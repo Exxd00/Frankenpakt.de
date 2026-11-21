@@ -33,11 +33,12 @@ const services=[
 const prices=[
  {id:'taxi',name:'Möbeltaxi',price:78,unit:'pro Fahrt',scope:'Ein vereinbartes Möbelstück, ein Fahrer. Bis 45 Minuten an den Bordsteinen und bis 10 km Gesamtroute ab und bis 90453. Eine benötigte zweite Trageperson stellen Sie.'},
  {id:'drei',name:'Umzugsteam · 3 Stunden',price:322,unit:'pro Einsatz',scope:'Zwei Personen mit Fahrzeug, drei Stunden Arbeit vor Ort. An- und Rückfahrt bis zusammen 20 km und 30 Minuten ab und bis 90453. Das Umzugsgut ist gepackt.'},
- {id:'kompakt',name:'Kompaktumzug',price:498,ab:true,unit:'pro Auftrag',scope:'Zwei Personen, bis 20 m³ insgesamt in höchstens zwei Ladungen. Bis fünf Stunden und 35 km ab und bis 90453. Erdgeschoss zu Erdgeschoss, je bis 15 m Trageweg, alles gepackt. Vor der Buchung prüfen wir Inventar, Gewicht je Ladung und Zugang. Dann erhalten Sie den Festpreis für den vereinbarten Umfang. Packen sowie Möbelabbau und -aufbau sind nicht enthalten. Für Entsorgung beauftragen Sie selbst einen Fachbetrieb.'},
+ {id:'kompakt',name:'Kompaktumzug',price:498,unit:'pro Auftrag',scope:'Zwei Personen, bis 20 m³ insgesamt in höchstens zwei Ladungen. Bis fünf Stunden und 35 km ab und bis 90453. Erdgeschoss zu Erdgeschoss, je bis 15 m Trageweg, alles gepackt. Vor der Buchung prüfen wir Inventar, Gewicht je Ladung und Zugang. Danach erhalten Sie Ihr persönliches Angebot. Packen sowie Möbelabbau und -aufbau sind nicht enthalten. Für Entsorgung beauftragen Sie selbst einen Fachbetrieb.'},
  {id:'sieben',name:'Umzugsteam · 7 Stunden',price:789,unit:'pro Einsatz',scope:'Zwei Personen mit Fahrzeug. Sieben Stunden ab und bis 90453, bis 50 km Gesamtroute. Vereinbarte Fahrten und Fahrzeit sind Teil der sieben Stunden.'},
  {id:'extra',name:'Verlängerung',price:55,unit:'je 30 Minuten',scope:'Im laufenden Auftrag nach Vereinbarung für dieselben zwei Personen und dasselbe Fahrzeug. Eine zweite Anfahrt fällt dabei nicht an.'}
 ];
-const euro=n=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0,minimumFractionDigits:0}).format(n);
+const formatEuro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0,minimumFractionDigits:0});
+const startingPrice = amount => 'ab ' + formatEuro.format(amount);
 const btn=(text,url,alt=false)=>'<a class="button'+(alt?' secondary':'')+'" href="'+url+'">'+text+'</a>';
 function contactChoices(service='',pack=''){
   const serviceParam=['entruempelung','entsorgung'].includes(service)?'leistung':'service';
@@ -105,7 +106,7 @@ function detail(d) {
   const request = '/anfrage/?service=' + d.s + (fullDay ? '&amp;paket=' + fullDay.id : '');
   const priceUrl = '/preise/?service=' + d.s + '&amp;paket=';
   const smallMoveComparison = fullDay ? '<p class="comparison-shortcut"><a href="/preise/?vorhaben=umzug#richtpreis">Wohnungsgröße und Strecke für meinen Umzug eingeben</a></p>' : '';
-  const leadOffer = fullDay ? '<div class="lead-offer"><strong>' + euro(fullDay.price) + ' · 2 Personen und Fahrzeug</strong><span>7 Stunden ab und bis 90453 Nürnberg · bis 50 km Gesamtroute. Endpreis inkl. 19 % USt.</span></div>' : '';
+  const leadOffer = fullDay ? '<div class="lead-offer"><strong>' + startingPrice(fullDay.price) + ' · 2 Personen und Fahrzeug</strong><span>7 Stunden ab und bis 90453 Nürnberg · bis 50 km Gesamtroute. Unverbindlicher Richtpreis inkl. 19 % USt.</span></div>' : '';
   return '<div class="subhead service-heading" data-interest-service="'+d.s+'" data-interest-package="'+(fullDay?.id||'')+'"><div class="wrap">' + crumb(d.t) +
     '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p>' + leadOffer + '<div class="actions">' +
     btn(fullDay ? '7-Stunden-Team anfragen' : 'Anfrage vorbereiten', request) +
@@ -113,8 +114,8 @@ function detail(d) {
     d.img + '.webp" width="900" height="650" alt="' + d.alt + '"></div></div></div></div>' +
     '<section class="wrap section service-facts"><div class="section-head"><h2>' + d.title + '</h2></div><div class="info-grid">' +
     d.list.map(([h,p]) => '<article><h3>' + h + '</h3><p>' + p + '</p></article>').join('') +
-    '</div><div class="mobile-facts">' + faq(d.list) + '</div><div class="price-callout"><div>' + ic('tag',28) + '<div><h3>' + item.name + ' · ' + euro(item.price) +
-    '</h3><p>' + item.scope + ' Endpreis inkl. 19 % USt.</p></div></div>' + btn('Preise prüfen',priceUrl + item.id + '#preisfinder',true) +
+    '</div><div class="mobile-facts">' + faq(d.list) + '</div><div class="price-callout"><div>' + ic('tag',28) + '<div><h3>' + item.name + ' · ' + startingPrice(item.price) +
+    '</h3><p>' + item.scope + ' Unverbindlicher Richtpreis inkl. 19 % USt.</p></div></div>' + btn('Preise prüfen',priceUrl + item.id + '#preisfinder',true) +
     '</div>' + smallMoveComparison + '</section><section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2>' + faq(d.faqs) + '</div></section>' + endCta(d.s);
 }
 function planningPage(page) {
@@ -166,7 +167,7 @@ function scopeSlot(calculator) {
 function pricePage() {
   const note = 'Stand 20. November 2026. Bei Treppen, längeren Laufwegen, mehreren Fahrten, Außenaufzug, Packmaterial oder Halteverbotszone stimmen wir den Aufwand vorab mit Ihnen ab. Für Entsorgung und Spezialtransporte wählen und beauftragen Sie selbst einen geeigneten Fachbetrieb.';
   const mobileRows = prices.map(item => {
-    const value = (item.ab ? '<small>ab</small> ' : '') + euro(item.price);
+    const value = startingPrice(item.price);
     return '<details><summary><span class="tile-name">' + item.name + '</span><span class="tile-price">' + value +
       '</span><span class="tile-unit">' + item.unit + '</span></summary><p>' + item.scope + '</p></details>';
   }).join('');
@@ -182,9 +183,9 @@ function pricePage() {
     '</tbody></table><p>Füllmenge, Treppen und verwertbare Möbel beeinflussen das Angebot. <a href="https://entrumpelungnurnberg.de/haushaltsaufloesung-nuernberg">Preisbeispiele von LV Transporte, September 2026</a></p></details></div>';
   const overview = '<section class="wrap mobile-prices"><h2>Preisbeispiele für Umzüge</h2><p class="tile-hint">Paket antippen und Bedingungen ansehen.</p>' +
     '<div class="price-tiles">' + mobileRows + '</div><details class="price-note"><summary>Stand und weitere Kosten</summary><p>' + note + '</p></details></section>';
-  const desktopRows = prices.map(i=>'<article data-paket="'+i.id+'" data-euro="'+i.price+'" data-ab="'+Boolean(i.ab)+'"><div><h3>'+i.name+'</h3><p>'+i.scope+'</p></div><div class="amount"><strong>'+(i.ab?'ab ':'')+euro(i.price)+'</strong><small>'+i.unit+'</small></div></article>').join('');
+  const desktopRows = prices.map(i=>'<article data-paket="'+i.id+'" data-euro="'+i.price+'"><div><h3>'+i.name+'</h3><p>'+i.scope+'</p></div><div class="amount"><strong>'+startingPrice(i.price)+'</strong><small>'+i.unit+'</small></div></article>').join('');
   return '<div class="subhead pricing-heading" id="raeumungskosten"><div class="wrap narrowhero">'+crumb('Preise')+'<h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead"><a href="#richtpreis">Richtpreis für mein Vorhaben ansehen</a> oder direkt <a href="#raeumungsrechner">Tragehilfe und Entsorgung</a> bzw. ein <a href="#preisfinder">Umzugspaket</a> berechnen.</p></div></div>' + priceComparison(scopeSlot('comparison')) + clearanceCalculator(scopeSlot('clearance')) + householdGuide + overview +
-    '<section class="wrap section" id="preisfinder"><div class="estimate-layout"><div><h2>Preisfinder für Umzüge</h2><p>Alle Preisbeispiele sind Endpreise für Privatkunden inklusive 19 % Umsatzsteuer. Wir prüfen Umfang, Gewicht, Zugang und Route, bevor Sie buchen.</p><form id="estimate" class="tool-form"><label for="paket">Gewünschte Leistung</label><select id="paket" name="paket">'+prices.filter(i=>i.id!=='extra').map(c=>'<option value="'+c.id+'"'+(c.id==='drei'?' selected':'')+'>'+c.name+'</option>').join('')+'<option value="anders">Andere Leistung oder unklarer Umfang</option></select><div id="estimate-conditions"></div><div id="estimate-extra"></div><label for="fit">Passen die genannten Bedingungen?</label><select id="fit"><option value="unknown">Das möchte ich prüfen lassen</option><option value="yes">Ja, voraussichtlich</option><option value="no">Nein, der Umfang weicht ab</option></select><button class="button js-only" type="submit">Preis einschätzen</button></form><noscript><p>Alle Paketpreise und Bedingungen finden Sie in der Preisübersicht. Über die Anfrage können Sie den passenden Umfang klären.</p></noscript></div><div class="estimate-result" id="estimate-result" role="status" aria-live="polite"><span class="large-icon">'+ic('tag',32)+'</span><h3>Ihre Preisorientierung</h3><p>Nach Ihrer Auswahl sehen Sie hier den passenden Richtpreis oder den nächsten Schritt zur persönlichen Kalkulation.</p></div></div>' + scopeSlot('moving') + '</section>' +
+    '<section class="wrap section" id="preisfinder"><div class="estimate-layout"><div><h2>Preisfinder für Umzüge</h2><p>Alle Ab-Preise verstehen sich inklusive 19 % Umsatzsteuer. Ihr persönliches Angebot erhalten Sie, nachdem wir Umfang, Gewicht, Zugang und Strecke geprüft haben.</p><form id="estimate" class="tool-form"><label for="paket">Gewünschte Leistung</label><select id="paket" name="paket">'+prices.filter(i=>i.id!=='extra').map(c=>'<option value="'+c.id+'"'+(c.id==='drei'?' selected':'')+'>'+c.name+'</option>').join('')+'<option value="anders">Andere Leistung oder unklarer Umfang</option></select><div id="estimate-conditions"></div><div id="estimate-extra"></div><label for="fit">Passen die genannten Bedingungen?</label><select id="fit"><option value="unknown">Das möchte ich prüfen lassen</option><option value="yes">Ja, voraussichtlich</option><option value="no">Nein, der Umfang weicht ab</option></select><button class="button js-only" type="submit">Preis einschätzen</button></form><noscript><p>Alle Paketpreise und Bedingungen finden Sie in der Preisübersicht. Über die Anfrage können Sie den passenden Umfang klären.</p></noscript></div><div class="estimate-result" id="estimate-result" role="status" aria-live="polite"><span class="large-icon">'+ic('tag',32)+'</span><h3>Ihre Preisorientierung</h3><p>Nach Ihrer Auswahl sehen Sie hier den passenden Richtpreis oder den nächsten Schritt zur persönlichen Kalkulation.</p></div></div>' + scopeSlot('moving') + '</section>' +
     '<section class="price-section desktop-prices"><div class="wrap"><h2>Preisbeispiele für Umzüge</h2><div class="tariffs">' + desktopRows +
     '</div><p class="fine">' + note + '</p></div></section>' + endCta();
 }

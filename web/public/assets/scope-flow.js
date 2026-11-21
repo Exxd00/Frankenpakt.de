@@ -115,7 +115,7 @@ function createEditor(host, service, isCalculator, getContext) {
     if (!notes.length) return;
     const list = document.createElement('ul');
     list.append(...notes.map(note => textElement('li',note)));
-    conditions.append(textElement('p','Diese Punkte prüfen wir vor dem Endpreis:'),list);
+    conditions.append(textElement('p','Diese Punkte prüfen wir für Ihr Angebot:'),list);
   }
   const widget = mountJobScope(inner,{service,initial:withRoute(draft),onChange(value) {
     if (value.fields.wasteRoute !== automaticRoute) automaticRoute = undefined;

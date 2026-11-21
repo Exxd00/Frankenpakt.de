@@ -69,9 +69,9 @@ function approvedScenario(job) {
 }
 const routes = {entsorgung:'#raeumungsrechner',entruempelung:'#raeumungsrechner',umzug:'#preisfinder'};
 const serviceNotes = {
-  entsorgung:'Abholung und Entsorgung buchen Sie direkt beim Entsorger. Er bestätigt Ihnen seinen Endpreis.',
+  entsorgung:'Für Abholung und Entsorgung erhalten Sie Ihr Angebot direkt vom Entsorger.',
   entruempelung:'Eine Abfallabholung beauftragen Sie direkt beim Entsorger. Für vereinbarte Arbeiten vor Ort erhalten Sie unser Angebot.',
-  umzug:'Den Endpreis bestätigen wir nach Prüfung von Umzugsgut, Adressen und Zugang.'
+  umzug:'Nach Prüfung von Umzugsgut, Adressen und Zugang erhalten Sie Ihr persönliches Angebot.'
 };
 const measurement = (value,unit) => value === 'unknown' ? 'noch unbekannt' : amountFormat.format(Number(value))+' '+unit;
 function factsText(job) {

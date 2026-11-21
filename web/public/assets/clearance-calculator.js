@@ -1,3 +1,5 @@
+import {formatStartingPrice} from './actual-job.js';
+
 const containerPrices = new Map([
   ['container-2', {size: '2', cents: 30107}],
   ['container-4-5', {size: '4,5', cents: 47005}],
@@ -5,8 +7,7 @@ const containerPrices = new Map([
 ]);
 const helpChoices = new Set(['none', 'one-helper', 'individual']);
 const disposalChoices = new Set(['none', 'asn', 'individual', ...containerPrices.keys()]);
-const euros = new Intl.NumberFormat('de-DE', {style: 'currency', currency: 'EUR'});
-const money = cents => euros.format(cents / 100);
+const formatEstimate = cents => cents === 0 ? 'kostenfrei' : formatStartingPrice(cents);
 
 export function calculateEstimate({help, disposal, asnEligible = false, containerEligible = false}) {
   const lines = [];
@@ -42,7 +43,7 @@ export function calculateEstimate({help, disposal, asnEligible = false, containe
     return {service, lines, totalCents, title, note};
   }
   const title = lines.length > 1 ? 'Geschätzte Gesamtkosten' : 'Richtwert für Ihre Auswahl';
-  let note = 'Bruttopreis für den beschriebenen Umfang. Den genauen Einsatz stimmen wir mit Ihnen ab.';
+  let note = 'Unverbindlicher Einstiegspreis inklusive MwSt. Ihr persönliches Angebot erhalten Sie nach Prüfung Ihrer Angaben.';
   if (disposal === 'asn') note = 'Die Abholung beantragen Sie direkt beim ASN. Die Stadt prüft Ihre Anmeldung.';
   if (containerPrices.has(disposal)) note = 'Der Containerpreis ist ein externer Brutto-Richtwert. Angebot und Buchung erhalten Sie direkt bei Schutt Karl.';
   if (lines.length > 1) note += ' Die Tragehilfe vereinbaren Sie separat mit FrankenPackt.';
@@ -64,8 +65,8 @@ export function inquiryEstimate(params) {
     asnEligible: params.get('asn') === 'ja', containerEligible: params.get('container') === 'ja'};
   const estimate = calculateEstimate(choice);
   if (!estimate.service || estimate.service !== params.get('leistung')) return null;
-  const lines = estimate.lines.map(({label,cents}) => cents === null ? label : label+' '+money(cents));
-  const summary = 'Preisrechner: '+lines.join('; ')+'.'+(estimate.totalCents !== null ? ' '+estimate.title+': '+money(estimate.totalCents)+'.' : '');
+  const lines = estimate.lines.map(({label,cents}) => cents === null ? label : label+' · '+formatEstimate(cents));
+  const summary = lines.join('. ')+'.'+(estimate.totalCents !== null && lines.length > 1 ? ' '+estimate.title+' · '+formatEstimate(estimate.totalCents)+'.' : '');
   return {service: estimate.service, params: selectionParams(choice), summary};
 }
 
@@ -87,12 +88,12 @@ function enableCalculator(form) {
     const estimate = calculateEstimate(choice);
     const amount = output.querySelector('[data-estimate-total]');
     amount.hidden = estimate.totalCents === null;
-    amount.textContent = estimate.totalCents === null ? '' : money(estimate.totalCents);
+    amount.textContent = estimate.totalCents === null ? '' : formatEstimate(estimate.totalCents);
     output.querySelector('[data-estimate-title]').textContent = estimate.title;
     output.querySelector('[data-estimate-note]').textContent = estimate.note;
     output.querySelector('[data-estimate-lines]').replaceChildren(...estimate.lines.map(({label, cents}) => {
       const li = document.createElement('li');
-      li.textContent = label + (cents === null ? '' : ' · '+money(cents));
+      li.textContent = label + (cents === null ? '' : ' · '+formatEstimate(cents));
       return li;
     }));
     const url = new URL(inquiry.href);

@@ -48,9 +48,9 @@ export function clearanceCalculator(scopeSlot = '') {
     ${scopeSlot}
     <details class="calc-sources">
       <summary>Preise und Bedingungen nachlesen</summary>
-      <p><strong>Tragehilfe</strong> · 161 € inklusive 19 % MwSt. für eine Person und drei Stunden vor Ort zum Tragen von Hausrat, den Sie weiterverwenden. Hin- und Rückfahrt des Helfers sind bis zusammen 30 Minuten enthalten. Ein gegebenenfalls benötigtes Fahrzeug stellen Sie.</p>
-      <p><strong>Städtische Abholung</strong> · Für berechtigte Nürnberger Privathaushalte einmal pro Kalenderjahr 0 €. Sie melden Ihre Gegenstände vorab selbst an. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/sperrmuell.html">Bedingungen der Stadt Nürnberg</a></p>
-      <p><strong>Sperrmüllcontainer</strong> · Schutt Karl nennt für 2 m³ rund 301,07 €, für 4,5 m³ 470,05 € und für 7 m³ 642,60 €, jeweils inklusive 19 % MwSt. Lieferung auf Privatgrund, fünf mietfreie Wochentage, Abholung und Entsorgung sind enthalten. Sie befüllen den Container und klären Lieferadresse, Termin und Tagespreis direkt mit dem Anbieter. <a href="https://www.schuttkarl.de/wp-content/uploads/2026/01/Schutt-Karl-Preisliste-Neulinge-2026.pdf">Preisliste vom 1. Januar 2026 (PDF)</a></p>
+      <p><strong>Tragehilfe</strong> · ab 161 € inklusive 19 % MwSt. für eine Person und drei Stunden vor Ort zum Tragen von Hausrat, den Sie weiterverwenden. Hin- und Rückfahrt des Helfers sind bis zusammen 30 Minuten enthalten. Ein gegebenenfalls benötigtes Fahrzeug stellen Sie.</p>
+      <p><strong>Städtische Abholung</strong> · Für berechtigte Nürnberger Privathaushalte einmal pro Kalenderjahr kostenfrei. Sie melden Ihre Gegenstände vorab selbst an. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/sperrmuell.html">Bedingungen der Stadt Nürnberg</a></p>
+      <p><strong>Sperrmüllcontainer von Schutt Karl</strong> · 2 m³ ab 301,07 €, 4,5 m³ ab 470,05 €, 7 m³ ab 642,60 €. Diese Richtwerte enthalten 19 % MwSt., Lieferung auf Privatgrund, fünf mietfreie Wochentage, Abholung und Entsorgung. Sie befüllen den Container und klären Lieferadresse, Termin und Tagespreis direkt mit dem Anbieter. <a href="https://www.schuttkarl.de/wp-content/uploads/2026/01/Schutt-Karl-Preisliste-Neulinge-2026.pdf">Preisliste vom 1. Januar 2026 (PDF)</a></p>
     </details>
     <noscript><p>Öffnen Sie „Preise und Bedingungen nachlesen“ für die Einzelpreise. Für eine persönliche Einschätzung können Sie einen <a href="/anfrage/?kontakt=telefon&amp;leistung=entruempelung">Rückruf vorbereiten</a>.</p></noscript>
   </section>`;

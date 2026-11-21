@@ -18,6 +18,14 @@ test('generated website serves all routes and assets, live legal copy before Jav
   for(const route of ['/','/umzug/','/moebeltaxi/','/seniorenumzug/','/raeumung/','/entsorgung/','/preise/','/anfrage/','/impressum/','/datenschutz/']){
     const res=await fetch(base+route);assert.equal(res.status,200,route);
     const html=await res.text();
+    assert.doesNotMatch(html,/\bFestpreis(?:e|en)?\b/i,route);
+    if(route==='/preise/'){
+      const mobileAmounts = Array.from(html.matchAll(/class="tile-price">([^<]+)</g), m => m[1]);
+      const desktopAmounts = Array.from(html.matchAll(/class="amount"><strong>([^<]+)</g), m => m[1]);
+      assert.equal(mobileAmounts.length, 5);
+      assert.deepEqual(desktopAmounts, mobileAmounts);
+      for(const amount of mobileAmounts) assert.match(amount, /^ab [\d.]+\s€$/);
+    }
     assert.match(html,/<link rel="canonical"/);assert.doesNotMatch(html,/content="noindex,follow"/);
     for(const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g))assets.add(m[1]);
     if(route==='/impressum/'){assert.match(html,/Probe &amp; Partner &lt;Test&gt;/);assert.match(html,/mailto:probe@example.invalid/);}

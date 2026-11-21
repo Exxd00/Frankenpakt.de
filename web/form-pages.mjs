@@ -4,7 +4,7 @@ export function inquiry(crumb, ic) {
   const livePhone = '<p data-live-phone hidden></p>';
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
     ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
-    <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Mit Angaben zu Inventar, Zugang und Termin kann unser Team den Endpreis für Ihr Vorhaben prüfen.</p>
+    <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Anhand Ihrer Angaben zu Inventar, Zugang und Termin erstellen wir Ihr persönliches Angebot.</p>
     <a class="inquiry-switch" id="inquiry-switch" href="/anfrage/?kontakt=telefon">Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>

@@ -10,6 +10,14 @@ const clearance = (...rooms) => ({service:'entruempelung',rooms});
 const move = (overrides={}) => ({service:'umzug',rooms:'2',area:'50',volume:'15',distance:'20',...overrides});
 const estimate = draft => evaluateActualJob(draft)?.estimatedCents;
 
+test('each quick estimate carries a single nonbinding starting price into the inquiry', () => {
+  for (const [job, expected] of [[disposal(item('Sofa')),'78'],[clearance(room('Keller','4')),'148'],[move(),'298']]) {
+    const {summary} = evaluateActualJob(job);
+    assert.match(summary, new RegExp('Unverbindlicher Richtwert ab '+expected+'\\s*€ brutto'));
+    assert.equal([...summary.matchAll(/€/g)].length,1);
+  }
+});
+
 test('customers name actual goods and quantities; only one usual furniture item triggers the single-item rate',()=>{
   for(const name of ['ein kleines Sofa','2-Sitzer-Sofa','Couch (3-Sitzer)','Kleiderschrank','Schrank','Esstisch','Bücherregal']) {
     assert.equal(estimate(disposal(item(name))),7800,name);

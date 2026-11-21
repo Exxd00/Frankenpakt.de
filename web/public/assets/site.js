@@ -132,6 +132,7 @@ document.addEventListener('keydown', event => {
 });
 
 const money = new Intl.NumberFormat('de-DE', {style: 'currency', currency: 'EUR', maximumFractionDigits: 0, minimumFractionDigits: 0});
+const startingPrice = euros => 'ab ' + money.format(euros);
 function enableEstimate(form) {
   const selection = document.querySelector('#paket');
   const fit = document.querySelector('#fit');
@@ -145,7 +146,7 @@ function enableEstimate(form) {
     packages.set(row.dataset.paket, {
       name: row.querySelector('h3').textContent,
       scope: row.querySelector('p').textContent,
-      euro: Number(row.dataset.euro), from: row.dataset.ab === 'true'
+      euro: Number(row.dataset.euro)
     });
   }
   const interest = pageInterest;
@@ -172,7 +173,7 @@ function enableEstimate(form) {
       const units = node('select');
       units.id = 'extra-units';
       for (let halfHours = 0; halfHours <= 4; halfHours++) {
-        const text = halfHours ? halfHours * 30 + ' Minuten · +' + money.format(halfHours * packages.get('extra').euro) : 'Keine Verlängerung einrechnen';
+        const text = halfHours ? halfHours * 30 + ' Minuten · ' + startingPrice(halfHours * packages.get('extra').euro) : 'Keine Verlängerung einrechnen';
         const option = node('option', text);
         option.value = String(halfHours);
         units.append(option);
@@ -203,9 +204,10 @@ function enableEstimate(form) {
     updateLink(request);
     result.replaceChildren(icon.cloneNode(true));
     if (compatible) {
-      result.append(node('h3', pkg.name), node('p', (pkg.from ? 'ab ' : '') + money.format(pkg.euro + units * packages.get('extra').euro), 'sum'));
-      result.append(node('p', units ? 'Paket ' + money.format(pkg.euro) + ' plus ' + money.format(units * packages.get('extra').euro) + ' für ' + units * 30 + ' zusätzliche Minuten nach Vereinbarung.' : pkg.scope));
-      result.append(node('p', 'Preisorientierung inklusive 19 % USt. Das Angebot bestätigt den konkreten Umfang.'));
+      const extension = units * packages.get('extra').euro;
+      result.append(node('h3', pkg.name), node('p', startingPrice(pkg.euro + extension), 'sum'));
+      result.append(node('p', units ? 'Paket ' + startingPrice(pkg.euro) + ' · ' + units * 30 + ' Minuten Verlängerung ' + startingPrice(extension) + '.' : pkg.scope));
+      result.append(node('p', 'Unverbindliche Schätzung inklusive 19 % USt. Ihr persönliches Angebot erhalten Sie nach Prüfung Ihrer Angaben.'));
     } else if (Object.hasOwn(clearance,service)) {
       result.append(node('h3', clearance[service].title), node('p', clearance[service].scope));
     } else {

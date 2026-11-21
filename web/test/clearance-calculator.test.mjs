@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {clearanceCalculator} from '../clearance-calculator.mjs';
 import {calculateEstimate, inquiryEstimate} from '../public/assets/clearance-calculator.js';
 
 test('known gross amounts are added in cents and external amounts require a qualifying selection', () => {
@@ -24,11 +25,31 @@ test('known gross amounts are added in cents and external amounts require a qual
 test('inquiry receives only the selected service and recomputed calculator context', () => {
   const params = new URLSearchParams({leistung:'entruempelung',hilfe:'one-helper',entsorgungsweg:'container-4-5',container:'ja',preis:'1',name:'irrelevant'});
   const estimate = inquiryEstimate(params);
-  assert.match(estimate.summary,/631,05/);
+  assert.deepEqual([...estimate.summary.matchAll(/ab ([\d,]+)\s*€/g)].map(match => match[1]), ['161', '470,05', '631,05']);
+  assert.doesNotMatch(estimate.summary,/ab ab/);
   assert.equal(estimate.params.toString(),'hilfe=one-helper&entsorgungsweg=container-4-5&container=ja');
   params.set('leistung','entsorgung');
   assert.equal(inquiryEstimate(params),null);
   params.set('hilfe','none');
   params.append('container','ja');
   assert.equal(inquiryEstimate(params),null);
+});
+
+test('eligible municipal pickup stays free and unpriced work keeps its price open', () => {
+  const params = new URLSearchParams({leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'});
+  assert.match(inquiryEstimate(params).summary,/ASN\).*kostenfrei/);
+  assert.doesNotMatch(inquiryEstimate(params).summary,/€/);
+  params.set('leistung','entruempelung');
+  params.set('hilfe','individual');
+  const mixed = inquiryEstimate(params).summary;
+  assert.match(mixed,/Angebot erforderlich/);
+  assert.match(mixed,/kostenfrei/);
+  assert.doesNotMatch(mixed,/€/);
+});
+
+test('price information available without JavaScript labels all paid services with ab', () => {
+  const html = clearanceCalculator();
+  assert.deepEqual([...html.matchAll(/ab ([\d,]+) €/g)].map(match => match[1]), ['161','301,07','470,05','642,60']);
+  assert.equal([...html.matchAll(/€/g)].length,4);
+  assert.match(html,/einmal pro Kalenderjahr kostenfrei/);
 });

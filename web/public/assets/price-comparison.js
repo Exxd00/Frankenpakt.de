@@ -94,7 +94,7 @@ function mountEstimator(form) {
     explanation.textContent = estimate ? estimate.basis : prompts[service];
     note.textContent = estimate?.note || '';
     note.hidden = !note.textContent;
-    inquiry.textContent = hasAmount ? 'Endpreis anfragen' : 'Angebot für meine Angaben anfragen';
+    inquiry.textContent = hasAmount ? 'Persönliches Angebot anfragen' : 'Angebot für meine Angaben anfragen';
   }
   function restore(draft) {
     const service = select.value;
