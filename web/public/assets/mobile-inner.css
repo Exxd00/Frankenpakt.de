@@ -1,0 +1,424 @@
+.mobile-facts,
+.mobile-prices,
+.jump-finder,
+.mobile-form-help {
+  display: none;
+}
+
+@media screen and (max-width: 780px) {
+  .service-heading,
+  .clearance-heading,
+  .pricing-heading,
+  .inquiry-heading {
+    padding-block: .35rem 1rem;
+  }
+
+  .subhead .crumb {
+    min-height: 2.6rem;
+    align-items: center;
+    margin-bottom: .35rem;
+  }
+
+  .subhead .crumb a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .subhead .detail-hero h1,
+  .subhead .narrowhero h1 {
+    font-size: clamp(2.05rem, 7vw, 3.05rem);
+    line-height: 1.02;
+  }
+
+  .subhead .lead {
+    margin: .55rem 0 0;
+    font-size: 1rem;
+    line-height: 1.45;
+  }
+
+  .service-heading .detail-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) clamp(3.7rem, 20vw, 7.5rem);
+    gap: .65rem .75rem;
+  }
+
+  .service-heading .detail-hero > div:first-child {
+    display: contents;
+  }
+
+  .service-heading .detail-hero h1 {
+    grid-area: 1 / 1;
+    align-self: center;
+  }
+
+  .service-heading .detail-img {
+    grid-area: 1 / 2;
+    align-self: center;
+    width: 100%;
+    aspect-ratio: 1.18;
+    min-height: 0;
+    border-radius: .6rem;
+  }
+
+  .service-heading .lead,
+  .service-heading .lead-offer,
+  .service-heading .actions {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .service-heading .lead-offer {
+    padding: .08rem 0 .08rem .65rem;
+  }
+
+  .service-heading .lead-offer strong {
+    font-size: 1.09rem;
+  }
+
+  .service-heading .lead-offer span {
+    font-size: .95rem;
+    line-height: 1.4;
+  }
+
+  .service-heading .detail-hero .actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+    margin: 0;
+  }
+
+  .service-heading .actions .button {
+    height: 100%;
+    min-height: 2.8rem;
+    padding: .45rem .55rem;
+  }
+
+  .clearance-heading .narrowhero > .button {
+    margin-top: .65rem;
+  }
+
+  .service-facts,
+  main:has(> .service-heading, > .clearance-heading) > .faq-section,
+  .mobile-prices,
+  #preisfinder,
+  .form-layout {
+    padding-block: 1.25rem;
+  }
+
+  .service-facts .info-grid,
+  .desktop-prices,
+  .form-layout .form-aside {
+    display: none;
+  }
+
+  .service-facts h2,
+  .faq-layout h2,
+  #preisfinder h2,
+  .mobile-prices h2 {
+    font-size: clamp(1.55rem, 5.1vw, 2rem);
+  }
+
+  .service-facts .section-head {
+    margin-bottom: 0;
+  }
+
+  .mobile-facts,
+  .mobile-prices,
+  .mobile-form-help {
+    display: block;
+  }
+
+  .mobile-facts .faq,
+  .price-tiles {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .5rem;
+    margin-top: .65rem;
+  }
+
+  .mobile-facts .faq > details,
+  .price-tiles > details,
+  .mobile-form-help > details {
+    min-width: 0;
+    background: var(--pale);
+    border: 1px solid var(--line);
+    border-radius: .65rem;
+  }
+
+  .mobile-facts .faq > details[open],
+  .mobile-facts .faq > details:last-child:nth-child(odd),
+  .price-tiles > details[open],
+  .price-tiles > details:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  .mobile-facts .faq summary,
+  .price-tiles summary,
+  .price-note summary,
+  .mobile-form-help summary {
+    position: relative;
+    box-sizing: border-box;
+    list-style: none;
+    min-height: 2.75rem;
+    padding: .63rem 1.7rem .63rem .7rem;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 650;
+    line-height: 1.25;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  .mobile-facts .faq summary,
+  .price-note summary,
+  .mobile-form-help summary {
+    display: flex;
+    align-items: center;
+  }
+
+  .mobile-facts .faq details:not([open]) > summary,
+  .price-tiles details:not([open]) > summary {
+    height: 100%;
+  }
+
+  .price-tiles summary::-webkit-details-marker,
+  .price-note summary::-webkit-details-marker,
+  .mobile-form-help summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-facts .faq summary::after,
+  .price-tiles summary::after,
+  .price-note summary::after,
+  .mobile-form-help summary::after {
+    content: "+";
+    position: absolute;
+    right: .55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink);
+    font: 650 1.2rem/1 var(--body);
+  }
+
+  .mobile-facts .faq details[open] > summary::after,
+  .price-tiles details[open] > summary::after,
+  .price-note[open] > summary::after,
+  .mobile-form-help details[open] > summary::after {
+    content: "−";
+  }
+
+  .mobile-facts .faq p,
+  .price-tiles details > p,
+  .price-note > p,
+  .mobile-form-help details > p {
+    padding: 0 .72rem .77rem;
+    font-size: 1rem;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+
+  .service-facts .price-callout {
+    gap: .7rem;
+    margin-top: 1rem;
+    padding: .9rem;
+  }
+
+  .service-facts .price-callout > div {
+    gap: .55rem;
+  }
+
+  .service-facts .price-callout > div > svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+
+  .service-facts .price-callout p,
+  .service-facts .note {
+    line-height: 1.45;
+  }
+
+  .service-facts .note {
+    margin-top: .85rem;
+    padding: .7rem .85rem;
+  }
+
+  .faq-section .faq-layout {
+    gap: .65rem;
+  }
+
+  .faq-layout .faq summary {
+    padding-block: .74rem;
+    min-height: 2.75rem;
+    line-height: 1.35;
+  }
+
+  .faq-layout .faq summary::after {
+    top: .53rem;
+  }
+
+  .pricing-heading .jump-finder {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    font-weight: 650;
+  }
+
+  .pricing-heading {
+    padding-bottom: .25rem;
+  }
+
+  .mobile-prices .tile-hint {
+    margin-top: .25rem;
+    color: var(--muted);
+    font-size: .95rem;
+  }
+
+  .price-tiles summary {
+    display: grid;
+    grid-template-rows: minmax(min-content, 1fr) auto auto;
+    gap: .16rem;
+    padding: .65rem .64rem;
+  }
+
+  .price-tiles summary::after {
+    top: auto;
+    bottom: .53rem;
+    transform: none;
+  }
+
+  .price-tiles .tile-name {
+    font-size: 1rem;
+  }
+
+  .price-tiles .tile-price {
+    color: var(--ink);
+    font: 650 1.58rem/1.05 var(--serif);
+    letter-spacing: -.035em;
+    white-space: nowrap;
+  }
+
+  .price-tiles .tile-price small {
+    font: 650 .64em/1 var(--body);
+    letter-spacing: normal;
+  }
+
+  .price-tiles .tile-unit {
+    padding-right: 1.05rem;
+    font-size: .9rem;
+    font-weight: 450;
+    color: var(--muted);
+  }
+
+  .price-tiles > details:last-child:nth-child(odd) summary {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    column-gap: .3rem;
+    padding-right: 1.9rem;
+  }
+
+  .price-tiles > details:last-child:nth-child(odd) .tile-unit {
+    grid-column: 1 / -1;
+  }
+
+  .price-note {
+    margin-top: .45rem;
+  }
+
+  .price-note > summary {
+    padding-left: 0;
+  }
+
+  .price-note > p {
+    padding-left: 0;
+  }
+
+  #preisfinder {
+    border-top: 1px solid var(--line);
+  }
+
+  #preisfinder .estimate-layout,
+  .form-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .9rem;
+  }
+
+  #preisfinder .estimate-layout h2 + p,
+  #preisfinder .tool-form {
+    margin-top: .45rem;
+    line-height: 1.45;
+  }
+
+  #preisfinder .estimate-result {
+    padding: .88rem;
+  }
+
+  #preisfinder .estimate-result .large-icon {
+    display: none;
+  }
+
+  #preisfinder .estimate-result p {
+    margin: .4rem 0 0;
+    line-height: 1.45;
+  }
+
+  #preisfinder .estimate-result .sum {
+    line-height: 1.05;
+  }
+
+  .form-layout .fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 .65rem;
+  }
+
+  .form-layout .fields > :nth-child(-n+2) {
+    grid-column: 1 / -1;
+  }
+
+  .form-layout .note.compact {
+    padding: .65rem .8rem;
+    margin-bottom: .7rem;
+    line-height: 1.45;
+  }
+
+  .form-layout .lead-form {
+    margin-top: .6rem;
+  }
+
+  .form-layout .lead-form fieldset {
+    min-width: 0;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .form-layout .lead-form legend {
+    font-size: 1.5rem;
+  }
+
+  .form-layout .lead-form label,
+  .form-layout .radiotitle,
+  #preisfinder .tool-form label {
+    margin-top: .62rem;
+  }
+
+  .form-layout .radio-row label {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    margin: .13rem 0;
+  }
+
+  .form-layout input,
+  .form-layout select,
+  .form-layout textarea,
+  #preisfinder select {
+    max-width: 100%;
+    min-width: 0;
+    font-size: 1rem;
+  }
+
+  .mobile-form-help > p:not([hidden]) {
+    margin-bottom: .6rem;
+  }
+}

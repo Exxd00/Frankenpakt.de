@@ -1,0 +1,129 @@
+.hero-grid { position: relative; }
+.service-card.clearance-card,
+.mobile-caption,
+.process-steps > summary { display: none; }
+
+@media screen and (max-width: 780px) {
+  .mast {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    min-height: 58px;
+    gap: 0 .5rem;
+    padding-block: .35rem;
+  }
+  .mast .wordmark { justify-self: start; min-height: 44px; min-width: 0; }
+  .mast .wordmark img { max-width: 100%; }
+  .mast .head-cta { grid-area: 1 / 2; margin: 0; min-height: 44px; padding: .42rem .65rem; }
+  .mast .menutoggle { grid-area: 1 / 3; min-width: 44px; min-height: 44px; justify-content: center; }
+  .mast nav { grid-column: 1 / -1; gap: 0 1rem; }
+  .mast nav a { display: inline-flex; align-items: center; min-height: 44px; }
+
+  .hero-grid {
+    width: calc(100% - 24px);
+    display: grid;
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+    grid-template-areas: "title photo" "copy copy" "buttons buttons" "phone phone" "price price";
+    border: 1px solid #A3B297;
+  }
+  .hero-copy { display: contents; }
+  .hero-heading { grid-area: title; align-self: center; padding: 1rem .3rem .65rem 1rem; }
+  .hero-heading .location { font-size: .875rem; gap: .25rem; line-height: 1.25; margin: 0 0 .4rem; }
+  .hero-heading .location svg { flex: none; width: 14px; }
+  .hero-heading h1 { font-size: clamp(1.95rem, 8.4vw, 3.3rem); line-height: 1.02; }
+  .hero-heading h1 br { display: inline; }
+  .hero-heading h1 em::before { content: none; }
+  .hero-picture { grid-area: photo; aspect-ratio: auto; border-radius: 0 0 0 .9rem; }
+  .hero-picture > img { object-position: center 48%; }
+  .hero .hero-copy > p {
+    grid-area: copy; max-width: unset; margin: 0; padding: .62rem 1rem .73rem;
+    font-size: 1rem; line-height: 1.35;
+  }
+  .hero .wide-detail { display: none; }
+  .hero .actions {
+    grid-area: buttons; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch; gap: .5rem; margin: 0 1rem;
+  }
+  .hero .button { min-height: 44px; padding: .5rem .3rem; font-size: .99rem; }
+  .hero .call-link {
+    grid-area: phone; justify-self: start; margin: .1rem 1rem .15rem; min-height: 44px;
+  }
+  .hero .price-ticket {
+    position: static; grid-area: price; max-width: none; margin: 0; min-height: 48px;
+    padding: .55rem 1rem; border: 0; border-top: 1px solid #829773; border-radius: 0;
+    background: #E4E9DE; gap: .6rem; box-shadow: none;
+  }
+  .price-ticket .ticket-icon { display: grid; width: 1.9rem; height: 1.9rem; }
+  .price-ticket .ticket-icon svg { width: 18px; height: 18px; }
+  .price-ticket small { margin-top: .12rem; }
+  .hero .price-ticket b { margin-left: auto; font-size: 1.4rem; }
+  .hero .price-ticket::after { content: "›"; font-size: 1.25rem; }
+  .hero .price-ticket:focus-visible { outline-offset: -4px; }
+
+  #leistungen { padding-block: 1.4rem; }
+  #leistungen .section-head { margin-bottom: .7rem; }
+  #leistungen h2 { font-size: clamp(1.55rem, 5.3vw, 2.1rem); }
+  #leistungen .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .55rem; }
+  #leistungen .service-card {
+    display: flex; position: relative; flex-direction: column; align-items: flex-start;
+    gap: .12rem; padding: .72rem; border-radius: .8rem; overflow-wrap: break-word;
+  }
+  #leistungen .service-card::after {
+    content: "›"; position: absolute; top: .65rem; right: .75rem;
+    font: 500 1.25rem/1 var(--body); color: var(--muted);
+  }
+  #leistungen .icon-tile { width: 1.9rem; height: 1.9rem; border-radius: .55rem; margin: 0 0 .26rem; }
+  #leistungen .icon-tile svg { width: 21px; height: 21px; }
+  #leistungen .service-card h3 { font-size: clamp(1.05rem, 4.6vw, 1.35rem); line-height: 1.18; }
+  #leistungen .mobile-caption { display: block; color: var(--muted); font-size: .94rem; line-height: 1.35; }
+  #leistungen .service-card p, #leistungen .card-link, #leistungen .clear-link { display: none; }
+  #leistungen .clearance-card { background: #E8E3D9; border-color: #D8D1C4; }
+
+  .how { padding-block: .12rem; }
+  .how .how-title { display: none; }
+  .process-steps > summary {
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    gap: .7rem; padding-block: .85rem; min-height: 52px; list-style: none;
+  }
+  .process-steps > summary::-webkit-details-marker { display: none; }
+  .process-steps > summary h2 { font-size: 1.4rem; }
+  .process-steps > summary::after { content: "+"; font: 500 1.55rem/1 var(--body); }
+  .process-steps[open] > summary::after { content: "−"; }
+  .process-steps .steps { margin-bottom: .75rem; }
+  .process-steps .steps li { padding-block: .7rem; }
+  .process-steps .steps li::before { top: .65rem; }
+  .endcta { padding-block: 1.25rem; }
+  .end-inner { gap: .75rem; }
+  .end-inner h2 { font-size: 1.55rem; }
+  .end-inner p { margin-top: .35rem; line-height: 1.4; font-size: 1rem; }
+  .end-inner .actions { gap: .25rem .6rem; }
+  .end-inner .actions a { min-height: 44px; margin: 0; }
+  .end-inner .button { padding: .45rem .78rem; }
+  .footer-main { padding-block: 1rem; gap: .6rem; }
+  .footer-main .wordmark { min-height: 44px; }
+  .footer-main p { margin: 0; }
+  .footlinks { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 .55rem; }
+  .footlinks a, .footlinks .text-toggle { display: inline-flex; align-items: center; min-height: 44px; justify-self: start; }
+}
+
+@media screen and (min-width: 540px) and (max-width: 780px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas: "title photo" "copy photo" "buttons photo" "phone photo" "price price";
+  }
+  .hero-picture { border-bottom-left-radius: 0; }
+}
+
+@media screen and (max-width: 360px) {
+  .mast { width: calc(100% - 20px); gap: 0 .25rem; }
+  .hero-heading { padding-left: .75rem; }
+  .hero-heading .location { font-size: .8rem; }
+  .hero .actions { margin-inline: .75rem; }
+  #leistungen .service-card { padding: .6rem; }
+}
+
+@media screen and (max-width: 400px) {
+  .bigtype #leistungen .service-grid { grid-template-columns: 1fr; }
+  .bigtype #leistungen .service-card { display: grid; grid-template-columns: auto 1fr; gap: .1rem .6rem; }
+  .bigtype #leistungen .icon-tile { grid-area: 1 / 1 / 3 / 2; margin: 0; align-self: center; }
+  .bigtype #leistungen .service-card h3, .bigtype #leistungen .mobile-caption { grid-column: 2; padding-right: 1rem; }
+}

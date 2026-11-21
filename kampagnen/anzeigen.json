@@ -1,0 +1,105 @@
+{
+  "campaign": "FrankenPackt | Suche | Nürnberg | Umzüge",
+  "openingKeywords": [
+    "umzugsunternehmen nürnberg preise",
+    "umzugsunternehmen nürnberg"
+  ],
+  "groups": [
+    {
+      "name": "Privatumzug",
+      "landing": "/umzug/",
+      "adVariant": "privatumzug-team",
+      "sitelinks": [
+        {"title":"7-Stunden-Preis prüfen","landing":"/preise/?service=umzug&paket=sieben#preisfinder"},
+        {"title":"7-Stunden-Team anfragen","landing":"/anfrage/?service=umzug&paket=sieben"},
+        {"title":"Rückruf zum Umzug","landing":"/anfrage/?service=umzug&paket=sieben&kontakt=telefon"},
+        {"title":"Seniorenumzug","landing":"/seniorenumzug/"}
+      ],
+      "path": "privatumzug",
+      "headlines": [
+        "Umzugsunternehmen Nürnberg",
+        "FrankenPackt Umzüge",
+        "Umzug mit zwei Helfern",
+        "Umzug in Nürnberg planen",
+        "Umzugspreis vorab prüfen",
+        "Team und Transporter",
+        "Angebot für Ihren Umzug",
+        "7 Stunden mit Umzugsteam"
+      ],
+      "descriptions": [
+        "Zwei Helfer und ein Transporter. Bestand und Adressen nennen und Angebot anfragen.",
+        "7 Stunden für 789 € inkl. MwSt. Ab und bis 90453, bis 50 km insgesamt. Paket ansehen.",
+        "Umzug innerhalb Nürnbergs? Wählen Sie Ihren Terminwunsch und schildern Sie den Umfang."
+      ],
+      "keywords": [
+        "umzugsunternehmen nürnberg",
+        "umzugsfirma nürnberg",
+        "umzugsunternehmen nürnberg preise",
+        "umzug nürnberg kosten"
+      ]
+    },
+    {
+      "name": "Seniorenumzug",
+      "landing": "/seniorenumzug/",
+      "adVariant": "seniorenumzug-team",
+      "sitelinks": [
+        {"title":"3-Stunden-Preis prüfen","landing":"/preise/?service=seniorenumzug&paket=drei#preisfinder"},
+        {"title":"3-Stunden-Team anfragen","landing":"/anfrage/?service=seniorenumzug&paket=drei"},
+        {"title":"Rückruf zum Seniorenumzug","landing":"/anfrage/?service=seniorenumzug&kontakt=telefon"},
+        {"title":"Privatumzug","landing":"/umzug/"}
+      ],
+      "path": "seniorenumzug",
+      "headlines": [
+        "Seniorenumzug Nürnberg",
+        "FrankenPackt Umzüge",
+        "Umzug mit Angehörigen planen",
+        "In Ruhe den Umzug planen",
+        "Rückruf zum Umzug anfragen",
+        "Angebot für Ihren Umzug",
+        "Umzug in eine kleinere Wohnung",
+        "Umzug in Nürnberg"
+      ],
+      "descriptions": [
+        "Planen Sie Ihren Umzug in Nürnberg. Auf Wunsch besprechen wir alles mit Angehörigen.",
+        "Geben Sie Start, Ziel und Terminwunsch an. Wir klären gemeinsam, was mitkommen soll.",
+        "Auch ohne Fotos anfragen: Wählen Sie einen Rückruf und schildern Sie Ihren Umzug."
+      ],
+      "keywords": [
+        "seniorenumzug nürnberg",
+        "seniorenumzüge nürnberg",
+        "umzug für senioren nürnberg"
+      ]
+    }
+  ],
+  "negativePhrases": [
+    "job",
+    "jobs",
+    "stellenangebote",
+    "ausbildung",
+    "bewerbung",
+    "praktikum",
+    "minijob",
+    "transporter mieten",
+    "umzugswagen mieten",
+    "lkw mieten",
+    "sprinter mieten",
+    "anhänger mieten",
+    "umzugskartons kaufen",
+    "umzugskartons gebraucht",
+    "wertstoffhof",
+    "sperrmüll anmelden",
+    "abfallkalender",
+    "container mieten",
+    "asbest",
+    "schadstoffmobil",
+    "klaviertransport",
+    "tresortransport",
+    "umzugsfirma gründen"
+  ],
+  "negativeExact": [
+    "entrümpelung nürnberg",
+    "wohnungsauflösung nürnberg",
+    "haushaltsauflösung nürnberg",
+    "sperrmüll abholung nürnberg"
+  ]
+}

@@ -1,0 +1,48 @@
+.inquiry-switch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: .3rem;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.receipt-section { max-width: 54rem; }
+.receipt-card {
+  border: 1px solid var(--line);
+  border-radius: 1.15rem;
+  background: var(--pale);
+  padding: clamp(1.1rem, 4vw, 3.5rem);
+}
+.receipt-card .crumb { margin-bottom: 1.4rem; }
+.receipt-card h1 { font-size: clamp(2rem, 5.5vw, 4rem); }
+.receipt-card .lead { max-width: 50ch; margin-top: .8rem; }
+.receipt-reference {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: .3rem 1rem;
+  margin-block: 1.25rem;
+  padding-block: .6rem;
+  border-block: 1px solid #AAB9A0;
+}
+.receipt-reference span { display: inline-flex; align-items: center; gap: .4rem; }
+.receipt-reference strong { overflow-wrap: anywhere; }
+.receipt-next { max-width: 50ch; margin-top: .85rem; }
+
+@media (max-width: 780px) {
+  .receipt-section { padding-block: 1rem; }
+  .receipt-card .crumb { margin-bottom: .65rem; }
+  .receipt-card .actions { margin-top: 1rem; gap: .45rem; }
+  .receipt-card .button { min-height: 44px; padding: .5rem .7rem; }
+  .lead-form:has(#callback-window:not([hidden])) fieldset > legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .lead-form:has(#callback-window:not([hidden])) fieldset { margin-bottom: .55rem; padding-bottom: .6rem; }
+  .lead-form:has(#callback-window:not([hidden])) .fine { margin-block: .6rem; }
+}

@@ -1,0 +1,144 @@
+@property --edge-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 26deg;
+}
+@keyframes light-around-edge {
+  from { --edge-angle: 26deg; }
+  to { --edge-angle: 386deg; }
+}
+.button, .contact-choice {
+  position: relative;
+  isolation: isolate;
+  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(9px);
+}
+.button:not(.secondary) {
+  background: linear-gradient(155deg, #ff846a7a 0%, transparent 52%), rgb(232 65 44 / 93%);
+  color: var(--tomato-ink);
+  box-shadow: inset 0 1px 0 #fff7, 0 2px 5px #26322218;
+}
+.button.secondary, .hero .button.secondary, .contact-choice {
+  background: linear-gradient(150deg, #fff6, #f7f5ef28 60%, #fff5);
+  border: 1px solid #62765b;
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 #fffb, 0 2px 4px #23321c11;
+}
+.contact-choice, .button {
+  --rim: #b6c4a2;
+  --shine: #fffdf1;
+}
+.button:not(.secondary) { --rim: #db6b4c; --shine: #fff0cf; }
+/* Only the narrow border is painted. The moving highlight never covers the label. */
+@supports (mask-composite: exclude) {
+  :is(.button, .contact-choice)::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1.7px;
+    pointer-events: none;
+    background: conic-gradient(from var(--edge-angle), transparent 4%, transparent 56%, var(--rim) 71%, var(--shine) 79%, var(--rim) 85%, transparent 95%);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .hero :is(.button, .contact-choice)::before, .contact-dialog[open] .button::before {
+      animation: light-around-edge 3.8s ease-in-out 1;
+    }
+    :is(.button, .contact-choice):focus-visible::before { animation: light-around-edge 4s linear infinite; }
+    @media (hover: hover) {
+      :is(.button, .contact-choice):hover::before { animation: light-around-edge 4s linear infinite; }
+    }
+  }
+}
+.button:not(.secondary):hover {
+  color: var(--tomato-ink);
+  background: linear-gradient(150deg, #ffb59c80, transparent 60%), #ef563e;
+}
+.contact-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .45rem;
+}
+.hero-copy .contact-choices { margin-top: 1rem; }
+.detail-hero .contact-choices { margin-top: .7rem; }
+.contact-choice {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .38rem;
+  min-height: 44px;
+  padding: .48rem .75rem;
+  border-radius: .7rem;
+  font: 650 .94rem/1.2 var(--body);
+  text-decoration: none;
+}
+.contact-choice > svg { flex: none; }
+.contact-choice:hover, .hero .contact-choice:hover { background-color: #f7f5efa8; }
+.end-inner .actions { align-items: center; }
+.endcta .contact-choice {
+  color: #f9f8f1;
+  border-color: #a3b498;
+  background: linear-gradient(155deg, #fff3, #fff1 60%, #fff2);
+}
+.endcta .contact-choice:hover { background-color: #52624d; }
+.endcta .button:not(.secondary):hover { color: var(--tomato-ink); }
+.footer-main .contact-choices { margin-top: .65rem; }
+.contact-dialog {
+  background: var(--cream);
+  color: var(--ink);
+  border: 1px solid #a4b19a;
+  padding: 1.55rem;
+  width: min(28rem, calc(100% - 2rem));
+  max-height: calc(100dvh - 2rem);
+  border-radius: 1.15rem;
+  box-shadow: 0 1rem 5rem #18221a40;
+}
+.contact-dialog::backdrop { background: rgb(25 36 29 / 58%); }
+.contact-dialog h2 { font-size: clamp(1.6rem, 4.6vw, 2rem); padding-right: 2rem; }
+.contact-dialog p { margin-top: .7rem; line-height: 1.45; font-size: 1rem; }
+.contact-dialog .handoff-number { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
+.contact-dialog .handoff-preview { color: var(--muted); font-size: .93rem; }
+.dialog-close {
+  display: grid; place-items: center; position: absolute; right: .55rem; top: .55rem;
+  width: 44px; height: 44px; border: none; background: transparent; color: var(--ink);
+  border-radius: 50%;
+}
+.dialog-close:hover { background: var(--pale); }
+.dialog-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
+.dialog-actions a { min-height: 44px; padding: .55rem .8rem; }
+.handoff-consent { display: flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .91rem; line-height: 1.4; margin-top: .75rem; cursor: pointer; }
+.contact-dialog .handoff-consent input[type=checkbox] {
+  min-height: 0; width: 1.15rem; height: 1.15rem; padding: 0; flex: none; accent-color: var(--ink);
+}
+.handoff-demo-result { border-left: 3px solid var(--sage); padding-left: .75rem; }
+@media screen and (max-width: 780px) {
+  .detail-hero .contact-choices { grid-column: 1 / -1; margin: 0; gap: .35rem; }
+  .detail-hero .contact-choice { flex: 1 1 auto; }
+  .hero-copy .contact-choices {
+    grid-area: phone; margin: .5rem 1rem .6rem; gap: .35rem;
+  }
+  .hero-copy .contact-choice { flex: 1 1 auto; }
+  .contact-choice { padding: .4rem .52rem; gap: .24rem; }
+  .contact-choice > svg { width: 16px; height: 16px; }
+  .end-inner .actions { gap: .6rem; }
+  .dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
+  .dialog-actions .button { min-width: 0; padding: .5rem .3rem; }
+}
+@media screen and (max-width: 360px) {
+  .hero-copy .contact-choices { margin-inline: .75rem; gap: .28rem; }
+  .hero-copy .contact-choice { padding-inline: .3rem; }
+  .hero-copy .contact-choice > svg, .detail-hero .contact-choice > svg { display: none; }
+  .contact-dialog { padding: 1.1rem; }
+}
+@media (prefers-contrast: more), (forced-colors: active) {
+  .contact-choice, .button, .hero .button.secondary, .endcta .contact-choice {
+    background: Canvas; color: CanvasText; border: 2px solid currentColor; box-shadow: none;
+  }
+  :is(.contact-choice, .button)::before { display: none; }
+}
+@media print {
+  .contact-dialog, .contact-choices { display: none !important; }
+}
