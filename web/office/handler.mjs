@@ -4,7 +4,7 @@ const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}
 const hex=buffer=>Array.from(new Uint8Array(buffer),n=>n.toString(16).padStart(2,'0')).join('');
 const encode=t=>new TextEncoder().encode(t);
 const hash=async t=>hex(await crypto.subtle.digest('SHA-256',encode(t)));
-function reject(status,message){throw Object.assign(new Error(message),{status});}
+function reject(status,message,responseHeaders={}){throw Object.assign(new Error(message),{status,responseHeaders});}
 function text(value,limit,label){
   if(typeof value!=='string'||!value.trim()||value.trim().length>limit||/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value))reject(400,label+' bitte prüfen.');
   return value.trim();
@@ -31,7 +31,7 @@ export function createOfficeHandler(env,fetcher=fetch){
   }
   async function gated(action,ip,limit){
     const key=action+':'+await hash(ip);
-    if(!await db('rpc/fp_office_gate','POST',{p_key:key,p_max:limit}))reject(429,'Zu viele Versuche. Bitte in zehn Minuten erneut versuchen.');
+    if(!await db('rpc/fp_office_gate','POST',{p_key:key,p_max:limit}))reject(429,'Zu viele Versuche. Bitte in zehn Minuten erneut versuchen.',{'Retry-After':'600'});
   }
   async function session(role){
     const token=hex(crypto.getRandomValues(new Uint8Array(32)));
@@ -66,7 +66,12 @@ export function createOfficeHandler(env,fetcher=fetch){
       const target=req.headers.get('Origin')+'/admin/';
       const r=await fetcher(base+'/auth/v1/otp?redirect_to='+encodeURIComponent(target),{method:'POST',
         headers:{apikey:secret,'Content-Type':'application/json'},body:JSON.stringify({email:EDITOR,create_user:true}),signal:AbortSignal.timeout(9000)});
-      if(!r.ok)reject(r.status===429?429:503,'IXA-Anmeldemail konnte nicht zugestellt werden. Bitte den Mailversand prüfen.');
+      if(r.status===429){
+        const retry=r.headers.get('Retry-After');
+        const delay=retry&&(/^\d{1,8}$/.test(retry)||Number.isFinite(Date.parse(retry)))?{'Retry-After':retry}:{};
+        reject(429,'Das Versandlimit für Anmeldemails ist erreicht. Nutzen Sie den jüngsten gültigen Link im IXA-Postfach oder versuchen Sie es später erneut.',delay);
+      }
+      if(!r.ok)reject(503,'Die IXA-Anmeldemail konnte nicht angefordert werden. Bitte später erneut versuchen.');
       return reply({ok:true});
     }
     if(route==='editor-verify'&&write){
@@ -161,5 +166,5 @@ export function createOfficeHandler(env,fetcher=fetch){
     }
     reject(404,'Unbekannter Pfad.');
   }
-  return async req=>{try{return await api(req);}catch(e){return reply({error:e.status?e.message:'Anfrage derzeit nicht möglich.'},e.status||503);}};
+  return async req=>{try{return await api(req);}catch(e){return reply({error:e.status?e.message:'Anfrage derzeit nicht möglich.'},e.status||503,e.responseHeaders);}};
 }

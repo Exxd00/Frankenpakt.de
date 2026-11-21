@@ -7,6 +7,17 @@ const officeUrl = 'https://office.example/functions/v1/frankenpakt-office/';
 const origin = 'https://frankenpakt.vercel.app';
 const reply = value => Response.json(value);
 
+test('upstream mail throttling preserves the retry window without requesting another email',async()=>{
+  let requested=0;
+  const handler=createOfficeHandler({SUPABASE_URL:'https://office.example',SUPABASE_SERVICE_ROLE_KEY:'fixture'},async url=>{
+    if(new URL(url).pathname==='/rest/v1/rpc/fp_office_gate')return reply(true);
+    requested++;return new Response(null,{status:429,headers:{'Retry-After':'120'}});
+  });
+  const response=await handler(new Request(officeUrl+'editor-start',{method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:'{}'}));
+  assert.equal(response.status,429);assert.equal(response.headers.get('Retry-After'),'120');
+  assert.match((await response.json()).error,/Versandlimit/);assert.equal(requested,1);
+});
+
 function fixtures(role) {
   const calls = [];
   const rates = [{id:'drei',label:'Umzugsteam',scope:'Drei Stunden',unit:'Einsatz',cents:32200,revision:1}];
