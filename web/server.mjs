@@ -1,5 +1,6 @@
 import http from 'node:http';
 import { isIP } from 'node:net';
+import {createHash,timingSafeEqual} from 'node:crypto';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -8,6 +9,8 @@ import { deliverDue, notificationSettings } from './lib/notify.mjs';
 import { deliverStaffMail, staffMailSettings } from './lib/mail-delivery.mjs';
 import { liveHtml } from './lib/render-live.mjs';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
+import { parseFileRequest, maxMultipartBytes, serveAttachment } from './lib/attachments.mjs';
+import {deliverOfficeEvents} from './lib/office-events.mjs';
 import { saveDailyReport } from './lib/snapshot.mjs';
 
 const webRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -40,18 +43,27 @@ export function configuration(env=process.env){
     privacyExtra:live?(env.PRIVACY_EXTRA||''):'',retentionDays:Number(env.CLOSED_RETENTION_DAYS||90)
   }};
 }
-async function body(req,maxBytes){
+async function readBytes(req,maxBytes){
+  if(Number(req.headers['content-length'])>maxBytes)throw new InputError('Anfrage zu groß.',413);
   let size=0;const parts=[];
   for await(const part of req){size+=part.length;if(size>maxBytes)throw new InputError('Anfrage zu groß.',413);parts.push(part);}
-  try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
+  return Buffer.concat(parts);
+}
+async function body(req,maxBytes){
+  const bin=await readBytes(req,maxBytes);
+  try{return JSON.parse(bin.toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
 const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/entsorgung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
-export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1',sendStaffMail=fetch}={}){
+export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1',sendStaffMail=fetch,sendOfficeEvent=fetch}={}){
   const config=configuration(env);
+  const officeFileToken=env.OPS_OFFICE_FILE_TOKEN;
+  if(officeFileToken && (officeFileToken.length<32||/\s/.test(officeFileToken)))throw new Error('Invalid OPS_OFFICE_FILE_TOKEN.');
   if(!Number.isInteger(config.retention)||config.retention<1)throw new Error('CLOSED_RETENTION_DAYS must be a positive integer.');
   const publicPath=path.resolve(publicDir);
   const notify=config.live?notificationSettings(env):null;
   const mail=config.live?staffMailSettings(env):null;
+  const eventsKey=config.live?env.FRANKENPACKT_EVENTS_WRITE_KEY:null;
+  if(eventsKey&&!/^[\x21-\x7e]+$/.test(eventsKey))throw new Error('Invalid FRANKENPACKT_EVENTS_WRITE_KEY.');
   const dataPath=path.resolve(config.dataDir||'.');
   if(config.live&&(dataPath===publicPath||dataPath.startsWith(publicPath+path.sep)))throw new Error('Data directory must be outside public/.');
   const db=config.live?openStore(path.join(dataPath,'leads.sqlite')):null;
@@ -73,9 +85,10 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
   const controller=new AbortController();
   let pending=null;
   function notifyOps(){
-    if((notify||mail)&&!pending)pending=Promise.allSettled([
+    if((notify||mail||eventsKey)&&!pending)pending=Promise.allSettled([
       deliverDue(db,notify,{signal:controller.signal}),
-      deliverStaffMail(db,mail,{send:sendStaffMail,signal:controller.signal})
+      deliverStaffMail(db,mail,{send:sendStaffMail,signal:controller.signal}),
+      deliverOfficeEvents(db?.officeEvents,eventsKey,{send:sendOfficeEvent,signal:controller.signal})
     ]).then(results=>{
       if(results.some(result=>result.status==='rejected'))console.error('Notification queue unavailable. Check operator storage.');
     }).finally(()=>{pending=null;});
@@ -87,15 +100,31 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
     if(!config.live)res.setHeader('X-Robots-Tag','noindex, nofollow');
     try{
       const url=new URL(req.url,'http://localhost');
+      if(url.pathname==='/assets/statistik.html'){
+        res.setHeader('X-Frame-Options','SAMEORIGIN');
+        res.setHeader('Content-Security-Policy',"frame-ancestors 'self'");
+        res.setHeader('Referrer-Policy','no-referrer');
+      }
+      const officeFile=/^\/api\/office-file\/(AN-[A-F0-9]{16})\/([1-5])$/.exec(url.pathname);
+      if(officeFile&&config.live&&officeFileToken&&['GET','HEAD'].includes(req.method)){
+        const digest=value=>createHash('sha256').update(value).digest();
+        if(!timingSafeEqual(digest(req.headers.authorization||''),digest('Bearer '+officeFileToken)))throw new InputError('Kein Zugriff.',403);
+        const file=db.attachments.get(officeFile[1],Number(officeFile[2]));
+        if(!file)throw new InputError('Datei nicht gefunden.',404);
+        serveAttachment(res,file,req.method==='HEAD');return;
+      }
       if(['GET','HEAD'].includes(req.method)&&url.pathname==='/api/config'){json(res,200,config.public);return;}
       if(req.method==='GET'&&url.pathname==='/healthz'){json(res,200,{ok:true,mode:config.public.mode});return;}
       const contactEvent=url.pathname==='/api/contact-events';
       if(req.method==='POST'&&(url.pathname==='/api/leads'||contactEvent)){
         if(contactEvent&&!config.public.contactMetrics)throw new InputError('Kontaktmessung inaktiv.',404);
-        if(!(req.headers['content-type']||'').toLowerCase().startsWith('application/json'))throw new InputError('JSON erforderlich.',415);
+        const type=req.headers['content-type']||'';
+        const multipart=!contactEvent&&/^multipart\/form-data\s*;/i.test(type);
+        if(!multipart&&!type.toLowerCase().startsWith('application/json'))throw new InputError('Unbekanntes Anfrageformat.',415);
+        if(multipart&&!config.live)throw new InputError('Dateiversand ist in der Vorschau ausgeschaltet.',403);
         const origin=req.headers.origin;
         const allowed=config.live?[config.origin]:['http://'+req.headers.host,'https://'+req.headers.host];
-        if((origin||contactEvent)&&!allowed.includes(origin))throw new InputError('Unbekannte Herkunft.',403);
+        if((origin||contactEvent||multipart)&&!allowed.includes(origin))throw new InputError('Unbekannte Herkunft.',403);
         const peer=req.socket.remoteAddress||'local',forwarded=req.headers['x-real-ip'];
         const fromLocalProxy=env.TRUST_LOCAL_PROXY==='1'&&['127.0.0.1','::1','::ffff:127.0.0.1'].includes(peer);
         const addr=fromLocalProxy&&typeof forwarded==='string'&&isIP(forwarded)?forwarded:peer;
@@ -109,9 +138,10 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
           db.contactClick(click);
           json(res,200,{ok:true});return;
         }
-        const lead=validate(await body(req,maxLeadBodyBytes));
+        const input=multipart ? await parseFileRequest(await readBytes(req,maxMultipartBytes),type) : {fields:await body(req,maxLeadBodyBytes),files:[]};
+        const lead=validate(input.fields);
         if(!config.live){json(res,200,{ok:true,mode:'preview',reference:'VORSCHAU'});return;}
-        const result=db.submit(lead,Date.now(),Boolean(notify),'web',mail?.route);json(res,result.created?201:200,{ok:true,mode:'live',reference:result.reference});
+        const result=db.submit(lead,Date.now(),Boolean(notify),'web',mail?.route,input.files,Boolean(eventsKey));json(res,result.created?201:200,{ok:true,mode:'live',reference:result.reference});
         if(result.created)notifyOps();
         return;
       }

@@ -35,7 +35,7 @@ test('configured production serves the same operator for pages, confirmed submis
   const routes = routesFor('production', origin);
   const publicRoot = new URL('../public/', import.meta.url);
   const pages = readdirSync(publicRoot,{withFileTypes:true})
-    .filter(entry=>entry.isDirectory() && existsSync(new URL(entry.name+'/index.html',publicRoot)))
+    .filter(entry=>entry.isDirectory() && entry.name !== 'admin' && existsSync(new URL(entry.name+'/index.html',publicRoot)))
     .map(entry=>'/'+entry.name+'/');
   for (const route of ['/', ...pages, '/robots.txt','/api/config']) {
     assert.equal(destination(routes, 'GET', route), origin + route);
@@ -48,5 +48,14 @@ test('configured production serves the same operator for pages, confirmed submis
   for (const route of ['/ops','/api/admin','/leads.sqlite']) assert.equal(destination(routes, 'GET', route),null);
   for (const bad of ['http://betrieb.example','https://betrieb.example/pfad','https://frankenpakt.vercel.app']) {
     assert.throws(() => routesFor('production',bad));
+  }
+});
+
+test('admin shell is static and its private API always uses the dedicated office endpoint', () => {
+  for (const routes of [routesFor('production'),routesFor('production','https://betrieb.example')]) {
+    assert.equal(destination(routes,'GET','/admin/'),null);
+    assert.equal(destination(routes,'GET','/api/office/state'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-office/state');
+    assert.equal(destination(routes,'POST','/api/office/viewer'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-office/viewer');
+    assert.equal(destination(routes,'GET','/api/office-file/AN-0000000000000000/1'),null);
   }
 });

@@ -66,6 +66,14 @@ Website im Browser über `http://127.0.0.1:8787/` öffnen. Eine vom Startskript 
 
 ### E-Mail für neue Website-Anfragen
 
+#### Fotos und Dokumente
+
+Im ausführlichen Anfrageformular lassen sich bis zu fünf Fotos (JPEG, PNG, WebP sowie vom Endgerät lesbare HEIC-/AVIF-Fotos), PDFs oder UTF-8-Textdateien auswählen. Die Verarbeitung startet im Browser. Bei einem Foto entsteht ein neu kodiertes JPEG mit maximal 1.920 Pixeln an der längsten Seite. Bei Dokumenten bleibt der Dateiinhalt erhalten. Das Formular zeigt die Ausgangs- und Versandgröße sowie die gemessene Aufbereitungszeit. Alle Dateien zusammen dürfen nach der Aufbereitung bis zu 3 MiB für den Versand und bis zu 8 MiB für die gespeicherten Originaldokumente bzw. aufbereiteten Fotos umfassen.
+
+Erst beim Absenden einer echten Anfrage werden die vorbereiteten Dateien zusammen mit den Auftragsdaten gespeichert. Sie liegen als private BLOBs in derselben Datenbank. Wiederholte Übermittlungen desselben Requests erzeugen keine zusätzlichen Dateien. Das Löschen des Vorgangs löscht seine Datenbankanhänge. In der Team-E-Mail befinden sich die Fotos direkt als JPEG. PDF- und Textanhänge erscheinen als ZIP, wenn das gesamte Archiv kleiner ist als das Originaldokument. Für einen Abruf aus dem Büro setzt der Betrieb auf der Server- und Büroseite denselben geheimen Wert `OPS_OFFICE_FILE_TOKEN` mit mindestens 32 Zeichen. Der Bürozugang prüft die Bearbeiterrolle; der private Node-Dienst liefert einzelne Dateien nur mit dem serverseitigen Token.
+
+Für das Ereignisblatt sendet der Node-Dienst nach gespeicherten Website-Anfragen `inquiry_received` und bei ausdrücklichen Rückrufbitten zusätzlich `callback_requested`. Dazu `FRANKENPACKT_EVENTS_WRITE_KEY` auf dem Dienst setzen. Jede Meldung enthält eine zufällige Ereignis-ID, Ereignisart, Leistung, Quellenkategorie und Anzahl. Die Datenbank hält noch ausstehende Meldungen für erneute Versuche vor.
+
 Jede neue Anfrage erscheint im Auftragseingang. Für eine zusätzliche Nachricht an das Teampostfach alle drei `OPS_MAIL_*`-Werte auf dem dauerhaften Node-Dienst setzen und den Dienst neu starten. Vor der Aktivierung den tatsächlichen Maildienst und die Aufbewahrung im Teampostfach in den Datenschutzangaben des Betriebs hinterlegen. Der Versand enthält Kundenangaben. Die getrennte HTTPS-Benachrichtigung mit `OPS_NOTIFY_URL` übermittelt weiterhin nur Ereignis, Vorgangsnummer und Leistung.
 
 Für den Abnahmetest je eine als Test gekennzeichnete Angebotsanfrage und Rückrufbitte verwenden. Im Teampostfach die Vorgangsnummer mit dem Auftragseingang abgleichen und das Kontaktziel der Schaltfläche prüfen. HTML- und Textansicht gehören zu derselben Nachricht. Die Zugangsdaten liegen ausschließlich im Secret Store des Node-Dienstes. [Resend-Versandschnittstelle](https://resend.com/docs/api-reference/emails/send-email)

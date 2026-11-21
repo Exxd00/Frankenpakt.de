@@ -68,7 +68,8 @@ function enableCalculator(form) {
   const containerOptions = form.querySelector('[data-container-confirm]');
   const inquiry = output.querySelector('[data-estimate-inquiry]');
 
-  function update() {
+  let lastAmount = null;
+  function update(notify=false) {
     asnOptions.hidden = asnEligible.disabled = disposal.value !== 'asn';
     containerOptions.hidden = containerEligible.disabled = !containerPrices.has(disposal.value);
     if (asnEligible.disabled) asnEligible.checked = false;
@@ -95,11 +96,14 @@ function enableCalculator(form) {
     }
     inquiry.setAttribute('href', url.pathname + url.search);
     inquiry.hidden = !estimate.service;
+    const displayed = estimate.totalCents === null ? null : estimate.service+'|'+estimate.totalCents;
+    if (notify && displayed && displayed !== lastAmount) form.dispatchEvent(new CustomEvent('fp-estimate',{bubbles:true,detail:{service:estimate.service}}));
+    lastAmount = displayed;
   }
-  form.addEventListener('change', update);
+  form.addEventListener('change',event=>update(event.isTrusted));
   form.addEventListener('submit', event => {
     event.preventDefault();
-    update();
+    update(true);
     output.focus();
   });
   update();

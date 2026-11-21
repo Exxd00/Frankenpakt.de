@@ -1,0 +1,100 @@
+// Public GA4 web-stream ID. This is a routing identifier, never an API secret.
+export const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
+const choiceKey = 'frankenpakt.statistik.v1';
+const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
+const pages = new Set(['/','/preise/','/anfrage/','/danke/','/umzug/','/seniorenumzug/','/moebeltaxi/','/entsorgung/','/raeumung/','/datenschutz/','/impressum/']);
+const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
+const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf']);
+const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
+const pageServices = {'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
+
+export function publicMetric(name, explicitService, location, uuid) {
+  if (!events.has(name) || !sites.has(location.hostname) || !pages.has(location.pathname)) return null;
+  const q = new URLSearchParams(location.search);
+  const category = [explicitService,q.get('leistung'),q.get('service'),q.get('vorhaben'),pageServices[location.pathname]].find(value => services.has(value)) || 'unbekannt';
+  const src = (q.get('src') || q.get('utm_source') || '').toLowerCase();
+  return {id:uuid(),event:name,service:category,source:sources.has(src) ? src : 'unbekannt',count:1,consent:true};
+}
+
+function analyticsFrame(id) {
+  if (id === 'G-XXXXXXXXXX' || !/^G-[A-Z0-9]{6,14}$/.test(id)) return null;
+  const frame = document.createElement('iframe');
+  frame.hidden = true;
+  frame.title = 'Optionale Statistik';
+  frame.setAttribute('sandbox','allow-scripts');
+  frame.referrerPolicy = 'no-referrer';
+  frame.src = '/assets/statistik.html';
+  let ready = false;
+  const pending = [];
+  // A sandboxed document has an opaque origin. Its WindowProxy is checked on every message.
+  const post = data => frame.contentWindow?.postMessage(data,'*');
+  const listen = event => {
+    if (event.source !== frame.contentWindow || event.origin !== 'null' || event.data !== 'fp-statistik-bereit' || ready) return;
+    ready = true;
+    post({cmd:'start',id,client:crypto.randomUUID()});
+    for (const data of pending.splice(0)) post(data);
+  };
+  window.addEventListener('message',listen);
+  document.body.append(frame);
+  return {
+    send(metric,path) {
+      const data = {cmd:'event',name:metric.event,service:metric.service,source:metric.source,path};
+      if (ready) post(data); else if (pending.length < 25) pending.push(data);
+    },
+    close() {
+      window.removeEventListener('message',listen);
+      pending.length = 0;
+      frame.remove();
+    }
+  };
+}
+
+export function mountMetrics({doc=document,win=window,location=win.location,storage,send=(...args)=>fetch(...args),uuid=()=>crypto.randomUUID(),frameFactory=()=>analyticsFrame(GA_MEASUREMENT_ID)}={}) {
+  const toggle = doc.querySelector('[data-statistics]');
+  if (!toggle || !sites.has(location.hostname) || !pages.has(location.pathname)) return;
+  const read = () => {try{return (storage || win.localStorage).getItem(choiceKey) === 'yes';}catch{return false;}};
+  let frame = null;
+  let enabled = false;
+  function set(value) {
+    if (value !== enabled) {
+      enabled = value;
+      if (enabled) frame = frameFactory();
+      else {frame?.close();frame=null;}
+    }
+    toggle.setAttribute('aria-pressed',String(enabled));
+    toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
+  }
+  function record(name, service) {
+    if (!enabled) return;
+    const metric = publicMetric(name,service,location,uuid);
+    if (!metric) return;
+    send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
+      headers:{'Content-Type':'application/json'},body:JSON.stringify(metric)}).catch(()=>{});
+    frame?.send(metric,location.pathname);
+  }
+  toggle.hidden=false;
+  set(read());
+  toggle.addEventListener('click',()=>{
+    const value=!enabled;
+    try{(storage || win.localStorage).setItem(choiceKey,value?'yes':'no');}catch{}
+    set(value);
+  });
+  win.addEventListener('storage',e=>{if(e.key===choiceKey||e.key===null)set(read());});
+  win.addEventListener('pagehide',()=>{frame?.close();frame=null;enabled=false;});
+  win.addEventListener('pageshow',e=>{if(e.persisted)set(read());});
+  doc.addEventListener('click',event=>{
+    const chosen=event.target.closest?.('[data-guide-choice],a.service-card');
+    if(!chosen)return;
+    const service=chosen.dataset.guideChoice || pageServices[chosen.getAttribute('href')];
+    if(services.has(service))record('service_chosen',service);
+  });
+  doc.addEventListener('change',event=>{
+    if(event.isTrusted && event.target.matches?.('#service,#comparison-topic') && services.has(event.target.value)) record('service_chosen',event.target.value);
+  });
+  doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
+  doc.addEventListener('fp-contact-handoff',()=>record('contact_intent',doc.querySelector('#service')?.value));
+  doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));
+}
+
+if (typeof document !== 'undefined') mountMetrics();

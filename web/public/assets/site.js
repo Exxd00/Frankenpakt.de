@@ -215,6 +215,7 @@ function enableEstimate(form) {
       result.append(node('h3', pkg.name), node('p', startingPrice(pkg.euro + extension), 'sum'));
       result.append(node('p', units ? 'Paket ' + startingPrice(pkg.euro) + ' · ' + units * 30 + ' Minuten Verlängerung ' + startingPrice(extension) + '.' : pkg.scope));
       result.append(node('p', 'Unverbindliche Schätzung inklusive 19 % USt. Ihr persönliches Angebot erhalten Sie nach Prüfung Ihrer Angaben.'));
+      form.dispatchEvent(new CustomEvent('fp-estimate',{bubbles:true,detail:{service}}));
     } else if (service === 'moebeltaxi') {
       result.append(node('h3', 'Ihr Möbeltransport'), node('p', 'Unser Team trägt, lädt und transportiert Ihr Möbelstück. Für Ihr Angebot nennen Sie uns bitte Maße, Strecke und Zugang an beiden Adressen.'));
     } else if (Object.hasOwn(clearance,service)) {
@@ -363,7 +364,7 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, contexts, draftTools) {
+function enableInquiry(form, contexts, draftTools, mountInquiryFiles) {
   const service = form.elements.service;
   const requestedTopic = params.get('vorhaben') || params.get('vergleich');
   const initialService = pageInterest || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
@@ -372,6 +373,7 @@ function enableInquiry(form, contexts, draftTools) {
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
   const callback = params.get('kontakt') === 'telefon' || initialService === 'rueckruf';
+  const fileBox = callback ? null : mountInquiryFiles(form.querySelector('#inquiry-files'));
   const phone = form.elements.phone;
   const email = form.elements.email;
   const summary = document.querySelector('#form-result');
@@ -499,6 +501,7 @@ function enableInquiry(form, contexts, draftTools) {
   let finished = false;
   function finish(receipt, submittedScope) {
     finished = true;
+    fileBox?.reset();
     if (submittedScope) {
       draftTools.clearDraft(submittedScope.service);
       editor?.select(submittedScope.service);
@@ -547,6 +550,7 @@ function enableInquiry(form, contexts, draftTools) {
       const attach = !callback || document.querySelector('#callback-draft').checked;
       const jobScope = callback ? (attach ? savedForCallback : null) : editor.getValue();
       const facts = attach ? draftTools.currentFacts(service.value,jobScope) : null;
+      const files = fileBox ? await fileBox.ready() : [];
       if (mode !== 'live') {
         finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value},jobScope||facts);
         return;
@@ -568,13 +572,13 @@ function enableInquiry(form, contexts, draftTools) {
       }
       body.source = source;
       if (adVariant) body.adVariant = adVariant;
-      const fingerprint = JSON.stringify(body);
+      const fingerprint = JSON.stringify([body,files.map(f=>f.id)]);
       if (lastPayload !== fingerprint || !lastId) {
         lastPayload = fingerprint;
         lastId = crypto.randomUUID();
       }
       body.requestId = lastId;
-      const response = await fetch('/api/leads', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+      const response = files.length ? await fileBox.send(body,files) : await fetch('/api/leads', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
       if (!response.ok) throw new Error(String(response.status));
       const answer = await response.json();
       if (!answer.ok || answer.mode !== 'live' || !/^AN-[A-F0-9]{16}$/.test(answer.reference)) throw new Error('invalid');
@@ -582,8 +586,9 @@ function enableInquiry(form, contexts, draftTools) {
       lastId = '';
       finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope||facts);
     } catch (error) {
-      summary.textContent = error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
+      summary.textContent = error.fileIssue ? error.message : error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
     } finally {
+      fileBox?.unlock();
       submit.disabled = finished || mode === 'unavailable';
       summary.focus();
     }
@@ -596,9 +601,9 @@ if (form) {
     contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
   }
   const submit = form.querySelector('#send-lead');
-  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts)]).then(([draftTools,results]) => {
+  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),import('/assets/inquiry-files.js')]).then(([draftTools,results,{mountInquiryFiles}]) => {
     const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
-    enableInquiry(form,valid.map(result => result.value),draftTools);
+    enableInquiry(form,valid.map(result => result.value),draftTools,mountInquiryFiles);
     submit.disabled = false;
   }).catch(() => {
     submit.disabled = true;

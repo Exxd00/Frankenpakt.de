@@ -111,6 +111,7 @@ footer{background:#EBEEE5;border-top:1px solid var(--line)}
 .footer-main p{font-size:.93rem;margin-top:.4rem;color:var(--muted)}
 .footlinks{display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;gap:.6rem 1.3rem}
 .footlinks a,.text-toggle{font-size:.94rem}
+.stat-choice{flex-basis:100%;text-align:end}.stat-choice small{display:block;font-size:.82rem;margin-top:.25rem}.stat-choice small a{font-size:inherit}.stat-toggle{font:inherit;color:inherit;background:transparent;border:1px solid currentColor;border-radius:.5rem;padding:.45rem .75rem;cursor:pointer}.stat-toggle[aria-pressed=true]{font-weight:700}.stat-choice:has([hidden]){display:none}@media(max-width:760px){.stat-choice{text-align:start}}
 .text-toggle{padding:0;text-decoration:underline;text-underline-offset:.18em}
 .crumb{font-size:.88rem;display:flex;gap:.52rem;color:var(--muted);margin-bottom:1.65rem}
 .crumb a{font-weight:600}

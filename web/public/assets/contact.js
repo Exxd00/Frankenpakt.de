@@ -81,6 +81,7 @@
         : 'Vorschau abgeschlossen. Mit dem Geschäftskonto öffnet sich hier der WhatsApp-Chat.';
       return;
     }
+    document.dispatchEvent(new CustomEvent('fp-contact-handoff'));
     record(channel + '_click');
     dialog.close();
   });

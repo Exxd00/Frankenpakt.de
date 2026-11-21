@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto';
 import {renderLeadMail} from './lead-mail.mjs';
+import {mailAttachment} from './attachments.mjs';
 
 const mailbox = /^[a-z\d!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z\d!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z\d](?:[a-z\d-]*[a-z\d])?\.)+[a-z]{2,63}$/i;
 // Resend retains idempotency keys for 24 hours. Allow for clock skew and transit.
@@ -70,7 +71,9 @@ export async function deliverStaffMail(store, settings, {send=fetch, clock=Date.
         const lead = store.get(next.ref);
         if (!lead) continue;
         const {subject,html,text} = renderLeadMail(lead);
-        body = JSON.stringify({from:'FrankenPackt <'+settings.from+'>',to:[settings.to],subject,html,text});
+        const attachments = lead.attachments.map(({id}) => mailAttachment(store.attachments.get(next.ref,id)));
+        body = JSON.stringify({from:'FrankenPackt <'+settings.from+'>',to:[settings.to],subject,html,text,
+          ...(attachments.length ? {attachments} : {})});
         // Repeat exactly the same bytes on a retry, including after a template update.
         if (!store.mail.keepPayload(next,body)) continue;
       }

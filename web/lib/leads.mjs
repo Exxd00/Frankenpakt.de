@@ -1,5 +1,7 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
 import {openStaffMailQueue} from './mail-delivery.mjs';
+import {openAttachments} from './attachments.mjs';
+import {officeEventsQueue} from './office-events.mjs';
 import { DatabaseSync, backup } from 'node:sqlite';
 import { mkdirSync, chmodSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -119,6 +121,8 @@ export function openStore(filename){
   const sign=(msg)=>createHmac('sha256',key).update(msg).digest('hex');
   function transaction(action){db.exec('BEGIN IMMEDIATE');try{const out=action();db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}
   const mail = openStaffMailQueue(db,transaction);
+  const attachments = openAttachments(db);
+  const officeEvents = officeEventsQueue(db,transaction);
   const netPaid="COALESCE((SELECT SUM(CASE WHEN p.direction='payment' THEN p.amount ELSE -p.amount END) FROM payments p WHERE p.ref=l.ref),0)";
   const settled="l.status='completed' AND l.gross_cents>0 AND "+netPaid+">=l.gross_cents";
   function updateSettlement(ref,ms){
@@ -146,6 +150,8 @@ export function openStore(filename){
   const effectiveService="COALESCE(json_extract(l.person,'$.requestedService'),l.service)";
   return {
     mail,
+    attachments,
+    officeEvents,
     close(){db.close();},
     quote:offers.quote,
     book:offers.book,
@@ -155,11 +161,12 @@ export function openStore(filename){
       await backup(db,target);
       if(process.platform!=='win32')chmodSync(target,0o600);
     },
-    submit(lead,ms=Date.now(),notify=false,entry='manual',mailRoute=null){
+    submit(lead,ms=Date.now(),notify=false,entry='manual',mailRoute=null,files=[],recordOfficeEvents=false){
       const {requestId,source,adVariant,contactMethod,contact,service,...fields}=lead;
       const person={...fields,contactMethod,contact};
-      const fingerprint=sign(JSON.stringify([source,service,person]));
-      const merge=sign(JSON.stringify([service,person]));
+      const fileKey=files.length ? [files.map(f=>[f.name,f.mime,f.digest])] : [];
+      const fingerprint=sign(JSON.stringify([source,service,person,...fileKey]));
+      const merge=sign(JSON.stringify([service,person,...fileKey]));
       const identity=sign(contactMethod+'|'+contact);
       function receipt(ref,created){
         if(entry==='web'){
@@ -189,6 +196,8 @@ export function openStore(filename){
             if(checks.length)person.jobConditionNotes=checks;
           }
           db.prepare("INSERT INTO leads(ref,created,updated,status,service,source,person,identity,merge_key) VALUES(?,?,?,'new',?,?,?,?,?)").run(ref,iso(ms),iso(ms),service,source,JSON.stringify(person),identity,merge);
+          attachments.save(ref,files);
+          if(entry==='web' && recordOfficeEvents)officeEvents.add(ref,service,person.requestedService,source,ms);
           if(source==='google' && isGoogleAdVariant(adVariant))db.prepare('INSERT INTO ad_attribution(ref,variant) VALUES(?,?)').run(ref,adVariant);
           db.prepare("INSERT INTO events VALUES(?,'new',?)").run(ref,iso(ms));found={ref};
           if(notify)db.prepare('INSERT INTO notices(ref,due) VALUES(?,?)').run(ref,ms);
@@ -262,7 +271,7 @@ export function openStore(filename){
       if(!l)return null;
       const person=JSON.parse(l.person);
       const scopeDetails=person.jobScope?{jobScopeSummary:summarizeJobScope(person.jobScope).split('\n')}:{};
-      return {...l,person,...scopeDetails,...offers.details(ref),events:db.prepare('SELECT status,at FROM events WHERE ref=? ORDER BY at,rowid').all(ref),
+      return {...l,person,attachments:attachments.list(ref),...scopeDetails,...offers.details(ref),events:db.prepare('SELECT status,at FROM events WHERE ref=? ORDER BY at,rowid').all(ref),
         contactEvents:db.prepare('SELECT event,at FROM contact_events WHERE ref=? ORDER BY at,rowid').all(ref),
         payments:db.prepare('SELECT entry,direction,amount AS amount_cents,at FROM payments WHERE ref=? ORDER BY at,rowid').all(ref),
         links:db.prepare('SELECT secondary,principal,reason,at FROM links WHERE secondary=? OR principal=? ORDER BY at').all(ref,ref)};},

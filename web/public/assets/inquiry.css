@@ -46,3 +46,21 @@
   .lead-form:has(#callback-window:not([hidden])) fieldset { margin-bottom: .55rem; padding-bottom: .6rem; }
   .lead-form:has(#callback-window:not([hidden])) .fine { margin-block: .6rem; }
 }
+.inquiry-files { margin-top:.85rem; padding:.55rem .8rem; border:1px solid #b6c2a7; border-radius:.85rem; background:#f3f4eb; }
+.inquiry-files summary { display:list-item; cursor:pointer; font-weight:650; padding:.45rem 0; color:#314b35; }
+.inquiry-files summary small { font-weight:400; }
+.inquiry-files input[type=file] { max-width:100%; padding:.5rem; font-size:1rem; }
+.inquiry-files input::file-selector-button { min-height:40px; margin-right:.4rem; border:1px solid #647959; border-radius:.5rem; background:#fff; color:#263d29; padding:.35rem .65rem; }
+.inquiry-files ul { margin:.55rem 0; padding:0; list-style:none; }
+.inquiry-files li { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:.25rem .5rem; padding:.3rem 0; border-top:1px solid #cbd4c3; }
+.inquiry-files li div { flex:1 1 9rem; min-width:0; overflow-wrap:anywhere; }
+.inquiry-files li small { display:block; color:#475747; }
+.inquiry-files li button { min-height:44px; padding:.25rem .45rem; border:0; color:#843324; font:inherit; text-decoration:underline; background:none; }
+.inquiry-files progress:not([hidden]) { display:block; width:100%; height:.52rem; accent-color:#446840; border:0; border-radius:1rem; overflow:hidden; }
+.inquiry-files progress::-webkit-progress-bar { background:#dce4d3; }
+.inquiry-files progress::-webkit-progress-value { background:#496b43; transition:width .18s; }
+.inquiry-files progress:indeterminate { appearance:none; background:linear-gradient(100deg,#dce4d3 15%,#839d73 45%,#dce4d3 75%) 0 0 / 210% 100%; animation:file-pulse 1.2s linear infinite; }
+.inquiry-files progress:indeterminate::-webkit-progress-bar { background:transparent; }
+.inquiry-files [role=status] { margin:.3rem 0; font-size:.94rem; color:#314b35; overflow-wrap:anywhere; }
+@keyframes file-pulse { to {background-position:-210% 0;} }
+@media(prefers-reduced-motion:reduce) { .inquiry-files progress:indeterminate { animation:none; } .inquiry-files progress::-webkit-progress-value { transition:none; } }

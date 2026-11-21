@@ -62,6 +62,7 @@ function mountEstimator(form) {
     }
     return draft;
   }
+  let lastAmount = null;
   function update(notify=false) {
     const draft = read();
     const service = select.value;
@@ -81,7 +82,7 @@ function mountEstimator(form) {
       params.set('vorhaben',service);
     }
     inquiry.setAttribute('href','/anfrage/'+(params.size?'?'+params:''));
-    if (!draft) return;
+    if (!draft) {lastAmount = null;return;}
     const hasAmount = estimate?.estimatedCents != null;
     calculator.hidden = !estimate || hasAmount;
     if (estimate && !hasAmount) {
@@ -91,6 +92,9 @@ function mountEstimator(form) {
     title.textContent = estimate?.priceLabel || 'Ihre Angaben';
     amount.textContent = hasAmount ? formatStartingPrice(estimate.estimatedCents) : '';
     amount.hidden = !hasAmount;
+    const displayed = hasAmount ? service+'|'+estimate.estimatedCents : null;
+    if (notify && displayed && displayed !== lastAmount) form.dispatchEvent(new CustomEvent('fp-estimate',{bubbles:true,detail:{service}}));
+    lastAmount = displayed;
     explanation.textContent = estimate ? estimate.basis : prompts[service];
     note.textContent = estimate?.note || '';
     note.hidden = !note.textContent;

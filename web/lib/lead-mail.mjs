@@ -12,6 +12,7 @@ const numberFormat = new Intl.NumberFormat('de-DE', {maximumFractionDigits:2});
 const escape = value => value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;')
   .replaceAll('"','&quot;').replaceAll("'","&#39;");
 const ink = '#1c291f', muted = '#465447', paper = '#F7F5EF';
+const heading = '#943529', section = '#365437';
 
 function brief(value, limit = 200) {
   if (typeof value !== 'string') return '';
@@ -74,7 +75,7 @@ function scopeDigest(person, service) {
 
 function bodyField(label, lines) {
   return '<tr><td style="padding:12px 0;border-top:1px solid #dce1d6;vertical-align:top">'+
-    '<p style="margin:0 0 3px;font-size:14px;font-weight:bold;line-height:20px;color:'+muted+'">'+label+'</p>'+
+    '<h2 style="margin:0 0 3px;font-size:15px;font-weight:bold;line-height:20px;color:'+section+'">'+escape(label)+'</h2>'+
     lines.map(line=>'<p style="margin:0;font-size:16px;line-height:24px;color:'+ink+'">'+escape(line)+'</p>').join('')+
     '</td></tr>';
 }
@@ -112,19 +113,23 @@ export function renderLeadMail(record) {
     else add('Regionaler Richtwert inkl. Entsorgung',amount+' brutto. Abholung und Entsorgung werden separat beim Entsorger beauftragt.');
   }
   add('Nachricht',brief(person.details,480));
+  const attachments = Array.isArray(record?.attachments) ? record.attachments : [];
+  const formatSize = bytes => bytes >= 1000000 ? numberFormat.format(bytes/1000000)+' MB' : Math.max(1,Math.ceil(bytes/1000))+' kB';
+  const files = attachments.filter(file=>brief(file?.name,150) && Number.isSafeInteger(file.size) && file.size>0);
+  if (files.length) add('Anhänge ('+files.length+')',...files.map(file=>brief(file.name,150)+' · '+formatSize(file.size)));
   const date = new Date(record?.created || '');
   const received = Number.isFinite(date.getTime()) ? 'Eingang '+dateFormat.format(date)+' Uhr (Berlin)' : '';
   const footer = [ref,received].filter(Boolean).join(' · ');
   const oneLine = value => '<p style="margin:0 0 4px;font-size:17px;line-height:25px">'+escape(value)+'</p>';
-  const html = '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
+  const html = '<!doctype html><html lang="de" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<title>'+escape(title)+'</title></head><body style="margin:0;padding:0;background:'+paper+';color:'+ink+';font-family:Arial,Helvetica,sans-serif">'+
-    '<div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all" aria-hidden="true">'+preheader+
+    '<div lang="de" dir="ltr" style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all" aria-hidden="true">'+preheader+
     '&zwnj;&nbsp;'.repeat(96)+'</div>'+
-    '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="'+paper+'"><tr><td align="center" style="padding:12px 8px">'+
+    '<table lang="de" dir="ltr" role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" bgcolor="'+paper+'"><tr><td align="center" style="padding:12px 8px">'+
     '<!--[if mso]><table role="presentation" width="530" cellpadding="0" cellspacing="0"><tr><td><![endif]-->'+
     '<table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:530px;table-layout:fixed;text-align:left;color:'+ink+';font-family:Arial,Helvetica,sans-serif;overflow-wrap:anywhere;word-wrap:break-word">'+
     '<tr><td bgcolor="#9CAF88" style="border-top:4px solid #E8412C;padding:12px 20px;font-size:19px;line-height:25px;font-weight:bold;color:'+ink+'">FrankenPackt</td></tr>'+
-    '<tr><td bgcolor="#ffffff" style="padding:18px 20px 4px"><h1 style="margin:0 0 12px;color:'+ink+';font-size:25px;line-height:32px">'+escape(title)+'</h1>'+
+    '<tr><td bgcolor="#ffffff" style="padding:18px 20px 4px"><h1 style="margin:0 0 12px;color:'+heading+';font-size:25px;line-height:32px">'+escape(title)+'</h1>'+
     (name ? oneLine(name) : '')+(contact ? oneLine(contact) : '')+
     (href ? '<table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:10px 0 12px"><tr><td bgcolor="#ad3022" style="border-radius:6px;mso-padding-alt:12px 18px"><a href="'+escape(href)+'" style="display:inline-block;padding:12px 18px;border-radius:6px;color:#ffffff;text-decoration:none;font-size:16px;line-height:22px;font-weight:bold">'+action+'</a></td></tr></table>' : '')+
     '</td></tr>'+(fields.length ? '<tr><td bgcolor="#ffffff" style="padding:0 20px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="table-layout:fixed">'+fields.map(({label,lines})=>bodyField(label,lines)).join('')+'</table></td></tr>' : '')+

@@ -24,7 +24,14 @@ function intakeRoutes(value: string) {
 }
 
 export const config = {
-  routes: configuredOrigin ? intakeRoutes(configuredOrigin) : [
-    { src: '^/api/config$', methods: ['GET', 'HEAD'], dest: '/assets/contact-preview.json', headers: { 'Cache-Control': 'no-store' } }
+  routes: [
+    {
+      src: '^/api/office/([A-Za-z0-9_/-]+)$', methods: ['GET', 'POST'],
+      dest: 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-office/$1',
+      headers: { 'Cache-Control': 'private, no-store' }
+    },
+    ...(configuredOrigin ? intakeRoutes(configuredOrigin) : [
+      { src: '^/api/config$', methods: ['GET', 'HEAD'], dest: '/assets/contact-preview.json', headers: { 'Cache-Control': 'no-store' } }
+    ])
   ]
 };
