@@ -15,6 +15,10 @@ function fixtures(role) {
     calls.push({path,method:opts.method});
     if (path === '/rest/v1/fp_office_sessions') return reply([{role}]);
     if (path === '/rest/v1/fp_office_rates') return reply(opts.method === 'GET' ? rates : []);
+    if(path==='/rest/v1/rpc/fp_intake_list')return reply([{reference:'AN-12345678ABCDEF12',file_count:1}]);
+    if(path==='/rest/v1/rpc/fp_intake_case')return reply({reference:JSON.parse(opts.body).p_ref,lead:{name:'Test'},attachments:[]});
+    if(path==='/rest/v1/rpc/fp_intake_close')return reply({reference:JSON.parse(opts.body).p_ref,closed:'2026-11-22T10:00:00Z'});
+    if(path==='/rest/v1/rpc/fp_intake_file')return reply({name:'Fläche.pdf',content_base64:btoa('%PDF-demo')});
     if (path === '/rest/v1/rpc/fp_office_quote_v2') {
       const args = JSON.parse(opts.body);
       assert.equal(args.p_issuer,'Beispiel GmbH, Anschrift');
@@ -41,10 +45,27 @@ test('private office accepts same-origin requests, rejects anonymous access and 
   const state = await run('state');
   assert.equal((await state.json()).role,'viewer');
   assert.match(state.headers.get('Cache-Control'),/no-store/);
-  for (const [route,body] of [['rate',{}],['quote',{}],['quotes',undefined],['files/AN-12345678ABCDEF12/1',undefined]]) {
+  for (const [route,body] of [['rate',{}],['quote',{}],['quotes',undefined],['cases',undefined],['case/AN-12345678ABCDEF12',undefined],['case/AN-12345678ABCDEF12/close',{confirm:true}],['files/AN-12345678ABCDEF12/1',undefined]]) {
     assert.equal((await run(route,body)).status,403,route);
   }
   assert.ok(calls.every(call=>['/rest/v1/fp_office_sessions','/rest/v1/fp_office_rates'].includes(call.path)));
+});
+
+test('IXA can open an inquiry and download a private attachment from the cloud store',async()=>{
+  const {run}=fixtures('editor');
+  const list=await run('cases');
+  const ref=(await list.json())[0].reference;
+  const record=await run('case/'+ref);
+  assert.equal((await record.json()).lead.name,'Test');
+  const file=await run('files/'+ref+'/1');
+  assert.equal(file.status,200);
+  assert.match(file.headers.get('Content-Disposition'),/attachment; filename\*=UTF-8''Fl%C3%A4che.pdf/);
+  assert.equal(file.headers.get('Content-Type'),'application/octet-stream');
+  assert.match(file.headers.get('Cache-Control'),/no-store/);
+  assert.equal(await file.text(),'%PDF-demo');
+  assert.equal((await run('case/'+ref+'/close',{})).status,400);
+  const closed=await run('case/'+ref+'/close',{confirm:true});
+  assert.equal((await closed.json()).closed,'2026-11-22T10:00:00Z');
 });
 
 test('editor quotes derive their unit prices from the durable catalogue and stale price edits return a conflict',async()=>{

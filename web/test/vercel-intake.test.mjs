@@ -4,11 +4,11 @@ import {existsSync,readFileSync,readdirSync} from 'node:fs';
 import test from 'node:test';
 
 const configUrl = new URL('../public/vercel.ts', import.meta.url);
-function routesFor(target, origin = '') {
+function routesFor(target, origin = '', cloud = '') {
   const code = 'import {config} from ' + JSON.stringify(configUrl.href) + '; console.log(JSON.stringify(config.routes));';
   const output = execFileSync(process.execPath, ['--input-type=module', '-e', code], {
     encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
-    env: {...process.env, VERCEL_ENV: target, FRANKENPACKT_INTAKE_ORIGIN: origin}
+    env: {...process.env, VERCEL_ENV: target, FRANKENPACKT_INTAKE_ORIGIN: origin, FRANKENPACKT_CLOUD_INTAKE: cloud}
   });
   return JSON.parse(output);
 }
@@ -21,7 +21,7 @@ function destination(routes, method, pathname) {
 }
 
 test('static production and preview builds publish their preview status without routing customer input', () => {
-  for (const routes of [routesFor('production'), routesFor('preview','https://betrieb.example')]) {
+  for (const routes of [routesFor('production'), routesFor('preview','https://betrieb.example','1')]) {
     const entry = destination(routes, 'GET', '/api/config');
     const settings = JSON.parse(readFileSync(new URL('../public' + entry,import.meta.url),'utf8'));
     assert.deepEqual(settings, {mode:'preview',leadIntake:false});
@@ -35,7 +35,7 @@ test('configured production serves the same operator for pages, confirmed submis
   const routes = routesFor('production', origin);
   const publicRoot = new URL('../public/', import.meta.url);
   const pages = readdirSync(publicRoot,{withFileTypes:true})
-    .filter(entry=>entry.isDirectory() && entry.name !== 'admin' && existsSync(new URL(entry.name+'/index.html',publicRoot)))
+    .filter(entry=>entry.isDirectory() && !['admin','betrieb'].includes(entry.name) && existsSync(new URL(entry.name+'/index.html',publicRoot)))
     .map(entry=>'/'+entry.name+'/');
   for (const route of ['/', ...pages, '/robots.txt','/api/config']) {
     assert.equal(destination(routes, 'GET', route), origin + route);
@@ -49,6 +49,21 @@ test('configured production serves the same operator for pages, confirmed submis
   for (const bad of ['http://betrieb.example','https://betrieb.example/pfad','https://frankenpakt.vercel.app']) {
     assert.throws(() => routesFor('production',bad));
   }
+});
+
+test('cloud production serves operator pages and sends submissions only to the private intake backend', () => {
+  const routes=routesFor('production','','1');
+  const read=(path)=>readFileSync(new URL('../public'+destination(routes,'GET',path),import.meta.url),'utf8');
+  const legal=read('/impressum/');
+  for(const value of ['Mohamad Alzaim','Einsteinring 12','90453 Nürnberg','mailto:info@frankenpakt.de','tel:+4917620126149']){
+    assert.ok(legal.includes(value));
+  }
+  assert.ok(read('/anfrage/').includes('Anfrage senden'));
+  assert.ok(read('/danke/').includes('noindex,nofollow'));
+  assert.ok(read('/datenschutz/').includes('Supabase'));
+  assert.equal(destination(routes,'POST','/api/leads'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake/leads');
+  assert.equal(destination(routes,'GET','/api/config'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake/config');
+  assert.equal(destination(routes,'GET','/api/leads'),null);
 });
 
 test('admin shell is static and its private API always uses the dedicated office endpoint', () => {

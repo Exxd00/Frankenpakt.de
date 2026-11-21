@@ -1,4 +1,5 @@
 import {scenarioPrices} from './richtpreise.js';
+import {mountOfficeCases} from './office-cases.js';
 
 const $=selector=>document.querySelector(selector);
 const money=cents=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(cents/100);
@@ -6,6 +7,7 @@ const shortDate=d=>new Intl.DateTimeFormat('de-DE',{dateStyle:'medium',timeZone:
 const nodes=(tag,content,css)=>{const n=document.createElement(tag);if(content!=null)n.textContent=content;if(css)n.className=css;return n;};
 const show=(msg='')=>{$('#notice').textContent=msg;};
 const quantities=new Map();
+const args=new URLSearchParams(location.search);
 let state=null,documentId=crypto.randomUUID(),activeTab='calc';
 async function api(action,body){
   const r=await fetch('/api/office/'+action,{method:body===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',
@@ -19,10 +21,10 @@ function action(el,event,work){
     try{await work(e);}catch(err){show(err.message||'Bitte erneut versuchen.');}finally{if(b)b.disabled=false;}});
 }
 function reset(){
-  state=null;quantities.clear();documentId=crypto.randomUUID();document.body.removeAttribute('data-role');
+  state=null;quantities.clear();caseInbox.clear();documentId=crypto.randomUUID();document.body.removeAttribute('data-role');
   $('#login').hidden=false;$('#office').hidden=true;$('#logout').hidden=true;$('#document').hidden=true;
   $('#who').textContent='Angebotsbüro';$('#paper').replaceChildren();$('#history').replaceChildren();$('#rates').replaceChildren();
-  $('#customer').value='';$('#scope').value='';$('#issuer').value='';$('#code').value='';$('#pass').value='';
+  $('#customer').value='';$('#scope').value='';$('#issuer').value=$('#issuer').defaultValue;$('#code').value='';$('#pass').value='';
 }
 function units(rate){return quantities.get(rate.id)||0;}
 function drawBasket(){
@@ -65,16 +67,26 @@ async function loadState(){
   $('#role-copy').textContent=state.role==='editor'?'Preise pflegen, Leistungen zusammenstellen und Angebote ausgeben.':'Preise einsehen und Mengen zur Orientierung berechnen.';
   drawRates();
 }
-async function openTab(tab){
-  if(tab==='archive'&&state?.role!=='editor')return;activeTab=tab;
-  for(const t of ['calc','archive','brand'])$('#'+t).hidden=t!==tab;
+async function openTab(tab,loadList=true){
+  if(['archive','cases'].includes(tab)&&state?.role!=='editor')return;activeTab=tab;
+  for(const t of ['calc','cases','archive','brand'])$('#'+t).hidden=t!==tab;
   document.querySelectorAll('[data-open]').forEach(n=>n.setAttribute('aria-pressed',String(n.dataset.open===tab)));
-  if(tab==='archive'){const list=$('#history');list.textContent='Angebote werden geladen …';const docs=await api('quotes');list.replaceChildren();
+  if(tab==='cases'&&loadList)await caseInbox.load();
+  if(tab==='archive'){const list=$('#history');list.textContent='Angebote werden geladen …';const docs=await api('quotes');if(state?.role!=='editor')return;list.replaceChildren();
     if(!docs.length)list.textContent='Noch keine Angebote gespeichert.';
     for(const quote of docs){const b=nodes('button',null,'history-row');b.append(nodes('span',quote.customer+' · '+shortDate(quote.created)),nodes('strong',money(quote.total_cents)));list.append(b);action(b,'click',async()=>showDoc(await api('quote/'+quote.id)));}
   }
 }
+async function startTab(){
+  const reference=args.get('vorgang');
+  if(state.role==='editor'&&/^AN-[0-9A-F]{16}$/.test(reference||'')){
+    await openTab('cases',false);await caseInbox.show(reference);
+    return;
+  }
+  await openTab('calc');
+}
 function showDoc(quote){
+  if(state?.role!=='editor')return;
   const paper=$('#paper');paper.replaceChildren();
   const logo=nodes('img');logo.src='/assets/marke.svg';logo.width=205;logo.alt='FrankenPackt';paper.append(logo,nodes('p',quote.issuer,'pre'),nodes('h1','Angebot'),nodes('p','Angebotsnummer '+quote.id+' · '+shortDate(quote.created)),nodes('h3','Angebot für'),nodes('p',quote.customer,'pre'),nodes('h3','Leistungsumfang'),nodes('p',quote.scope,'pre'));
   for(const item of quote.lines){const row=nodes('div',null,'doc-row');const left=nodes('div');left.append(nodes('strong',item.label),nodes('p',item.quantity+' × '+money(item.cents)+' / '+item.unit),nodes('p',item.scope));row.append(left,nodes('strong',money(item.quantity*item.cents)));paper.append(row);}
@@ -94,9 +106,9 @@ function resources(){
     const block=nodes('div'),im=nodes('img');im.src='/assets/'+key+'.webp';im.alt=caption;im.loading='lazy';block.append(im);link(block,caption+' · WebP',im.src,key+'.webp');$('#pictures').append(block);}
   const reg=$('#regional');for(const [k,caption] of Object.entries({sofa:'Einzelmöbel',keller:'Keller bis 6 m²',kellerMittel:'Keller über 6 bis 12 m²',kellerGross:'Keller über 12 bis 25 m²',kleinumzug:'Kleinumzug (Marktvergleich)'})){reg.append(nodes('p',caption+' · ab '+money(scenarioPrices[k]*100)));}
 }
-action($('#viewer'),'submit',async()=>{await api('viewer',{password:$('#pass').value});$('#pass').value='';await loadState();await openTab('calc');});
+action($('#viewer'),'submit',async()=>{await api('viewer',{password:$('#pass').value});$('#pass').value='';await loadState();await startTab();});
 action($('#otp'),'click',async()=>{await api('editor-start',{});show('E-Mail angefordert. Kopieren Sie den ursprünglichen Bestätigungslink aus der IXA-Mail in das Feld.');});
-action($('#editor'),'submit',async()=>{await api('editor-verify',{code:$('#code').value});$('#code').value='';await loadState();await openTab('calc');});
+action($('#editor'),'submit',async()=>{await api('editor-verify',{code:$('#code').value});$('#code').value='';await loadState();await startTab();});
 action($('#logout'),'click',async()=>{await api('logout',{});reset();});
 action($('#quote-form'),'submit',async()=>{
   const items=state.rates.filter(r=>units(r)>0).map(r=>({id:r.id,revision:r.revision,quantity:units(r)}));if(!items.length)throw Error('Bitte mindestens eine Leistung auswählen.');
@@ -106,8 +118,7 @@ $('#quote-form').addEventListener('input',()=>{documentId=crypto.randomUUID();})
 $('#print').addEventListener('click',()=>window.print());
 action($('#back'),'click',async()=>{$('#document').hidden=true;$('#office').hidden=false;await openTab(activeTab);});
 document.querySelectorAll('[data-open]').forEach(el=>action(el,'click',()=>openTab(el.dataset.open)));
-action($('#file-form'),'submit',async()=>{
-  const ref=$('#case-ref').value.trim().toUpperCase(),id=$('#file-id').value;
+async function downloadFile(ref,id){
   if(!/^AN-[0-9A-F]{16}$/.test(ref)||!/^\d{1,10}$/.test(id))throw Error('Vorgangs- und Dateinummer prüfen.');
   const r=await fetch('/api/office/files/'+ref+'/'+id,{cache:'no-store'});
   if(!r.ok){let data={};try{data=await r.json();}catch{}throw Error(data.error||'Datei konnte nicht geladen werden.');}
@@ -117,11 +128,19 @@ action($('#file-form'),'submit',async()=>{
   if(encoded){try{name=decodeURIComponent(encoded);}catch{}}
   name=name.replace(/[\\/\u0000-\u001f]/g,'_');
   const url=URL.createObjectURL(await r.blob());const a=link(document.body,'Datei',url,name);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),5000);
-});
+}
+action($('#file-form'),'submit',()=>downloadFile($('#case-ref').value.trim().toUpperCase(),$('#file-id').value));
+const caseInbox=mountOfficeCases({api,action,editor:()=>state?.role==='editor',download:downloadFile,onQuote:async record=>{
+  const fields=record.lead.jobScope?.fields||{};
+  const address=[fields.fromStreet,[fields.fromZip,fields.fromTown].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+  $('#customer').value=[record.lead.name,address].filter(Boolean).join('\n').slice(0,160);
+  $('#scope').value=[record.reference,record.lead.details].filter(Boolean).join('\n').slice(0,1200);
+  quantities.clear();documentId=crypto.randomUUID();drawRates();await openTab('calc');$('#calc').scrollIntoView();
+}});
 resources();
-const args=new URLSearchParams(location.search);$('#case-ref').value=args.get('vorgang')||'';$('#file-id').value=args.get('datei')||'';
+$('#case-ref').value=args.get('vorgang')||'';$('#file-id').value=args.get('datei')||'';
 try{
   const fragment=new URLSearchParams(location.hash.slice(1));const token=fragment.get('access_token');
   if(token){history.replaceState(null,'',location.pathname+location.search);await api('editor-verify',{accessToken:token});}
-  await loadState();await openTab(args.has('datei')&&state.role==='editor'?'archive':'calc');
+  await loadState();await startTab();
 }catch(err){if(!/anmelden/i.test(err.message))show(err.message);}

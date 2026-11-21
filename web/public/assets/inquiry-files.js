@@ -82,7 +82,7 @@ export function mountInquiryFiles(host) {
     if(entries.length){meter(entries.length+' von '+entries.length+' für den Versand bereit.',1);}
     else{progress.hidden=true;status.textContent='';}
   }
-  input.addEventListener('change',()=>{
+  function acceptSelection(){
     const chosen=Array.from(input.files);input.value='';
     if(!chosen.length||locked)return;
     if(entries.length+chosen.length>maxFiles){status.textContent='Pro Anfrage können Sie höchstens fünf Dateien auswählen.';return;}
@@ -105,7 +105,9 @@ export function mountInquiryFiles(host) {
         host.dispatchEvent(new CustomEvent('fp-upload-ready',{bubbles:true}));
       }
     });
-  });
+  }
+  input.addEventListener('change',acceptSelection);
+  if(input.files?.length)acceptSelection();
   return {
     async ready(){
       locked=input.disabled=true;render();await queue;

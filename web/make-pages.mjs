@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {inquiry,legal,thankYou} from './form-pages.mjs';
 import {clearanceCalculator} from './clearance-calculator.mjs';
 import {scenarioPrices} from './scenario-prices.mjs';
+import {cloudPage} from './lib/cloud-pages.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 await mkdir(path.join(dir,'assets'), {recursive:true});
 await writeFile(path.join(dir,'assets/richtpreise.js'), 'export const scenarioPrices = '+JSON.stringify(scenarioPrices,null,2)+';\n', 'utf8');
@@ -219,6 +220,15 @@ const pages=[
  ['/impressum/','Impressum','Anbieterangaben zur Website von FrankenPackt.',legal(crumb,false)],
  ['/datenschutz/','Datenschutz','Informationen zum Umgang mit Angaben auf dieser Website.',legal(crumb,true)]
 ];
-for(const [url,title,description,body] of pages){const out=path.join(dir,url);await mkdir(out,{recursive:true});await writeFile(path.join(out,'index.html'),shell(url,title,description,body),'utf8');}
+for(const [url,title,description,body] of pages){
+  const html=shell(url,title,description,body);
+  const preview=path.join(dir,url), production=path.join(dir,'betrieb',url);
+  await Promise.all([mkdir(preview,{recursive:true}),mkdir(production,{recursive:true})]);
+  await Promise.all([
+    writeFile(path.join(preview,'index.html'),html,'utf8'),
+    writeFile(path.join(production,'index.html'),cloudPage(html,url),'utf8')
+  ]);
+}
+await writeFile(path.join(dir,'betrieb','robots.txt'),'User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /danke/\nDisallow: /betrieb/\n','utf8');
 await writeFile(path.join(dir,'404.html'),shell('/404/','Seite nicht gefunden','Diese Seite ist nicht verfügbar.','<section class="wrap section"><h1>Seite nicht gefunden</h1><p>Auf der Startseite finden Sie Entrümpelung, Entsorgungswege und Umzüge.</p>'+btn('Zur Startseite','/')+'</section>'),'utf8');
 await writeFile(path.join(dir,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');

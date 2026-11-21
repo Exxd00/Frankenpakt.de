@@ -22,7 +22,7 @@ export function liveHtml(html,settings,canonical){
     .replaceAll('data-contact="whatsapp" hidden href="/anfrage/"',settings.whatsapp?'data-contact="whatsapp" rel="noreferrer" href="https://wa.me/'+escapeHtml(settings.whatsapp.slice(1))+'"':'data-contact="whatsapp" hidden href="/anfrage/"')
     .replace('</head>','<link rel="canonical" href="'+escapeHtml(canonical)+'"></head>')
     .replace(/(<div id="operator-data"><h2>[^<]+<\/h2>)<p>[^<]*<\/p>(<\/div>)/,(_m,b,e)=>b+operator+extra+e)
-    .replace('<div id="privacy-extra"></div>','<div id="privacy-extra">'+privacyInfo+'</div>')
+    .replace('<div id="privacy-extra"></div>','<div id="privacy-extra">'+(settings.cloudPrivacyHtml || privacyInfo)+'</div>')
     .replaceAll('<p data-live-phone hidden></p>','<p data-live-phone>Direkt anrufen: '+tel+'</p>')
     .replace(/(<div id="form-mode"[^>]*>)[^<]*(<\/div>)/,(_m,b,e)=>b+'Ihre Anfrage wird an unseren Betrieb übermittelt.'+e)
     .replace('>Musteranfrage prüfen</button>','>Anfrage senden</button>')

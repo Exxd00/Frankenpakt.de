@@ -1,5 +1,11 @@
 # FrankenPackt · Anfragen, Aufträge und Zahlungseingänge
 
+## Anfragen von der öffentlichen Website
+
+IXA öffnet auf der Website `/admin/`, meldet sich mit **Mit IXA bearbeiten** an und öffnet **Anfragen**. Dort stehen bestätigte Eingänge, Anlagen und der Versandstatus. Aus einer Anfrage lässt sich ein Angebot erstellen. Die Leseberechtigung zeigt die Kalkulation und das Markenmaterial. Die nachstehenden `ops.mjs`-Befehle arbeiten auf dem separaten lokalen SQLite-Datenbestand.
+
+Die Produktionsbereitstellung auf Vercel verwendet `FRANKENPACKT_CLOUD_INTAKE=1` und den freigegebenen Eingang `frankenpakt-intake` in Supabase. Produktionsseiten mit den bestätigten Betreiberangaben entstehen durch `node web/make-pages.mjs`. Prüfung nach einer Bereitstellung: `/api/config` meldet `mode: live` und `leadIntake: true`, nach dem Absenden erscheint eine Vorgangsnummer und IXA kann den Eingang im Angebotsbüro öffnen. Der Erhalt einer Vorgangsnummer bestätigt die Speicherung. Den E-Mail-Versand zeigt der separate Bürostatus an.
+
 ## Angebot kalkulieren und Absage einordnen
 
 `node ops.mjs show VORGANG` zeigt bei detaillierten Website-Anfragen die Einsatzdaten unter `jobScopeSummary`. Bei einem Umzug stehen Abhol- und Zieladresse mit ihrem jeweiligen Zugang getrennt im Vorgang. Für die Einsatzplanung sind die tatsächlich nutzbare Nutzlast des Fahrzeugs, Tragewege, das eingeplante Personal des Betriebs und der vereinbarte Umgang mit den Gegenständen maßgeblich. Bei einer Räumung prüfen Sie auch, welche Stücke der Kunde behalten will und welche Abholung er beim Entsorger beauftragt.
@@ -150,3 +156,7 @@ Ein Seitenaufruf ist ein HTTP-Abruf und kann sich durch Neuladen wiederholen. Be
 
 Zur interoperablen Sicherung `node ops.mjs backup ABSOLUTER_NEUER_DATEIPFAD` verwenden. Einen abgestimmten Sicherungsplan des Hosters einrichten und eine Sicherung regelmäßig separat wiederherstellen. Der Server bereinigt erledigte Fälle täglich und beim Start. Für langfristige Vergleiche aggregierte Monatsberichte vor Ablauf der Aufbewahrungszeit im Betriebsarchiv aufbewahren. Nach Prüfung eines Löschbegehrens kann ein berechtigter Mitarbeiter `node ops.mjs erase VORGANG` ausführen. Dies entfernt die Anfrage samt untergeordneten Buchungseinträgen aus diesem Werkzeug. Sicherungslöschung und handels- oder steuerrechtliche Pflichten getrennt bearbeiten.
 
+
+### Freiwillige Webstatistik
+
+Der Schalter im Fußbereich aktiviert die vier anonymisierten Ereignistypen für die betriebliche Tabelle. Ohne aktive Wahl erfolgen keine Statistikaufrufe. Für GA4 ist die öffentliche Konstante `GA_MEASUREMENT_ID` in `public/assets/metrics.js` zunächst leer. Erst nach Einrichtung des richtigen Web-Datenstreams dort die von Google ausgegebene Mess-ID eintragen und neu veröffentlichen. Im Datenstream „Optimierte Analysen“ und die Erfassung von Nutzerdaten ausschalten. Google-Signale und Werbepersonalisierung ausgeschaltet lassen. Der Google-Tag läuft nach Zustimmung in einem eigenen leeren Dokument mit festem Seitentitel und vordefinierten Seitenpfaden. Bei Widerruf werden dieses Dokument und seine Sitzungscookies entfernt. Browserprüfung und Ereignisübersicht erfolgen mit Testdaten. Im Google-Echtzeitbericht anschließend die vier Ereignisse kontrollieren. Die serverseitigen Eingangs- und Rückrufereignisse entstehen weiterhin nur bei einer gespeicherten Anfrage.

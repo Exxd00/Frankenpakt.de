@@ -364,7 +364,7 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, contexts, draftTools, mountInquiryFiles) {
+function enableInquiry(form, contexts, draftTools, preparedFiles) {
   const service = form.elements.service;
   const requestedTopic = params.get('vorhaben') || params.get('vergleich');
   const initialService = pageInterest || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
@@ -373,7 +373,7 @@ function enableInquiry(form, contexts, draftTools, mountInquiryFiles) {
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
   const callback = params.get('kontakt') === 'telefon' || initialService === 'rueckruf';
-  const fileBox = callback ? null : mountInquiryFiles(form.querySelector('#inquiry-files'));
+  const fileBox = callback ? null : preparedFiles;
   const phone = form.elements.phone;
   const email = form.elements.email;
   const summary = document.querySelector('#form-result');
@@ -601,9 +601,10 @@ if (form) {
     contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
   }
   const submit = form.querySelector('#send-lead');
-  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),import('/assets/inquiry-files.js')]).then(([draftTools,results,{mountInquiryFiles}]) => {
+  const preparedFiles = import('/assets/inquiry-files.js').then(({mountInquiryFiles}) => mountInquiryFiles(form.querySelector('#inquiry-files')));
+  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),preparedFiles]).then(([draftTools,results,fileBox]) => {
     const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
-    enableInquiry(form,valid.map(result => result.value),draftTools,mountInquiryFiles);
+    enableInquiry(form,valid.map(result => result.value),draftTools,fileBox);
     submit.disabled = false;
   }).catch(() => {
     submit.disabled = true;

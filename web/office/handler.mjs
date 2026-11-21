@@ -103,6 +103,20 @@ export function createOfficeHandler(env,fetcher=fetch){
       return reply({role:auth.role,email:auth.role==='editor'?EDITOR:VIEWER,rates});
     }
     if(auth.role!=='editor')reject(403,'Nur IXA kann Vorgänge und Preise bearbeiten.');
+    if(!write&&route==='cases')return reply(await db('rpc/fp_intake_list','POST',{}));
+    const caseMatch=/^case\/(AN-[0-9A-F]{16})$/.exec(route);
+    if(!write&&caseMatch){
+      const record=await db('rpc/fp_intake_case','POST',{p_ref:caseMatch[1]});
+      if(!record)reject(404,'Anfrage nicht gefunden.');
+      return reply(record);
+    }
+    const closeMatch=/^case\/(AN-[0-9A-F]{16})\/close$/.exec(route);
+    if(write&&closeMatch){
+      if(body.confirm!==true)reject(400,'Abschluss bitte bestätigen.');
+      const result=await db('rpc/fp_intake_close','POST',{p_ref:closeMatch[1]});
+      if(!result)reject(404,'Anfrage nicht gefunden.');
+      return reply(result);
+    }
     if(route==='rate'&&write){
       const label=text(body.label,120,'Bezeichnung'),unit=text(body.unit,35,'Einheit'),scope=text(body.scope,500,'Umfang');
       if(!Number.isSafeInteger(body.cents)||body.cents<1||body.cents>100000000)reject(400,'Bruttopreis prüfen.');
@@ -132,7 +146,15 @@ export function createOfficeHandler(env,fetcher=fetch){
     const match=/^files\/(AN-[0-9A-F]{16})\/([1-9][0-9]{0,9})$/.exec(route);
     if(!write&&match){
       const target=env.FRANKENPACKT_INTAKE_ORIGIN,token=env.OPS_OFFICE_FILE_TOKEN;
-      if(!target||!token||token.length<32)reject(503,'Der private Dateispeicher ist noch nicht verbunden.');
+      if(!target){
+        const file=await db('rpc/fp_intake_file','POST',{p_ref:match[1],p_id:Number(match[2])});
+        if(!file)reject(404,'Datei nicht gefunden.');
+        const decoded=atob(file.content_base64),bytes=new Uint8Array(decoded.length);
+        for(let i=0;i<bytes.length;i++)bytes[i]=decoded.charCodeAt(i);
+        const encoded=encodeURIComponent(file.name).replace(/['()*]/g,c=>'%'+c.charCodeAt(0).toString(16));
+        return new Response(bytes,{headers:{...headers,'Content-Type':'application/octet-stream','Content-Disposition':"attachment; filename*=UTF-8''"+encoded,'Content-Security-Policy':"default-src 'none'; sandbox"}});
+      }
+      if(!token||token.length<32)reject(503,'Der private Dateispeicher ist noch nicht verbunden.');
       const r=await fetcher(new URL('/api/office-file/'+match[1]+'/'+match[2],target),{headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(15000)});
       if(!r.ok)reject(r.status===404?404:503,'Datei konnte nicht abgerufen werden.');
       return new Response(r.body,{headers:{...headers,'Content-Type':'application/octet-stream','Content-Disposition':r.headers.get('Content-Disposition')||'attachment','Content-Security-Policy':"default-src 'none'; sandbox"}});

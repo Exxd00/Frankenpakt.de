@@ -13,7 +13,7 @@
     const d = event.data || {};
     if (d.cmd === 'start' && !id && /^G-[A-Z0-9]{6,14}$/.test(d.id) && /^[0-9a-f-]{36}$/.test(d.client)) {
       id = d.id;
-      // No shared browser or advertising identifiers. A new client ID is used per document.
+      // The customer-facing page is never passed to this tag. The site supplies a new client ID for each page.
       tag('consent','default',{ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied',analytics_storage:'granted'});
       tag('set','ads_data_redaction',true);
       tag('set','url_passthrough',false);
@@ -22,7 +22,8 @@
       tag('set','allow_enhanced_conversions',false);
       tag('js',new Date());
       tag('config',id,{send_page_view:false,allow_google_signals:false,allow_ad_personalization_signals:false,
-        ignore_referrer:true,client_storage:'none',client_id:d.client,page_location:'https://frankenpakt.de/',page_referrer:'',page_title:'FrankenPackt'});
+        ignore_referrer:true,cookie_domain:'none',cookie_prefix:'fpstat',cookie_path:'/assets',cookie_expires:0,cookie_update:false,
+        cookie_flags:'SameSite=Strict;Secure',client_id:d.client,page_location:'https://frankenpakt.de/',page_referrer:'',page_title:'FrankenPackt'});
       const script=document.createElement('script');
       script.async=true;
       script.referrerPolicy='no-referrer';

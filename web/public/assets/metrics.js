@@ -1,5 +1,5 @@
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
-export const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+export const GA_MEASUREMENT_ID = '';
 const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
 const choiceKey = 'frankenpakt.statistik.v1';
 const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
@@ -18,19 +18,18 @@ export function publicMetric(name, explicitService, location, uuid) {
 }
 
 function analyticsFrame(id) {
-  if (id === 'G-XXXXXXXXXX' || !/^G-[A-Z0-9]{6,14}$/.test(id)) return null;
+  if (!/^G-[A-Z0-9]{6,14}$/.test(id)) return null;
   const frame = document.createElement('iframe');
   frame.hidden = true;
   frame.title = 'Optionale Statistik';
-  frame.setAttribute('sandbox','allow-scripts');
+  frame.setAttribute('sandbox','allow-scripts allow-same-origin');
   frame.referrerPolicy = 'no-referrer';
   frame.src = '/assets/statistik.html';
   let ready = false;
   const pending = [];
-  // A sandboxed document has an opaque origin. Its WindowProxy is checked on every message.
-  const post = data => frame.contentWindow?.postMessage(data,'*');
+  const post = data => frame.contentWindow?.postMessage(data,location.origin);
   const listen = event => {
-    if (event.source !== frame.contentWindow || event.origin !== 'null' || event.data !== 'fp-statistik-bereit' || ready) return;
+    if (event.source !== frame.contentWindow || event.origin !== location.origin || event.data !== 'fp-statistik-bereit' || ready) return;
     ready = true;
     post({cmd:'start',id,client:crypto.randomUUID()});
     for (const data of pending.splice(0)) post(data);
@@ -56,11 +55,18 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   const read = () => {try{return (storage || win.localStorage).getItem(choiceKey) === 'yes';}catch{return false;}};
   let frame = null;
   let enabled = false;
+  function clearCookies() {
+    // These session cookies are confined to the empty tag document's path.
+    const suffix=GA_MEASUREMENT_ID.slice(2);
+    for (const name of ['fpstat_ga','fpstat_ga_'+suffix]) {
+      doc.cookie=name+'=; Max-Age=0; Path=/assets; SameSite=Strict; Secure';
+    }
+  }
   function set(value) {
     if (value !== enabled) {
       enabled = value;
       if (enabled) frame = frameFactory();
-      else {frame?.close();frame=null;}
+      else {frame?.close();frame=null;clearCookies();}
     }
     toggle.setAttribute('aria-pressed',String(enabled));
     toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
@@ -86,7 +92,8 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   doc.addEventListener('click',event=>{
     const chosen=event.target.closest?.('[data-guide-choice],a.service-card');
     if(!chosen)return;
-    const service=chosen.dataset.guideChoice || pageServices[chosen.getAttribute('href')];
+    const url=new URL(chosen.href,location.origin);
+    const service=chosen.dataset.guideChoice || (url.origin===location.origin && pageServices[url.pathname]);
     if(services.has(service))record('service_chosen',service);
   });
   doc.addEventListener('change',event=>{

@@ -3,6 +3,20 @@
 const configuredOrigin = process.env.VERCEL_ENV === 'production'
   ? process.env.FRANKENPACKT_INTAKE_ORIGIN?.trim()
   : undefined;
+const cloudEnabled = process.env.VERCEL_ENV === 'production' && process.env.FRANKENPACKT_CLOUD_INTAKE === '1';
+const cloud = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake';
+const pages = 'anfrage|danke|datenschutz|entsorgung|impressum|moebeltaxi|preise|raeumung|seniorenumzug|umzug';
+const read = ['GET','HEAD'];
+
+function cloudRoutes() {
+  return [
+    {src:'^/(?:index\\.html)?$', methods:read, dest:'/betrieb/index.html'},
+    {src:'^/('+pages+')(?:/index\\.html|/)?$', methods:read, dest:'/betrieb/$1/index.html'},
+    {src:'^/robots\\.txt$', methods:read, dest:'/betrieb/robots.txt'},
+    {src:'^/api/config$', methods:read, dest:cloud+'/config',headers:{'Cache-Control':'no-store'}},
+    {src:'^/api/leads$', methods:['POST'], dest:cloud+'/leads',headers:{'Cache-Control':'no-store'}}
+  ];
+}
 
 function intakeRoutes(value: string) {
   const url = new URL(value);
@@ -11,9 +25,7 @@ function intakeRoutes(value: string) {
     throw new Error('FRANKENPACKT_INTAKE_ORIGIN must be the separate HTTPS origin of the operator service.');
   }
   const origin = url.origin;
-  const read = ['GET', 'HEAD'];
   // Route HTML as well as the API so contact links, legal information and receipts agree.
-  const pages = 'anfrage|danke|datenschutz|entsorgung|impressum|moebeltaxi|preise|raeumung|seniorenumzug|umzug';
   return [
     { src: '^/(?:index\\.html)?$', methods: read, dest: origin + '/' },
     { src: '^/(' + pages + ')(?:/index\\.html|/)?$', methods: read, dest: origin + '/$1/' },
@@ -30,7 +42,7 @@ export const config = {
       dest: 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-office/$1',
       headers: { 'Cache-Control': 'private, no-store' }
     },
-    ...(configuredOrigin ? intakeRoutes(configuredOrigin) : [
+    ...(configuredOrigin ? intakeRoutes(configuredOrigin) : cloudEnabled ? cloudRoutes() : [
       { src: '^/api/config$', methods: ['GET', 'HEAD'], dest: '/assets/contact-preview.json', headers: { 'Cache-Control': 'no-store' } }
     ])
   ]

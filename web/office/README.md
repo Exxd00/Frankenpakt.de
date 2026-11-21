@@ -7,7 +7,8 @@
 - Mit dem vereinbarten Passwort lassen sich Preise, Mengenrechnung und Markenmaterial ansehen. Das Google-Konto frankenpakt.de@gmail.com hat im verknüpften Kalkulationsblatt Leserechte.
 - Über **Mit IXA bearbeiten** einen Anmeldelink an das IXA-Postfach anfordern und den Bestätigungslink aus dieser E-Mail einfügen. Damit kann IXA Positionen anlegen, Preise pflegen und Kundenangebote erstellen.
 - Für ein Angebot Mengen, Anbieter samt Anschrift, Empfänger und Arbeitsumfang eingeben. Die Ausgabe übernimmt die gespeicherten Bruttopreise. **Drucken / PDF speichern** öffnet den Druckdialog. Das Archiv zeigt die jüngsten 50 Angebote mit ihren ursprünglichen Positionen.
-- Büropreise, öffentliche Ab-Preise und die separate Google-Kalkulationsdatei haben eigene Datenquellen. Eine Änderung im Büro gilt unmittelbar für neue Büroangebote. Der öffentliche Rechner verwendet weiterhin seine freigegebenen Ab-Preise.
+- Eine Preisänderung gilt unmittelbar für neue Büroangebote. Das private Google-Kalkulationsblatt übernimmt den Bürokatalog zeitversetzt per IMPORTDATA. Regionale Vergleichswerte, Drittleistungen und öffentliche Ab-Preise werden separat gepflegt.
+- Unter **Anfragen** kann IXA die letzten 50 Online-Anfragen oder einen Vorgang anhand seiner Nummer öffnen. Kontaktdaten, Angaben zum Auftrag und mitgeschickte Dateien stehen zum Erstellen eines Angebots bereit.
 
 ## Betrieb
 
@@ -15,4 +16,4 @@ Die SQL-Migrationen sind `schema.sql` und anschließend `quote-issuer.sql`. Der 
 
 `fp_office_settings` enthält den serverseitig bereitgestellten, gesalzenen PBKDF2-SHA256-Prüfwert (310.000 Iterationen, 16-Byte-Salt, 32-Byte-Ergebnis, beide hexadezimal). Zum Wechsel des Lesezugangs einen neuen Zufallssalt verwenden, den Prüfwert außerhalb von Git aktualisieren und bestehende Viewer-Sitzungen widerrufen. Nur die Service-Rolle hat Zugriff auf die Tabellen und die Angebotsfunktion.
 
-Für den optionalen Abruf einer gespeicherten Anfrageanlage benötigt die Edge Function `FRANKENPACKT_INTAKE_ORIGIN` und `OPS_OFFICE_FILE_TOKEN`. Derselbe Token ist im privaten Node-Eingangsdienst zu hinterlegen. Die Mitarbeiter-Mail enthält die übermittelten Anlagen direkt.
+Die Cloud-Vorgänge und Anlagen werden über die privaten Funktionen `fp_intake_list`, `fp_intake_case` und `fp_intake_file` gelesen. Beim Einsatz eines separaten Node-Dateispeichers können `FRANKENPACKT_INTAKE_ORIGIN` und `OPS_OFFICE_FILE_TOKEN` für den alternativen Dateiabruf hinterlegt werden. Die Mitarbeiter-Mail enthält die übermittelten Anlagen direkt.
