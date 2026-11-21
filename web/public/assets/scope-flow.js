@@ -172,11 +172,12 @@ export function calculatorScopes(getSelection,onActivate) {
     next.dataset.scopeContinue = kind;
     slot.append(next);
     let editor, currentService;
-    function refresh(reopen = false) {
-      if (!slot.open) return;
+    function refresh(reopen = false, activate = false) {
+      if (!slot.open && !activate) return;
       const {service,url} = getSelection(kind);
-      next.href = url.pathname+url.search;
       onActivate(url,service);
+      if (!slot.open) return;
+      next.href = url.pathname+url.search;
       if (!canCache) {
         host.textContent = (preview ? 'Vorschau: Bitte nur Beispieldaten verwenden. ' : '')+'Ihr Browser erlaubt hier keine Zwischenspeicherung. Geben Sie die Auftragsdetails direkt in der vollständigen Anfrage ein.';
         next.textContent = 'Auftragsdetails in der Anfrage eingeben';
@@ -195,7 +196,7 @@ export function calculatorScopes(getSelection,onActivate) {
     });
     const selector = {moving:'#estimate',clearance:'#clearance-calculator',comparison:'#comparison-form'}[kind];
     const form = document.querySelector(selector);
-    const changed = () => queueMicrotask(() => refresh());
+    const changed = () => queueMicrotask(() => refresh(false,true));
     form.addEventListener('change',changed);
     form.addEventListener('input',changed);
     next.addEventListener('click',event => {
@@ -212,6 +213,9 @@ export function calculatorScopes(getSelection,onActivate) {
         }
       }
     });
-    refresh();
+    const query = new URLSearchParams(location.search);
+    const enteredEstimate = kind === 'comparison' && (['#richtpreis','#preisvergleich'].includes(location.hash) ||
+      (!location.hash && (query.has('vorhaben') || query.has('vergleich'))));
+    refresh(false,enteredEstimate);
   }
 }

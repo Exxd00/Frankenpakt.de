@@ -12,6 +12,27 @@ import { saveDailyReport } from '../lib/snapshot.mjs';
 import {bookTestOffer} from '../test-support/booking.mjs';
 
 const sample=()=>({service:'umzug',zipFrom:'90453',zipTo:'90402',details:'Tisch und Stuhl',contactMethod:'email',email:'test@example.invalid',name:'Testperson',source:'google',requestId:randomUUID()});
+test('inquiry and callback keep the catalog estimate separate from user-entered notes and final price',t=>{
+  const db=openStore(':memory:');t.after(()=>db.close());
+  for(const [scenario,service,cents] of [['sofa','entsorgung',7800],['keller','entruempelung',14800],['kleinumzug','umzug',29800]]){
+    const payload={...sample(),service,vorhaben:scenario,details:'Eigener Hinweis',
+      priceOrientation:{estimatedCents:5},vergleichcent:'5',gross_cents:5};
+    const full=validate(payload);
+    const saved=db.submit(full);
+    assert.equal(db.submit(full).reference,saved.reference);
+    const lead=db.get(saved.reference);
+    assert.equal(lead.person.priceOrientation.estimatedCents,cents);
+    assert.equal(lead.person.details,'Eigener Hinweis');
+    assert.equal(lead.gross_cents,null);
+    const callback=validate({...payload,requestId:randomUUID(),service:'rueckruf',requestedService:service,contactMethod:'phone',phone:'0911 123456'});
+    assert.equal(db.get(db.submit(callback).reference).person.priceOrientation.estimatedCents,cents);
+  }
+  assert.throws(()=>validate({...sample(),vorhaben:'sofa'}));
+  assert.throws(()=>validate({...sample(),vorhaben:'1.25'}));
+  const ordinary=validate({...sample(),priceOrientation:{estimatedCents:5}});
+  assert.equal(db.get(db.submit(ordinary).reference).person.priceOrientation,undefined);
+});
+
 test('required fields, spam trap and minimum disclosure',()=>{
   const data=sample();
   assert.throws(()=>validate({...data,zipFrom:'9100'}));

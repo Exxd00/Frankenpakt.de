@@ -6,6 +6,7 @@ import { cleanMoney, InputError, isGoogleAdVariant } from './inputs.mjs';
 import { openOffers } from './offers.mjs';
 import { validateJobScope, summarizeJobScope, summarizeJobTiming } from '../public/assets/job-scope-model.js';
 import { normalizeJobContext, scopeConditionNotes } from '../public/assets/job-scope-conditions.js';
+import { inquiryComparison } from '../public/assets/price-comparison.js';
 export { InputError } from './inputs.mjs';
 
 const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
@@ -29,6 +30,12 @@ export function mobileNumber(phone){
   const plain=phone.replace(/[\s().\/-]/g,'');
   const e164=plain.startsWith('00')?'+'+plain.slice(2):plain.startsWith('0')?'+49'+plain.slice(1):plain;
   return /^\+?[1-9][0-9]{6,14}$/.test(e164)?e164:'';
+}
+function scenarioOrientation(scenario,service){
+  if(typeof scenario!=='string'||!['umzug','entsorgung','entruempelung'].includes(service))return null;
+  const params=new URLSearchParams({vorhaben:scenario});
+  params.set(service==='umzug'?'service':'leistung',service);
+  return inquiryComparison(params);
 }
 export function validate(body){
   if(!body||Array.isArray(body)||typeof body!=='object')throw new InputError('Anfrage bitte prüfen.');
@@ -66,6 +73,10 @@ export function validate(body){
   if(service==='rueckruf' && body.requestedService!=null && body.requestedService!==''){
     if(!services.has(body.requestedService)||body.requestedService==='rueckruf')throw new InputError('Gewünschte Leistung bitte prüfen.');
     lead.requestedService=body.requestedService;
+  }
+  if(body.vorhaben!=null){
+    if(!scenarioOrientation(body.vorhaben,lead.requestedService||service))throw new InputError('Das Vorhaben passt nicht zur ausgewählten Leistung.');
+    lead.vorhaben=body.vorhaben;
   }
   return lead;
 }
@@ -160,6 +171,10 @@ export function openStore(filename){
         const created=!found;
         if(created){
           const ref='AN-'+randomUUID().replaceAll('-','').slice(0,16).toUpperCase();
+          if(person.vorhaben){
+            const estimate=scenarioOrientation(person.vorhaben,person.requestedService||service);
+            if(estimate)person.priceOrientation={estimatedCents:estimate.estimatedCents,summary:estimate.summary};
+          }
           if(person.jobContext){
             const checks=scopeConditionNotes(person.jobScope,new URLSearchParams(person.jobContext));
             if(checks.length)person.jobConditionNotes=checks;

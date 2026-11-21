@@ -1,125 +1,123 @@
+import {scenarioPrices} from './richtpreise.js';
+
+const disposalNote = 'Abholung und Entsorgung buchen Sie direkt beim Entsorger. Er nennt Ihnen seinen Endpreis.';
+
 export const comparisonTopics = new Map([
   ['sofa', {
-    label:'Sofa abholen und entsorgen', service:'entsorgung', startEuros:80,
-    reference:'Sofa in Nürnberg, inkl. Tragen und Entsorgung. Richtwert ab 80 € brutto, Stand September 2026.',
-    source:'https://entrumpelungnurnberg.de/blog/moebel-entsorgen-nuernberg', sourceLabel:'LV Transporte'
+    label:'Ein Sofa entsorgen', service:'entsorgung', euros:scenarioPrices.sofa,
+    scope:'Regionaler Planungswert für das Heraustragen und die Entsorgung eines einzelnen Sofas in Nürnberg.',
+    note:disposalNote
   }],
   ['keller', {
-    label:'Kellerabteil bis 6 m² räumen', service:'entruempelung', startEuros:150,
-    reference:'Kellerabteil bis 6 m² in Nürnberg, inkl. Entsorgung. Richtwert 150–350 € brutto, Stand September 2026.',
-    source:'https://entrumpelungnurnberg.de/kellerentruempelung-nuernberg', sourceLabel:'LV Transporte'
+    label:'Kellerabteil bis 6 m² räumen', service:'entruempelung', euros:scenarioPrices.keller,
+    scope:'Regionaler Planungswert für die Räumung eines Kellerabteils bis 6 m² in Nürnberg einschließlich Entsorgung.',
+    note:'Eine Abfallabholung buchen Sie direkt beim Entsorger. Für vereinbarte Arbeiten vor Ort erhalten Sie von uns ein eigenes Angebot.'
   }],
   ['kleinumzug', {
-    label:'Kleiner regionaler Umzug', service:'umzug', startEuros:300,
-    reference:'1–2 Zimmer bis 60 m², 10–20 m³, bis 50 km. Richtwert ab 300 € brutto für Laden, Fahren und Entladen. Packmaterial kostet extra.',
-    source:'https://www.umzuege-selisch.de/preise-privatumzuege.html', sourceLabel:'Umzüge Selisch'
+    label:'Kleine Wohnung regional umziehen', service:'umzug', euros:scenarioPrices.kleinumzug,
+    scope:'Für 1–2 Zimmer bis 60 m², 10–20 m³ Umzugsgut und bis zu 50 km. Laden, Fahrt und Entladen sind berücksichtigt. Packmaterial kommt bei Bedarf hinzu.',
+    note:'Den Endpreis nennen wir Ihnen nach Prüfung der Adressen, des Umzugsguts und der Zugänge.'
   }],
-  ['entruempelung', {label:'Entrümpelung', service:'entruempelung'}],
-  ['entsorgung', {label:'Entsorgung', service:'entsorgung'}],
-  ['umzug', {label:'Umzug', service:'umzug'}]
+  ['entruempelung', {
+    label:'Andere Räume entrümpeln', service:'entruempelung',
+    scope:'Der Aufwand hängt von der Füllmenge und den Tragewegen ab. Im Räumungsrechner wählen Sie die benötigte Hilfe und bei Bedarf einen Entsorgungsweg.',
+    route:'#raeumungsrechner', action:'Räumungskosten berechnen'
+  }],
+  ['entsorgung', {
+    label:'Andere Gegenstände entsorgen', service:'entsorgung',
+    scope:'Der Entsorgungsweg richtet sich nach Material und Menge. Im Rechner sehen Sie die Bedingungen und Preise für die städtische Sperrmüllabholung und verschiedene Containergrößen.',
+    route:'#raeumungsrechner', action:'Abholung oder Container einschätzen'
+  }],
+  ['umzug', {
+    label:'Anderen Umzug planen', service:'umzug',
+    scope:'Wählen Sie im Umzugsrechner das passende Paket und prüfen Sie den Leistungsumfang. Für andere Mengen oder Strecken erhalten Sie ein individuelles Angebot.',
+    route:'#preisfinder', action:'Umzugspaket berechnen'
+  }]
 ]);
-const whole = new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR', minimumFractionDigits:0, maximumFractionDigits:0});
-const fractional = new Intl.NumberFormat('de-DE', {style:'currency', currency:'EUR'});
-const money = cents => (cents % 100 === 0 ? whole : fractional).format(cents / 100);
-const maximumCents = 99999999999;
 
-export function parseGrossCents(input) {
-  let amount = String(input ?? '').trim().replace(/\s*€$/, '').trim();
-  if (/^\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?$/.test(amount)) amount = amount.replaceAll('.', '');
-  const parts = /^(\d{1,9})(?:[,.](\d{1,2}))?$/.exec(amount);
-  if (!parts) return null;
-  return Number(parts[1]) * 100 + Number((parts[2] || '').padEnd(2,'0'));
+export function startingPrice(topic) {
+  if (topic.euros == null) return '';
+  const fractionDigits = Number.isInteger(topic.euros) ? 0 : 2;
+  return 'ab '+topic.euros.toLocaleString('de-DE',{style:'currency',currency:'EUR',minimumFractionDigits:fractionDigits,maximumFractionDigits:fractionDigits});
 }
 
-export function targetCents(grossCents) {
-  if (!Number.isSafeInteger(grossCents) || grossCents <= 200 || grossCents > maximumCents) return null;
-  return grossCents - 200;
+function queryScenario(query) {
+  const canonical = query.getAll('vorhaben');
+  const legacy = query.getAll('vergleich');
+  if (canonical.length > 1 || legacy.length > 1 || (canonical.length && legacy.length && canonical[0] !== legacy[0])) return null;
+  const key = canonical[0] ?? legacy[0];
+  return comparisonTopics.has(key) ? key : null;
+}
+
+function serviceParam(topic) {
+  return topic.service === 'umzug' ? 'service' : 'leistung';
 }
 
 export function inquiryComparison(query) {
-  const topicKey = query.get('vergleich');
-  const topic = comparisonTopics.get(topicKey);
-  if (!topic) return null;
-  const serviceKey = topic.service === 'umzug' ? 'service' : 'leistung';
-  const otherKey = serviceKey === 'service' ? 'leistung' : 'service';
-  for (const key of [serviceKey,'vergleich','vergleichcent','vergleichart']) {
-    if (query.getAll(key).length !== 1) return null;
-  }
-  if (query.has(otherKey) || query.get(serviceKey) !== topic.service) return null;
-  const raw = query.get('vergleichcent');
-  const kind = query.get('vergleichart');
-  if (!/^[1-9]\d{0,10}$/.test(raw) || !['ab','gesamt'].includes(kind)) return null;
-  const cents = Number(raw);
-  const target = targetCents(cents);
-  if (target === null) return null;
-  const prefix = kind === 'ab' ? 'ab ' : '';
-  const params = new URLSearchParams({vergleich:topicKey,vergleichcent:raw,vergleichart:kind});
-  let summary = 'Preisvergleich für '+topic.label+'. Fremdpreis '+prefix+money(cents)+' brutto. Unverbindliches Preisziel '+prefix+money(target)+' für denselben Umfang.';
-  if (kind === 'ab' && topic.startEuros * 100 === cents) summary += ' Der Vergleichswert entspricht dem veröffentlichten Beispiel von '+topic.sourceLabel+'.';
-  if (topic.service !== 'umzug') summary += ' Eine Abfallabholung wird direkt beim Entsorger beauftragt.';
-  summary += ' Den Endpreis für unsere Leistungen nennen wir nach Prüfung.';
-  return {service:topic.service,params,summary};
+  const key = queryScenario(query);
+  if (!key) return null;
+  const topic = comparisonTopics.get(key);
+  const param = serviceParam(topic);
+  if (query.getAll(param).length !== 1 || query.get(param) !== topic.service || query.has(param === 'service' ? 'leistung' : 'service')) return null;
+  const estimate = startingPrice(topic);
+  const summary = estimate
+    ? [topic.label+'.', 'Unverbindlicher Richtwert '+estimate+' brutto.', topic.scope, topic.note].join(' ')
+    : topic.label+'. Individuelles Angebot nach Prüfung der Auftragsdetails.';
+  return {service:topic.service, params:new URLSearchParams({vorhaben:key}), estimatedCents:topic.euros == null ? null : Math.round(topic.euros*100), summary};
 }
 
-function enableComparison(form) {
+function enableEstimate(form) {
   const section = form.closest('#preisvergleich');
-  const layout = section.querySelector('.comparison-layout');
   const result = section.querySelector('.comparison-result');
   const title = result.querySelector('[data-comparison-title]');
   const amount = result.querySelector('[data-comparison-amount]');
-  const description = result.querySelector('[data-comparison-message]');
+  const scope = result.querySelector('[data-comparison-message]');
+  const note = result.querySelector('[data-estimate-scope-note]');
+  const nextCalculator = result.querySelector('[data-scenario-calculator]');
   const inquiry = result.querySelector('[data-comparison-inquiry]');
-  const references = form.querySelectorAll('[data-comparison-reference]');
-  const {topic, price, kind} = form.elements;
-  const preset = new URLSearchParams(location.search).get('vergleich');
-  if (comparisonTopics.has(preset)) topic.value = preset;
-
-  function applyTopic() {
-    const selected = comparisonTopics.get(topic.value);
-    price.value = selected.startEuros === undefined ? '' : String(selected.startEuros);
-    kind.value = 'ab';
-    for (const reference of references) reference.hidden = reference.dataset.comparisonReference !== topic.value;
+  const details = section.querySelector('[data-calc-scope]');
+  const select = form.elements.topic;
+  const query = new URLSearchParams(location.search);
+  const preset = queryScenario(query);
+  if (preset) select.value = preset;
+  else {
+    const service = query.get('leistung') || query.get('service');
+    if (['entruempelung','entsorgung','umzug'].includes(service)) select.value = service;
   }
 
   function update() {
-    const cents = parseGrossCents(price.value);
-    const target = targetCents(cents);
-    const chosen = comparisonTopics.get(topic.value);
-    const startingPrice = kind.value === 'ab';
-    amount.textContent = '';
-    inquiry.hidden = true;
-    if (target === null || !chosen) {
-      title.textContent = 'Ihr Preisziel';
-      description.textContent = cents !== null && cents <= 200
-        ? 'Bei 2 € oder weniger ergibt ein Abzug von 2 € keinen positiven Zielpreis.'
-        : 'Geben Sie einen Bruttopreis in Euro mit höchstens zwei Nachkommastellen ein.';
-      price.setAttribute('aria-invalid', String(Boolean(price.value.trim()) && cents === null));
-      return;
+    const topic = comparisonTopics.get(select.value);
+    result.hidden = !topic;
+    inquiry.hidden = !topic;
+    if (details) details.hidden = !topic;
+    if (!topic) return;
+    const estimate = startingPrice(topic);
+    title.textContent = estimate ? 'Unverbindlicher Richtwert inkl. MwSt.' : 'Kosten für Ihr Vorhaben';
+    amount.textContent = estimate;
+    amount.hidden = !estimate;
+    scope.textContent = topic.scope;
+    note.textContent = topic.note || '';
+    note.hidden = !topic.note;
+    nextCalculator.hidden = !topic.route;
+    if (topic.route) {
+      nextCalculator.setAttribute('href', topic.route);
+      nextCalculator.textContent = topic.action;
     }
-    price.removeAttribute('aria-invalid');
-    title.textContent = 'Ihr unverbindliches Preisziel';
-    amount.textContent = (startingPrice ? 'ab ' : '')+money(target);
-    description.textContent = 'Vergleichen Sie Anfahrt, Tragewege und Leistungsumfang. Wir prüfen, welchen Teil wir zu welchem Endpreis übernehmen können.'
-      +(chosen.service === 'umzug' ? '' : ' Für Abtransport und Entsorgung von Abfällen beauftragen Sie den Entsorger direkt.');
-    const url = new URL(inquiry.href);
-    for (const key of ['service','leistung','vergleich','vergleichcent','vergleichart']) url.searchParams.delete(key);
-    url.searchParams.set(chosen.service === 'umzug' ? 'service' : 'leistung',chosen.service);
-    url.searchParams.set('vergleich',topic.value);
-    url.searchParams.set('vergleichcent', String(cents));
-    url.searchParams.set('vergleichart',kind.value);
-    inquiry.setAttribute('href', url.pathname+url.search);
-    inquiry.hidden = false;
+    const tracking = new URL(inquiry.href).searchParams;
+    const params = new URLSearchParams({[serviceParam(topic)]:topic.service, vorhaben:select.value});
+    for (const name of ['src','anzeige','schrift']) {
+      if (tracking.has(name)) params.set(name,tracking.get(name));
+    }
+    inquiry.setAttribute('href','/anfrage/?'+params);
+    inquiry.textContent = estimate ? 'Endpreis anfragen' : 'Individuelles Angebot anfragen';
   }
-  price.addEventListener('input', update);
-  topic.addEventListener('change', applyTopic);
-  form.addEventListener('change', update);
-  form.addEventListener('submit', event => { event.preventDefault(); update(); result.focus(); });
-  applyTopic();
+  select.addEventListener('change', update);
+  form.addEventListener('submit', event => event.preventDefault());
   update();
-  layout.hidden = false;
+  section.querySelector('.comparison-layout').hidden = false;
 }
 
 if (typeof document !== 'undefined') {
   const form = document.querySelector('#comparison-form');
-  if (form) enableComparison(form);
+  if (form) enableEstimate(form);
 }

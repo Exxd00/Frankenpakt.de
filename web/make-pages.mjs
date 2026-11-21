@@ -3,8 +3,11 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {inquiry,legal,thankYou} from './form-pages.mjs';
 import {clearanceCalculator} from './clearance-calculator.mjs';
-import {priceComparison} from './price-comparison.mjs';
+import {scenarioPrices} from './scenario-prices.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
+await mkdir(path.join(dir,'assets'), {recursive:true});
+await writeFile(path.join(dir,'assets/richtpreise.js'), 'export const scenarioPrices = '+JSON.stringify(scenarioPrices,null,2)+';\n', 'utf8');
+const {priceComparison}=await import('./price-comparison.mjs');
 const brand='FrankenPackt';
 const iconpaths={
  pin:'<path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/>',
@@ -88,7 +91,7 @@ function steps(){
 }
 const home='<section class="hero"><div class="wrap hero-grid"><div class="hero-copy"><div class="hero-heading"><div class="location">'+ic('pin',17)+
   ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Wir sortieren mit Ihnen vor Ort und tragen heraus, was Sie behalten oder weitergeben möchten. Für Abfälle buchen Sie die Abholung direkt bei der Stadt oder einem Fachbetrieb.</p>'+
-  '<div class="actions">'+btn('Preis berechnen','/preise/#raeumungsrechner')+btn('Entsorgungswege','/entsorgung/',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
+  '<div class="actions">'+btn('Richtpreis ansehen','/preise/#richtpreis')+btn('Entsorgungswege','/entsorgung/',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
   '<div class="hero-picture"><img src="/assets/entruempelung-franken.webp" width="1200" height="800" fetchpriority="high" alt="Zwei Frauen sortieren eine Schale und weiteren Hausrat"></div></div></section>'+
   serviceCards()+steps();
 const serviceContent={
@@ -101,7 +104,7 @@ function detail(d) {
   const fullDay = d.s === 'umzug' ? prices.find(p => p.id === 'sieben') : null;
   const request = '/anfrage/?service=' + d.s + (fullDay ? '&amp;paket=' + fullDay.id : '');
   const priceUrl = '/preise/?service=' + d.s + '&amp;paket=';
-  const smallMoveComparison = fullDay ? '<p class="comparison-shortcut">Sie ziehen aus einer kleinen Wohnung um? <a href="/preise/?vergleich=kleinumzug#preisvergleich">Preisbeispiel für 1–2 Zimmer ansehen</a></p>' : '';
+  const smallMoveComparison = fullDay ? '<p class="comparison-shortcut">Sie ziehen aus einer kleinen Wohnung um? <a href="/preise/?vorhaben=kleinumzug#richtpreis">Richtpreis für 1–2 Zimmer ansehen</a></p>' : '';
   const leadOffer = fullDay ? '<div class="lead-offer"><strong>' + euro(fullDay.price) + ' · 2 Personen und Fahrzeug</strong><span>7 Stunden ab und bis 90453 Nürnberg · bis 50 km Gesamtroute. Endpreis inkl. 19 % USt.</span></div>' : '';
   return '<div class="subhead service-heading" data-interest-service="'+d.s+'" data-interest-package="'+(fullDay?.id||'')+'"><div class="wrap">' + crumb(d.t) +
     '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p>' + leadOffer + '<div class="actions">' +
@@ -117,8 +120,8 @@ function detail(d) {
 function planningPage(page) {
   const cards=page.steps.map(([title,copy,icon])=>'<article>'+ic(icon,28)+'<h3>'+title+'</h3><p>'+copy+'</p></article>').join('');
   const comparison=page.service==='entsorgung'
-    ? '<p class="comparison-shortcut">Beispiel Sofa: Fremdpreis ab 80 €. <a href="/preise/?vergleich=sofa#preisvergleich">Ihr Preisziel ab 78 € prüfen</a></p>'
-    : '<p class="comparison-shortcut">Kleines Kellerabteil bis 6 m²: Fremdpreis ab 150 €. <a href="/preise/?vergleich=keller#preisvergleich">Ihr Preisziel ab 148 € prüfen</a></p>';
+    ? '<p class="comparison-shortcut"><a href="/preise/?vorhaben=sofa#richtpreis">Was kostet die Abholung eines Sofas?</a></p>'
+    : '<p class="comparison-shortcut"><a href="/preise/?vorhaben=keller#richtpreis">Was kostet das Räumen eines Kellerabteils bis 6 m²?</a></p>';
   return '<section class="subhead clearance-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero">'+
     crumb(page.name)+'<h1>'+page.heading+'</h1><p class="lead">'+page.intro+'</p><div class="actions">'+
     btn('Preis berechnen','/preise/?leistung='+page.service+'#raeumungsrechner')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+comparison+contactChoices(page.service)+'</div></section>'+
@@ -182,7 +185,7 @@ function pricePage() {
   const overview = '<section class="wrap mobile-prices"><h2>Preisbeispiele für Umzüge</h2><p class="tile-hint">Paket antippen und Bedingungen ansehen.</p>' +
     '<div class="price-tiles">' + mobileRows + '</div><details class="price-note"><summary>Stand und weitere Kosten</summary><p>' + note + '</p></details></section>';
   const desktopRows = prices.map(i=>'<article data-paket="'+i.id+'" data-euro="'+i.price+'" data-ab="'+Boolean(i.ab)+'"><div><h3>'+i.name+'</h3><p>'+i.scope+'</p></div><div class="amount"><strong>'+(i.ab?'ab ':'')+euro(i.price)+'</strong><small>'+i.unit+'</small></div></article>').join('');
-  return '<div class="subhead pricing-heading" id="raeumungskosten"><div class="wrap narrowhero">'+crumb('Preise')+'<h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead">Berechnen Sie die Kosten für Ihre <a href="#raeumungsrechner">Räumung</a> oder Ihren <a href="#preisfinder">Umzug</a>. Im <a href="#preisvergleich">Preisvergleich</a> finden Sie Beispiele aus Nürnberg und können einen eigenen Vergleichspreis eingeben.</p></div></div>' + clearanceCalculator(scopeSlot('clearance')) + priceComparison(scopeSlot('comparison')) + householdGuide + overview +
+  return '<div class="subhead pricing-heading" id="raeumungskosten"><div class="wrap narrowhero">'+crumb('Preise')+'<h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead"><a href="#richtpreis">Richtpreis für mein Vorhaben ansehen</a> oder direkt <a href="#raeumungsrechner">Tragehilfe und Entsorgung</a> bzw. ein <a href="#preisfinder">Umzugspaket</a> berechnen.</p></div></div>' + priceComparison(scopeSlot('comparison')) + clearanceCalculator(scopeSlot('clearance')) + householdGuide + overview +
     '<section class="wrap section" id="preisfinder"><div class="estimate-layout"><div><h2>Preisfinder für Umzüge</h2><p>Alle Preisbeispiele sind Endpreise für Privatkunden inklusive 19 % Umsatzsteuer. Wir prüfen Umfang, Gewicht, Zugang und Route, bevor Sie buchen.</p><form id="estimate" class="tool-form"><label for="paket">Gewünschte Leistung</label><select id="paket" name="paket">'+prices.filter(i=>i.id!=='extra').map(c=>'<option value="'+c.id+'"'+(c.id==='drei'?' selected':'')+'>'+c.name+'</option>').join('')+'<option value="anders">Andere Leistung oder unklarer Umfang</option></select><div id="estimate-conditions"></div><div id="estimate-extra"></div><label for="fit">Passen die genannten Bedingungen?</label><select id="fit"><option value="unknown">Das möchte ich prüfen lassen</option><option value="yes">Ja, voraussichtlich</option><option value="no">Nein, der Umfang weicht ab</option></select><button class="button js-only" type="submit">Preis einschätzen</button></form><noscript><p>Alle Paketpreise und Bedingungen finden Sie in der Preisübersicht. Über die Anfrage können Sie den passenden Umfang klären.</p></noscript></div><div class="estimate-result" id="estimate-result" role="status" aria-live="polite"><span class="large-icon">'+ic('tag',32)+'</span><h3>Ihre Preisorientierung</h3><p>Nach Ihrer Auswahl sehen Sie hier den passenden Richtpreis oder den nächsten Schritt zur persönlichen Kalkulation.</p></div></div>' + scopeSlot('moving') + '</section>' +
     '<section class="price-section desktop-prices"><div class="wrap"><h2>Preisbeispiele für Umzüge</h2><div class="tariffs">' + desktopRows +
     '</div><p class="fine">' + note + '</p></div></section>' + endCta();

@@ -1,7 +1,13 @@
 'use strict';
 
 document.documentElement.classList.add('js');
-const params = new URLSearchParams(location.search);
+const pageUrl = new URL(location.href);
+const obsoleteAmountKeys = ['vergleichcent','vergleichart'];
+if (obsoleteAmountKeys.some(key => pageUrl.searchParams.has(key))) {
+  for (const key of obsoleteAmountKeys) pageUrl.searchParams.delete(key);
+  history.replaceState(history.state,'',pageUrl);
+}
+const params = pageUrl.searchParams;
 const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
 const rawSource = (params.get('src') || params.get('utm_source') || '').toLowerCase();
 const source = channels.has(rawSource) ? rawSource : 'unbekannt';
@@ -28,7 +34,11 @@ const packageLabels = {
   taxi: 'Möbeltaxi', drei: 'Umzugsteam · 3 Stunden',
   kompakt: 'Kompaktumzug', sieben: 'Umzugsteam · 7 Stunden'
 };
-const priceContextKeys = ['hilfe','entsorgungsweg','asn','container','vergleich','vergleichcent','vergleichart'];
+const priceContextKeys = ['hilfe','entsorgungsweg','asn','container','vorhaben'];
+
+function clearEstimateContext(url) {
+  for (const key of [...priceContextKeys, 'vergleich']) url.searchParams.delete(key);
+}
 
 function serviceForPackage(pack, interest) {
   if (pack === 'taxi') return 'moebeltaxi';
@@ -48,9 +58,13 @@ function updateProjectLinks(interest,pack,units,writeContext) {
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);
-    if (url.pathname === '/anfrage/') {
-      for (const key of priceContextKeys) url.searchParams.delete(key);
+    if (url.pathname === '/anfrage/' || url.pathname === '/preise/') {
+      clearEstimateContext(url);
       if (writeContext) writeContext(url);
+      if (url.pathname === '/preise/') {
+        if (url.searchParams.has('vorhaben')) url.hash = 'richtpreis';
+        else if (url.hash === '#richtpreis') url.hash = '';
+      }
     }
     link.setAttribute('href',url.pathname + url.search + url.hash);
     updateLink(link);
@@ -69,6 +83,7 @@ function updateLink(anchor) {
   if (!href || !href.startsWith('/')) return;
   const url = new URL(href, location.href);
   if (url.origin !== location.origin) return;
+  for (const key of obsoleteAmountKeys) url.searchParams.delete(key);
   if (source !== 'unbekannt') url.searchParams.set('src', source);
   if (adVariant) url.searchParams.set('anzeige',adVariant);
   else url.searchParams.delete('anzeige');
@@ -352,7 +367,7 @@ function enableInquiry(form, contexts, draftTools) {
     scope.textContent = topic?.scope || '';
   }
   showServiceFields();
-  let comparison = contexts.find(context => context.params.has('vergleich'));
+  let comparison = contexts.find(context => context.params.has('vorhaben'));
   const estimate = contexts.find(context => context.params.has('hilfe'));
   const comparisonNote = comparison ? node('p', comparison.summary, 'note compact') : null;
   if (comparisonNote) {
@@ -391,12 +406,16 @@ function enableInquiry(form, contexts, draftTools) {
   }
   let currentPack = pack;
   const presetDetails = details.value;
-  const contextKeys = contexts.flatMap(context => Array.from(context.params.keys()));
   function writeContext(url) {
-    for (const key of contextKeys) url.searchParams.delete(key);
+    clearEstimateContext(url);
     for (const context of contexts) {
       for (const [key, value] of context.params) url.searchParams.set(key, value);
     }
+  }
+  if (params.has('vergleich') || params.has('vorhaben')) {
+    const canonical = new URL(location.href);
+    writeContext(canonical);
+    if (canonical.href !== location.href) history.replaceState(history.state,'',canonical);
   }
   function updateFormLinks(interest) {
     writeInterest(switchTarget,interest,currentPack,params.get('zusatz'));
@@ -506,13 +525,13 @@ function enableInquiry(form, contexts, draftTools) {
         const jobContext = draftTools.offerContext(jobScope.service,new URLSearchParams(location.search));
         if (jobContext) body.jobContext = jobContext;
       }
-      if (comparison && !callback) body.details = [comparison.summary,body.details].filter(Boolean).join('\n');
+      if (comparison) body.vorhaben = comparison.params.get('vorhaben');
       if (callback) {
         body.service = 'rueckruf';
         if (serviceOption && projectServices.has(serviceOption.value)) body.requestedService = serviceOption.value;
         body.contactMethod = 'phone';
         body.timeframe = body.callbackTime;
-        body.details = context;
+        body.details = [serviceOption?.label,details.value].filter(Boolean).join(' · ');
         delete body.callbackTime;
       }
       body.source = source;
@@ -541,7 +560,7 @@ function enableInquiry(form, contexts, draftTools) {
 if (form) {
   form.addEventListener('submit',event => event.preventDefault());
   const contexts = [];
-  if (params.has('vergleich')) {
+  if (params.has('vorhaben') || params.has('vergleich')) {
     contexts.push(import('/assets/price-comparison.js').then(({inquiryComparison}) => inquiryComparison(params)));
   }
   if (params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
