@@ -1,3 +1,6 @@
+// Two detailed addresses and a room-by-room inventory can include multibyte text.
+export const maxLeadBodyBytes=128*1024;
+
 export class InputError extends Error {
   constructor(message, status=400) {
     super(message);

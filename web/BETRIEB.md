@@ -2,6 +2,10 @@
 
 ## Angebot kalkulieren und Absage einordnen
 
+`node ops.mjs show VORGANG` zeigt bei detaillierten Website-Anfragen die Einsatzdaten unter `jobScopeSummary`. Bei einem Umzug stehen Abhol- und Zieladresse mit ihrem jeweiligen Zugang getrennt im Vorgang. Für die Einsatzplanung sind die tatsächlich nutzbare Nutzlast des Fahrzeugs, Tragewege, verfügbare Helfer und der vereinbarte Umgang mit den Gegenständen maßgeblich. Bei einer Räumung prüfen Sie auch, welche Stücke der Kunde behalten will und welche Abholung er beim Entsorger beauftragt.
+
+Ein übernommenes Preisziel bezieht sich auf den Vergleichspreis für denselben Leistungsumfang abzüglich 2 €. Etagen, Laufwege und weitere Auftragsdetails dienen der Prüfung durch das Team. Den angebotenen Endpreis dokumentiert das Team nach dieser Prüfung.
+
 Nach der Prüfung und Qualifizierung erfasst das Team den tatsächlich angebotenen Bruttopreis. Die erste Version erhält die Nummer 1. Für eine Preisänderung vor der Buchung folgt jeweils die nächste Nummer. Jede Version enthält den vollständigen Preis und optional die geplanten Netto-Ausführungskosten.
 
 ```powershell

@@ -1,12 +1,12 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="Anliegen in Nürnberg beschreiben, Entsorgungswege klären oder einen Transport anfragen und den gewünschten Rückmeldeweg wählen."><title>Anfrage zu Entrümpelung, Entsorgung oder Umzug · FrankenPackt</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css"><link rel="stylesheet" href="/assets/inquiry.css"><script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script></head><body><a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="188" height="54"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Menü</button><nav aria-label="Hauptnavigation" id="primary"><a href="/raeumung/">Entrümpelung</a><a href="/entsorgung/">Entsorgung</a><a href="/umzug/">Umzüge</a><a href="/preise/">Preise</a></nav><a class="button head-cta" href="/anfrage/" aria-current="page">Anfrage stellen</a></div></header><main id="inhalt" tabindex="-1"><section class="subhead inquiry-heading"><div class="wrap narrowhero">
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="Anliegen in Nürnberg beschreiben, Entsorgungswege klären oder einen Transport anfragen und den gewünschten Rückmeldeweg wählen."><title>Anfrage zu Entrümpelung, Entsorgung oder Umzug · FrankenPackt</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css"><link rel="stylesheet" href="/assets/inquiry.css"><link rel="stylesheet" href="/assets/job-scope.css"><script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script></head><body><a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="188" height="54"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Menü</button><nav aria-label="Hauptnavigation" id="primary"><a href="/raeumung/">Entrümpelung</a><a href="/entsorgung/">Entsorgung</a><a href="/umzug/">Umzüge</a><a href="/preise/">Preise</a></nav><a class="button head-cta" href="/anfrage/" aria-current="page">Anfrage stellen</a></div></header><main id="inhalt" tabindex="-1"><section class="subhead inquiry-heading"><div class="wrap narrowhero">
     <nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>Anfrage</span></nav><h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
-    <p class="lead" id="inquiry-lead">Geht es um eine Entrümpelung, einzelne Gegenstände oder einen Umzug? Wählen Sie Ihr Anliegen und wie wir Sie erreichen.</p>
+    <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Mit Angaben zu Inventar, Zugang und Termin kann unser Team den Endpreis für Ihr Vorhaben prüfen.</p>
     <a class="inquiry-switch" id="inquiry-switch" href="/anfrage/?kontakt=telefon">Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>
     <div id="form-mode" class="note compact" role="status">Vorschau: Bitte verwenden Sie nur Beispieldaten. Ihre Angaben bleiben in diesem Browser.</div>
     <noscript><p>Das Onlineformular benötigt JavaScript. Unsere Kontaktangaben finden Sie im <a href="/impressum/">Impressum</a>.</p></noscript>
-    <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off">
+    <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off" novalidate>
       <fieldset id="project-fields"><legend>Ihr Vorhaben</legend>
         <div class="fields">
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>
@@ -16,16 +16,15 @@
               <option value="umzug">Privatumzug</option><option value="seniorenumzug">Seniorenumzug</option>
               <option value="moebeltaxi">Möbeltaxi</option><option value="transport">Transportanteil bei Wohnungsauflösung</option>
             </select></div>
-          <div><label for="timeframe">Wunschzeitraum</label><input id="timeframe" name="timeframe" maxlength="80" placeholder="Zum Beispiel Anfang Dezember"></div>
-          <div><label for="zipFrom">PLZ des Einsatzorts <span>*</span></label><input id="zipFrom" name="zipFrom" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" required placeholder="90453"></div>
-          <div id="destination-field"><label for="zipTo">Ziel-PLZ (bei Transport)</label><input id="zipTo" name="zipTo" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" placeholder="Falls bekannt"></div>
         </div>
         <p id="service-scope" class="fine" hidden></p>
-        <label for="details">Welche Gegenstände sind es?</label>
-        <textarea name="details" id="details" rows="3" maxlength="1400" placeholder="Zum Beispiel ein Schrank und sechs Kartons im zweiten Stock, ohne Aufzug."></textarea>
+        <div id="inquiry-job-scope" hidden></div>
+        <label for="details">Zusätzliche Hinweise (optional)</label>
+        <textarea name="details" id="details" rows="2" maxlength="1400" placeholder="Was möchten Sie uns zusätzlich mitteilen?"></textarea>
       </fieldset>
       <fieldset><legend>So erreichen wir Sie</legend>
         <p id="callback-context" class="fine" hidden></p>
+        <label id="callback-draft-choice" hidden><input type="checkbox" id="callback-draft"> Meine ausgefüllten Auftragsdetails für diesen Rückruf mitschicken</label>
         <label for="name">Ihr Name <span>*</span></label><input id="name" name="name" required maxlength="90" autocomplete="name">
         <div id="method-field">
           <div class="radiotitle" id="pref-label">Gewünschte Rückmeldung <span>*</span></div>
@@ -42,7 +41,7 @@
         <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input name="website" id="website" tabindex="-1" autocomplete="off"></div>
       </fieldset>
       <p class="fine">Mit * markierte Angaben werden benötigt. Ihre Kontaktdaten dienen der Bearbeitung Ihrer Anfrage. Hinweise dazu im <a href="/datenschutz/">Datenschutz</a>.</p>
-      <button class="button js-only" type="submit" id="send-lead">Musteranfrage prüfen</button>
+      <button class="button js-only" type="submit" id="send-lead" disabled>Musteranfrage prüfen</button>
       <p id="form-result" role="status" aria-live="polite" tabindex="-1"></p>
     </form>
   </div>

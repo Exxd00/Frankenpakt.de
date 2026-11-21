@@ -28,6 +28,7 @@ const packageLabels = {
   taxi: 'Möbeltaxi', drei: 'Umzugsteam · 3 Stunden',
   kompakt: 'Kompaktumzug', sieben: 'Umzugsteam · 7 Stunden'
 };
+const priceContextKeys = ['hilfe','entsorgungsweg','asn','container','vergleich','vergleichcent','vergleichart'];
 
 function serviceForPackage(pack, interest) {
   if (pack === 'taxi') return 'moebeltaxi';
@@ -47,7 +48,10 @@ function updateProjectLinks(interest,pack,units,writeContext) {
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);
-    if (writeContext && url.pathname === '/anfrage/') writeContext(url);
+    if (url.pathname === '/anfrage/') {
+      for (const key of priceContextKeys) url.searchParams.delete(key);
+      if (writeContext) writeContext(url);
+    }
     link.setAttribute('href',url.pathname + url.search + url.hash);
     updateLink(link);
   }
@@ -202,6 +206,51 @@ const form = document.querySelector('#lead-form');
 const estimate = document.querySelector('#estimate');
 if (estimate) enableEstimate(estimate);
 
+if (estimate) {
+  import('/assets/scope-flow.js').then(({calculatorScopes}) => {
+    function selection(kind) {
+      let url;
+      if (kind === 'moving') {
+        const pack = document.querySelector('#paket').value;
+        const fit = document.querySelector('#fit').value;
+        url = new URL('/anfrage/',location.href);
+        writeInterest(url,serviceForPackage(pack,pageInterest),pack,fit === 'yes' ? document.querySelector('#extra-units')?.value : '');
+      } else {
+        const anchor = document.querySelector(kind === 'comparison' ? '[data-comparison-inquiry]' : '[data-estimate-inquiry]');
+        if (!anchor.hidden) url = new URL(anchor.href);
+        else {
+          let service = Object.hasOwn(clearance,pageInterest) ? pageInterest : 'entruempelung';
+          if (kind === 'comparison') {
+            const topic = document.querySelector('#comparison-topic').value;
+            service = ({keller:'entruempelung',sofa:'entsorgung',kleinumzug:'umzug'})[topic] || topic;
+          }
+          url = new URL('/anfrage/',location.href);
+          writeInterest(url,service);
+        }
+      }
+      const link = document.createElement('a');
+      link.setAttribute('href',url.pathname+url.search);
+      updateLink(link);
+      return {url:new URL(link.href),service:url.searchParams.get('leistung') || url.searchParams.get('service')};
+    }
+    calculatorScopes(selection,(selected,service) => {
+      updateProjectLinks(service,selected.searchParams.get('paket'),selected.searchParams.get('zusatz'),url => {
+        for (const key of priceContextKeys) {
+          if (selected.searchParams.has(key)) url.searchParams.set(key,selected.searchParams.get(key));
+          else url.searchParams.delete(key);
+        }
+      });
+    });
+  }).catch(() => {
+    document.querySelectorAll('[data-scope-mount]').forEach(host => {
+      const link = node('a','Auftragsdetails in der Anfrage eingeben');
+      link.href = '/anfrage/';
+      updateLink(link);
+      host.replaceChildren(link);
+    });
+  });
+}
+
 function telephoneLooksValid(value) {
   if (!/^\+?[\d\s()./-]+$/.test(value)) return false;
   let number = value.replace(/[\s()./-]/g, '');
@@ -279,7 +328,7 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, contexts = []) {
+function enableInquiry(form, contexts, draftTools) {
   const service = form.elements.service;
   const initialService = pageInterest;
   const pack = contexts.length || Object.hasOwn(clearance,initialService) ? null : params.get('paket');
@@ -292,15 +341,15 @@ function enableInquiry(form, contexts = []) {
   const summary = document.querySelector('#form-result');
   const submit = document.querySelector('#send-lead');
   const details = form.elements.details;
-  const defaultExample = details.placeholder;
   const scope = document.querySelector('#service-scope');
-  const destination = document.querySelector('#destination-field');
+  draftTools.recoverHandoff(service.value);
+  const editor = callback ? null : draftTools.inquiryScope(document.querySelector('#inquiry-job-scope'),service.value,() => new URLSearchParams(location.search));
+  const savedForCallback = callback ? draftTools.completeDraft(service.value) : null;
+  document.querySelector('#callback-draft-choice').hidden = !savedForCallback;
   function showServiceFields() {
     const topic = Object.hasOwn(clearance,service.value) ? clearance[service.value] : null;
     scope.hidden = !topic;
     scope.textContent = topic?.scope || '';
-    destination.hidden = form.elements.zipTo.disabled = Boolean(topic);
-    details.placeholder = topic?.example || defaultExample;
   }
   showServiceFields();
   let comparison = contexts.find(context => context.params.has('vergleich'));
@@ -367,15 +416,16 @@ function enableInquiry(form, contexts = []) {
         comparison = null;
       }
       contexts = [];
-      const url = new URL(location.href);
-      writeInterest(url,service.value);
-      writeContext(url);
-      history.replaceState(history.state, '', url);
     }
     if (Object.hasOwn(packageLabels,currentPack) && serviceForPackage(currentPack,service.value) !== service.value) {
       currentPack = null;
       if (details.value === presetDetails) details.value = '';
     }
+    const url = new URL(location.href);
+    writeInterest(url,service.value,currentPack,params.get('zusatz'));
+    writeContext(url);
+    history.replaceState(history.state,'',url);
+    editor?.select(service.value);
     updateFormLinks(service.value);
   });
   function selectContact() {
@@ -396,8 +446,12 @@ function enableInquiry(form, contexts = []) {
   let lastPayload = '';
   let lastId = '';
   let finished = false;
-  function finish(receipt) {
+  function finish(receipt, submittedScope) {
     finished = true;
+    if (submittedScope) {
+      draftTools.clearDraft(submittedScope.service);
+      editor?.select(submittedScope.service);
+    }
     try {
       goToReceipt(receipt);
     } catch {
@@ -427,6 +481,7 @@ function enableInquiry(form, contexts = []) {
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (submit.disabled) return;
+    if (!callback && (!service.reportValidity() || !editor.validate())) return;
     if (phone.required && !telephoneLooksValid(phone.value)) phone.setCustomValidity('Bitte geben Sie eine erreichbare Telefonnummer mit Vorwahl ein.');
     if (email.required && !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.value)) email.setCustomValidity('Bitte prüfen Sie Ihre E-Mail-Adresse.');
     if (!form.reportValidity()) return;
@@ -438,11 +493,19 @@ function enableInquiry(form, contexts = []) {
         summary.textContent = 'Bitte verwenden Sie vorübergehend die Kontaktdaten im Impressum.';
         return;
       }
+      const jobScope = callback
+        ? (document.querySelector('#callback-draft').checked ? savedForCallback : null)
+        : editor.getValue();
       if (mode !== 'live') {
-        finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value});
+        finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value},jobScope);
         return;
       }
       const body = Object.fromEntries(new FormData(form));
+      if (jobScope) {
+        body.jobScope = jobScope;
+        const jobContext = draftTools.offerContext(jobScope.service,new URLSearchParams(location.search));
+        if (jobContext) body.jobContext = jobContext;
+      }
       if (comparison && !callback) body.details = [comparison.summary,body.details].filter(Boolean).join('\n');
       if (callback) {
         body.service = 'rueckruf';
@@ -466,7 +529,7 @@ function enableInquiry(form, contexts = []) {
       if (!answer.ok || answer.mode !== 'live' || !/^AN-[A-F0-9]{16}$/.test(answer.reference)) throw new Error('invalid');
       form.reset();
       lastId = '';
-      finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod});
+      finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope);
     } catch (error) {
       summary.textContent = error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
     } finally {
@@ -476,6 +539,7 @@ function enableInquiry(form, contexts = []) {
   });
 }
 if (form) {
+  form.addEventListener('submit',event => event.preventDefault());
   const contexts = [];
   if (params.has('vergleich')) {
     contexts.push(import('/assets/price-comparison.js').then(({inquiryComparison}) => inquiryComparison(params)));
@@ -483,16 +547,14 @@ if (form) {
   if (params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
     contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
   }
-  if (contexts.length) {
-    const submit = form.querySelector('#send-lead');
+  const submit = form.querySelector('#send-lead');
+  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts)]).then(([draftTools,results]) => {
+    const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
+    enableInquiry(form,valid.map(result => result.value),draftTools);
+    submit.disabled = false;
+  }).catch(() => {
     submit.disabled = true;
-    Promise.allSettled(contexts).then(results => {
-      const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
-      submit.disabled = false;
-      enableInquiry(form, valid.map(result => result.value));
-    });
-  } else {
-    enableInquiry(form);
-  }
+    document.querySelector('#form-mode').textContent = 'Die Auftragsfelder konnten nicht geladen werden. Bitte laden Sie die Seite neu.';
+  });
 }
 

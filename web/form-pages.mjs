@@ -4,13 +4,13 @@ export function inquiry(crumb, ic) {
   const livePhone = '<p data-live-phone hidden></p>';
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
     ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
-    <p class="lead" id="inquiry-lead">Geht es um eine Entrümpelung, einzelne Gegenstände oder einen Umzug? Wählen Sie Ihr Anliegen und wie wir Sie erreichen.</p>
+    <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Mit Angaben zu Inventar, Zugang und Termin kann unser Team den Endpreis für Ihr Vorhaben prüfen.</p>
     <a class="inquiry-switch" id="inquiry-switch" href="/anfrage/?kontakt=telefon">Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>
     <div id="form-mode" class="note compact" role="status">Vorschau: Bitte verwenden Sie nur Beispieldaten. Ihre Angaben bleiben in diesem Browser.</div>
     <noscript><p>Das Onlineformular benötigt JavaScript. Unsere Kontaktangaben finden Sie im <a href="/impressum/">Impressum</a>.</p></noscript>
-    <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off">
+    <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off" novalidate>
       <fieldset id="project-fields"><legend>Ihr Vorhaben</legend>
         <div class="fields">
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>
@@ -20,16 +20,15 @@ export function inquiry(crumb, ic) {
               <option value="umzug">Privatumzug</option><option value="seniorenumzug">Seniorenumzug</option>
               <option value="moebeltaxi">Möbeltaxi</option><option value="transport">Transportanteil bei Wohnungsauflösung</option>
             </select></div>
-          <div><label for="timeframe">Wunschzeitraum</label><input id="timeframe" name="timeframe" maxlength="80" placeholder="Zum Beispiel Anfang Dezember"></div>
-          <div><label for="zipFrom">PLZ des Einsatzorts <span>*</span></label><input id="zipFrom" name="zipFrom" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" required placeholder="90453"></div>
-          <div id="destination-field"><label for="zipTo">Ziel-PLZ (bei Transport)</label><input id="zipTo" name="zipTo" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" placeholder="Falls bekannt"></div>
         </div>
         <p id="service-scope" class="fine" hidden></p>
-        <label for="details">Welche Gegenstände sind es?</label>
-        <textarea name="details" id="details" rows="3" maxlength="1400" placeholder="Zum Beispiel ein Schrank und sechs Kartons im zweiten Stock, ohne Aufzug."></textarea>
+        <div id="inquiry-job-scope" hidden></div>
+        <label for="details">Zusätzliche Hinweise (optional)</label>
+        <textarea name="details" id="details" rows="2" maxlength="1400" placeholder="Was möchten Sie uns zusätzlich mitteilen?"></textarea>
       </fieldset>
       <fieldset><legend>So erreichen wir Sie</legend>
         <p id="callback-context" class="fine" hidden></p>
+        <label id="callback-draft-choice" hidden><input type="checkbox" id="callback-draft"> Meine ausgefüllten Auftragsdetails für diesen Rückruf mitschicken</label>
         <label for="name">Ihr Name <span>*</span></label><input id="name" name="name" required maxlength="90" autocomplete="name">
         <div id="method-field">
           <div class="radiotitle" id="pref-label">Gewünschte Rückmeldung <span>*</span></div>
@@ -46,7 +45,7 @@ export function inquiry(crumb, ic) {
         <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input name="website" id="website" tabindex="-1" autocomplete="off"></div>
       </fieldset>
       <p class="fine">Mit * markierte Angaben werden benötigt. Ihre Kontaktdaten dienen der Bearbeitung Ihrer Anfrage. Hinweise dazu im <a href="/datenschutz/">Datenschutz</a>.</p>
-      <button class="button js-only" type="submit" id="send-lead">Musteranfrage prüfen</button>
+      <button class="button js-only" type="submit" id="send-lead" disabled>Musteranfrage prüfen</button>
       <p id="form-result" role="status" aria-live="polite" tabindex="-1"></p>
     </form>
   </div>
@@ -66,5 +65,5 @@ export function thankYou(crumb, ic) {
   </div></section>`;
 }
 
-export const legal=(crumb,privacy)=>'<div class="subhead"><div class="wrap narrowhero">'+crumb(privacy?'Datenschutz':'Impressum')+'<h1>'+(privacy?'Datenschutz':'Impressum')+'</h1></div></div><section class="wrap section legal" id="'+(privacy?'privacy':'imprint')+'"><div id="operator-data"><h2>'+(privacy?'Verantwortliche Stelle':'Anbieterangaben')+'</h2><p>Diese Ansicht dient der Erprobung. Die freigegebenen Anbieter- und Kontaktdaten werden beim Start des Geschäftsbetriebs hier angezeigt.</p></div>'+(privacy?'<h2>Anfrage und Rückmeldung</h2><p>Im Produktivbetrieb verarbeiten wir die von Ihnen übermittelten Angaben, um Ihr Anliegen zu beantworten und auf Ihren Wunsch ein Angebot vorzubereiten. Grundlage sind vorvertragliche Maßnahmen auf Ihre Anfrage (Art. 6 Abs. 1 Buchst. b DSGVO).</p><p>Bei der Anfrage werden Name, gewünschter Kontaktweg und Angaben zum Auftrag erfasst. Für den kurzen Rückrufwunsch genügen Name und Telefonnummer. Die Eingangsbestätigung im Browserverlauf enthält die Vorgangsnummer und den gewählten Rückmeldeweg. Die offene Beschreibung ist freiwillig. Bitte geben Sie keine Gesundheitsdaten oder Angaben über Dritte ein.</p><h2>Technischer Betrieb</h2><p>Die Website verwendet lokal bereitgestellte Schriften und Bilder. Der Linkparameter für die Anzeigenquelle kann bei der Anfrage als Kanal mitübermittelt werden. Namen oder Kontaktdaten werden dazu nicht an Werbeplattformen übermittelt.</p><div id="privacy-extra"></div><h2>Ihre Rechte</h2><p>Je nach den gesetzlichen Voraussetzungen können Sie Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit verlangen und sich bei einer Datenschutzaufsichtsbehörde beschweren. Wenden Sie sich dafür an die verantwortliche Stelle.</p><p><a href="https://www.lda.bayern.de/de/beschwerde.html">Bayerisches Landesamt für Datenschutzaufsicht</a></p>':'')+'</section>';
+export const legal=(crumb,privacy)=>'<div class="subhead"><div class="wrap narrowhero">'+crumb(privacy?'Datenschutz':'Impressum')+'<h1>'+(privacy?'Datenschutz':'Impressum')+'</h1></div></div><section class="wrap section legal" id="'+(privacy?'privacy':'imprint')+'"><div id="operator-data"><h2>'+(privacy?'Verantwortliche Stelle':'Anbieterangaben')+'</h2><p>Diese Ansicht dient der Erprobung. Die freigegebenen Anbieter- und Kontaktdaten werden beim Start des Geschäftsbetriebs hier angezeigt.</p></div>'+(privacy?'<h2>Anfrage und Rückmeldung</h2><p>Im Produktivbetrieb verarbeiten wir die von Ihnen übermittelten Angaben, um Ihr Anliegen zu beantworten und auf Ihren Wunsch ein Angebot vorzubereiten. Grundlage sind vorvertragliche Maßnahmen auf Ihre Anfrage (Art. 6 Abs. 1 Buchst. b DSGVO).</p><p>Für ein Angebot erfassen wir Ihre Kontaktdaten, Einsatzadressen, Zugänge, Inventar, gewünschte Arbeiten und den Termin. Während der Eingabe bleiben die Auftragsdetails in diesem Browser-Tab, damit Sie sie vom Rechner in die Anfrage übernehmen können. Sie können den Entwurf im Formular löschen. Nach dem Absenden der vollständigen Anfrage löschen wir den übernommenen Entwurf aus dem Tabspeicher. Für einen kurzen Rückruf genügen Name und Telefonnummer. Ausgefüllte Auftragsdetails können Sie dabei freiwillig mitsenden. Die Eingangsbestätigung im Browserverlauf enthält die Vorgangsnummer und den gewählten Rückmeldeweg. Die offene Beschreibung ist freiwillig. Bitte geben Sie keine Gesundheitsdaten oder Angaben über Dritte ein.</p><h2>Technischer Betrieb</h2><p>Die Website verwendet lokal bereitgestellte Schriften und Bilder. Der Linkparameter für die Anzeigenquelle kann bei der Anfrage als Kanal mitübermittelt werden. Namen oder Kontaktdaten werden dazu nicht an Werbeplattformen übermittelt.</p><div id="privacy-extra"></div><h2>Ihre Rechte</h2><p>Je nach den gesetzlichen Voraussetzungen können Sie Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit verlangen und sich bei einer Datenschutzaufsichtsbehörde beschweren. Wenden Sie sich dafür an die verantwortliche Stelle.</p><p><a href="https://www.lda.bayern.de/de/beschwerde.html">Bayerisches Landesamt für Datenschutzaufsicht</a></p>':'')+'</section>';
 

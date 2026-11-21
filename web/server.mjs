@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openStore, validate, validateContactClick, InputError, mobileNumber } from './lib/leads.mjs';
 import { deliverDue, notificationSettings } from './lib/notify.mjs';
 import { liveHtml } from './lib/render-live.mjs';
+import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import { saveDailyReport } from './lib/snapshot.mjs';
 
 const webRoot=path.dirname(fileURLToPath(import.meta.url));
@@ -38,9 +39,9 @@ export function configuration(env=process.env){
     privacyExtra:live?(env.PRIVACY_EXTRA||''):'',retentionDays:Number(env.CLOSED_RETENTION_DAYS||90)
   }};
 }
-async function body(req){
+async function body(req,maxBytes){
   let size=0;const parts=[];
-  for await(const part of req){size+=part.length;if(size>12*1024)throw new InputError('Anfrage zu groß.',413);parts.push(part);}
+  for await(const part of req){size+=part.length;if(size>maxBytes)throw new InputError('Anfrage zu groß.',413);parts.push(part);}
   try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
 const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/entsorgung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
@@ -98,12 +99,12 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
         if(!bucket||bucket.end<=now){bucket={count:0,end:now+60000};windowByPeer.set(quotaKey,bucket);}
         if(++bucket.count>maxRequests){res.setHeader('Retry-After','60');throw new InputError('Bitte versuchen Sie es in einer Minute erneut.',429);}
         if(contactEvent){
-          const click=validateContactClick(await body(req));
+          const click=validateContactClick(await body(req,12*1024));
           if(click.event==='whatsapp_click'&&!config.public.whatsapp)throw new InputError('WhatsApp ist nicht eingerichtet.');
           db.contactClick(click);
           json(res,200,{ok:true});return;
         }
-        const lead=validate(await body(req));
+        const lead=validate(await body(req,maxLeadBodyBytes));
         if(!config.live){json(res,200,{ok:true,mode:'preview',reference:'VORSCHAU'});return;}
         const result=db.submit(lead,Date.now(),Boolean(notify),'web');json(res,result.created?201:200,{ok:true,mode:'live',reference:result.reference});
         if(result.created)notifyOps();

@@ -1,6 +1,6 @@
 import {comparisonTopics} from './public/assets/price-comparison.js';
 
-export function priceComparison() {
+export function priceComparison(scopeSlot = '') {
   const options = [...comparisonTopics].map(([key,topic]) => `<option value="${key}">${topic.label}</option>`).join('');
   const references = [...comparisonTopics].filter(([,topic]) => topic.source).map(([key,topic]) =>
     `<p class="comparison-reference" data-comparison-reference="${key}" hidden>Preisbeispiel: ${topic.reference} <a href="${topic.source}">Quelle: ${topic.sourceLabel}</a></p>`).join('');
@@ -26,6 +26,7 @@ export function priceComparison() {
         <a href="/anfrage/?leistung=entsorgung" data-comparison-inquiry hidden>Endpreis anfragen</a>
       </div>
     </div>
+    ${scopeSlot}
     <noscript><p>Für einen Vergleich ziehen Sie 2 € vom Bruttopreis für die gleiche Leistung ab. Den konkreten Leistungsumfang und unseren Angebotspreis klären Sie über die <a href="/anfrage/">Anfrage</a>. Eine Abfallabholung beauftragen Sie direkt beim Entsorger.</p></noscript>
   </section>`;
 }

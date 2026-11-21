@@ -4,6 +4,8 @@ import { mkdirSync, chmodSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { cleanMoney, InputError, isGoogleAdVariant } from './inputs.mjs';
 import { openOffers } from './offers.mjs';
+import { validateJobScope, summarizeJobScope, summarizeJobTiming } from '../public/assets/job-scope-model.js';
+import { normalizeJobContext, scopeConditionNotes } from '../public/assets/job-scope-conditions.js';
 export { InputError } from './inputs.mjs';
 
 const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
@@ -35,14 +37,31 @@ export function validate(body){
   if(typeof requestId!=='string'||!requestIdPattern.test(requestId))throw new InputError('Anfragenummer ungültig.');
   if(!services.has(service)||!contactMethods.has(contactMethod))throw new InputError('Leistung und Kontaktweg bitte prüfen.');
   if(service==='rueckruf'&&contactMethod!=='phone')throw new InputError('Für einen Rückruf bitte eine Telefonnummer angeben.');
-  const zipFrom=string(body.zipFrom,5,'PLZ des Einsatzorts',{required:service!=='rueckruf'}),zipTo=string(body.zipTo,5,'Ziel-PLZ');
+  let jobScope;
+  if(Object.hasOwn(body,'jobScope')){
+    const scopeService=service==='rueckruf'?body.requestedService:service;
+    if(!services.has(scopeService)||scopeService==='rueckruf')throw new InputError('Gewünschte Leistung für die Auftragsdetails angeben.');
+    const checked=validateJobScope(body.jobScope,scopeService);
+    if(!checked.ok)throw new InputError(Object.values(checked.errors)[0]||'Auftragsdetails bitte prüfen.');
+    jobScope=checked.value;
+    if((body.zipFrom && body.zipFrom!==jobScope.fields.fromZip)||(body.zipTo && body.zipTo!==jobScope.fields.toZip))
+      throw new InputError('Die Postleitzahlen müssen mit den Einsatzadressen übereinstimmen.');
+  }
+  const zipFrom=string(jobScope?.fields.fromZip??body.zipFrom,5,'PLZ des Einsatzorts',{required:service!=='rueckruf'});
+  const zipTo=string(jobScope?.fields.toZip??body.zipTo,5,'Ziel-PLZ');
   if((zipFrom&&!/^\d{5}$/.test(zipFrom))||(zipTo&&!/^\d{5}$/.test(zipTo)))throw new InputError('Bitte eine fünfstellige PLZ angeben.');
   const name=string(body.name,120,'Name',{required:true});
   const contact=contactMethod==='email'?string(body.email,254,'E-Mail',{required:true}).toLowerCase():mobileNumber(string(body.phone,55,'Telefon',{required:true}));
   if(!contact||(contactMethod==='email'&&!emailPattern.test(contact)))throw new InputError('Kontaktangabe bitte prüfen.');
-  const details=string(body.details,2000,'Nachricht'),timeframe=string(body.timeframe,120,'Zeitraum');
+  const details=string(body.details,2000,'Nachricht');
+  const timeframe=jobScope && service!=='rueckruf' ? summarizeJobTiming(jobScope) : string(body.timeframe,120,'Zeitraum');
   const source=sources.has(body.source)?body.source:'unbekannt';
   const lead={requestId:requestId.toLowerCase(),service,name,contactMethod,contact,zipFrom,zipTo,details,timeframe,source};
+  if(jobScope){
+    lead.jobScope=jobScope;
+    const ctx=normalizeJobContext(body.jobContext,jobScope.service);
+    if(ctx)lead.jobContext=ctx;
+  }
   if(source==='google' && isGoogleAdVariant(body.adVariant))lead.adVariant=body.adVariant;
   if(service==='rueckruf' && body.requestedService!=null && body.requestedService!==''){
     if(!services.has(body.requestedService)||body.requestedService==='rueckruf')throw new InputError('Gewünschte Leistung bitte prüfen.');
@@ -141,6 +160,10 @@ export function openStore(filename){
         const created=!found;
         if(created){
           const ref='AN-'+randomUUID().replaceAll('-','').slice(0,16).toUpperCase();
+          if(person.jobContext){
+            const checks=scopeConditionNotes(person.jobScope,new URLSearchParams(person.jobContext));
+            if(checks.length)person.jobConditionNotes=checks;
+          }
           db.prepare("INSERT INTO leads(ref,created,updated,status,service,source,person,identity,merge_key) VALUES(?,?,?,'new',?,?,?,?,?)").run(ref,iso(ms),iso(ms),service,source,JSON.stringify(person),identity,merge);
           if(source==='google' && isGoogleAdVariant(adVariant))db.prepare('INSERT INTO ad_attribution(ref,variant) VALUES(?,?)').run(ref,adVariant);
           db.prepare("INSERT INTO events VALUES(?,'new',?)").run(ref,iso(ms));found={ref};
@@ -211,10 +234,13 @@ export function openStore(filename){
       });
     },
     get(ref){const l=db.prepare('SELECT ref,created,updated,status,service,source,'+adForLead+' AS adVariant,person,gross_cents,cost_cents,'+netPaid+' AS collected_cents,('+settled+') AS currentlyPaidInFull FROM leads l WHERE l.ref=?').get(ref);
-      return l?{...l,person:JSON.parse(l.person),...offers.details(ref),events:db.prepare('SELECT status,at FROM events WHERE ref=? ORDER BY at,rowid').all(ref),
+      if(!l)return null;
+      const person=JSON.parse(l.person);
+      const scopeDetails=person.jobScope?{jobScopeSummary:summarizeJobScope(person.jobScope).split('\n')}:{};
+      return {...l,person,...scopeDetails,...offers.details(ref),events:db.prepare('SELECT status,at FROM events WHERE ref=? ORDER BY at,rowid').all(ref),
         contactEvents:db.prepare('SELECT event,at FROM contact_events WHERE ref=? ORDER BY at,rowid').all(ref),
         payments:db.prepare('SELECT entry,direction,amount AS amount_cents,at FROM payments WHERE ref=? ORDER BY at,rowid').all(ref),
-        links:db.prepare('SELECT secondary,principal,reason,at FROM links WHERE secondary=? OR principal=? ORDER BY at').all(ref,ref)}:null;},
+        links:db.prepare('SELECT secondary,principal,reason,at FROM links WHERE secondary=? OR principal=? ORDER BY at').all(ref,ref)};},
     link(secondary,principal,reason,ms=Date.now()){
       const evidence=string(reason,250,'Prüfvermerk',{required:true});
       return transaction(()=>{

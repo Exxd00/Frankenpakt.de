@@ -1,4 +1,4 @@
-export function clearanceCalculator() {
+export function clearanceCalculator(scopeSlot = '') {
   return `<section id="raeumungsrechner" class="wrap clearance-estimator" aria-labelledby="clearance-calc-heading">
     <h2 id="clearance-calc-heading">Räumungskosten berechnen</h2>
     <p class="calc-intro">Wählen Sie Tragehilfe und Entsorgungsweg. Sie sehen Ihren Richtpreis direkt und ohne Kontaktdaten.</p>
@@ -45,6 +45,7 @@ export function clearanceCalculator() {
         <a data-estimate-inquiry href="/anfrage/?leistung=entruempelung">Vorhaben anfragen</a>
       </div>
     </div>
+    ${scopeSlot}
     <details class="calc-sources">
       <summary>Preise und Bedingungen nachlesen</summary>
       <p><strong>Tragehilfe</strong> · 161 € inklusive 19 % MwSt. für eine Person und drei Stunden vor Ort zum Tragen von Hausrat, den Sie weiterverwenden. Hin- und Rückfahrt des Helfers sind bis zusammen 30 Minuten enthalten. Ein gegebenenfalls benötigtes Fahrzeug stellen Sie.</p>

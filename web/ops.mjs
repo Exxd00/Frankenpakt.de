@@ -2,6 +2,7 @@ import path from 'node:path';
 import {existsSync} from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { openStore, validate } from './lib/leads.mjs';
+import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import {reviewAdSpend} from './lib/ad-review.mjs';
 
 const [action,ref,status,gross,cost]=process.argv.slice(2);
@@ -29,8 +30,14 @@ if(!['list','callbacks','record','show','contact','quote','book','loss','stage',
     if(action==='unlink')output=db.unlink(ref);
     if(action==='paid-orders')output=db.paidOrders();
     if(action==='record'||action==='book'){
-      let input='';for await(const part of process.stdin){input+=part;if(input.length>12000)throw new Error('Anfrage zu groß.');}
-      const data=JSON.parse(input);
+      const parts=[];
+      let bytes=0;
+      for await(const part of process.stdin){
+        bytes+=part.length;
+        if(bytes>(action==='record'?maxLeadBodyBytes:12*1024))throw new Error('Anfrage zu groß.');
+        parts.push(part);
+      }
+      const data=JSON.parse(Buffer.concat(parts).toString('utf8'));
       if(action==='book')output=db.book(ref,data);
       else {data.requestId??=randomUUID();output=db.submit(validate(data));}
     }

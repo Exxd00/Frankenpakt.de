@@ -35,6 +35,12 @@ button:disabled{opacity:.58;cursor:wait}
 .skip{position:absolute;top:0;left:.7rem;transform:translateY(-130%);background:var(--cream);z-index:25;border:2px solid var(--ink);padding:.5rem 1rem}
 .skip:focus{transform:none}
 .js-only{display:none!important}
+.calculator-scope{display:none;margin-block:1rem 0;border:1px solid var(--line);border-radius:.85rem;background:var(--pale)}
+html.js .calculator-scope:not([hidden]){display:block}
+.calculator-scope>summary{min-height:44px;padding:.75rem 1rem;cursor:pointer;font-weight:650;color:var(--ink)}
+.calculator-scope[open]>summary{border-bottom:1px solid var(--line)}
+.calculator-scope>[data-scope-mount]{padding:clamp(.6rem,2vw,1.1rem)}
+.calculator-scope>[data-scope-continue]{margin:0 1rem 1rem;white-space:normal}
 html.js .js-only{display:inline-flex!important}
 header{position:relative;background:var(--cream);border-bottom:1px solid var(--line);z-index:3}
 .mast{display:flex;min-height:5.35rem;align-items:center;gap:clamp(.9rem,2.4vw,3.4rem)}
