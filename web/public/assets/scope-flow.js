@@ -188,6 +188,27 @@ export function recoverHandoff(service) {
   if(facts?.service===service)writeEstimateFacts(service,facts);
 }
 
+// When tab storage is blocked, use the destination's history entry for same-tab handoff.
+document.addEventListener('click',event=>{
+  const link=event.target.closest('a[href]');
+  if(!link||event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey||link.target==='_blank')return;
+  const url=new URL(link.href,location.href);
+  if(url.origin!==location.origin||url.pathname!=='/anfrage/')return;
+  const service=url.searchParams.get('leistung')||url.searchParams.get('service');
+  const facts=readEstimateFacts(service),draft=readDraft(service);
+  const factsSaved=!facts||writeEstimateFacts(service,facts);
+  const draftSaved=!draft||saveDraft(draft);
+  if(factsSaved&&draftSaved)return;
+  event.preventDefault();
+  try{
+    history.pushState({frankenpacktEstimateHandoff:facts,frankenpacktJobHandoff:draft},'',url);
+    location.reload();
+  }catch{
+    const status=document.querySelector('#form-result,[data-scope-mount] [role="status"],[data-comparison-message]');
+    if(status)status.textContent='Die Angaben konnten in diesem Browser nicht übertragen werden. Sie bleiben auf dieser Seite erhalten.';
+  }
+});
+
 export function calculatorScopes(getSelection,onActivate) {
   const slots = Array.from(document.querySelectorAll('[data-calc-scope]'));
   const canCache = storageAvailable();
@@ -232,39 +253,11 @@ export function calculatorScopes(getSelection,onActivate) {
         if(slot.open&&editor)editor.restore(service);
         refresh(false,true);
       });
-      // Keep facts private even if this browser disallows tab storage.
-      document.addEventListener('click',event=>{
-        const link=event.target.closest('a[href]');
-        if(!link||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
-        const url=new URL(link.href,location.href);
-        if(url.origin!==location.origin||url.pathname!=='/anfrage/')return;
-        const service=url.searchParams.get('leistung')||url.searchParams.get('service');
-        const facts=readEstimateFacts(service);
-        if(!facts||writeEstimateFacts(service,facts))return;
-        event.preventDefault();
-        try{
-          history.pushState({frankenpacktEstimateHandoff:facts,frankenpacktJobHandoff:readDraft(service)},'',url);
-          location.reload();
-        }catch{host.textContent='Der Entwurf konnte nicht übertragen werden. Ihre Eingaben bleiben auf dieser Seite.';}
-      });
     }
     const changed = () => queueMicrotask(() => refresh(false,true));
     form.addEventListener('change',changed);
     form.addEventListener('input',changed);
-    next.addEventListener('click',event => {
-      if (!editor) return;
-      const draft = editor.getValue();
-      if (!saveDraft(draft)) {
-        event.preventDefault();
-        try {
-          history.pushState({frankenpacktJobHandoff:draft},'',next.href);
-          location.reload();
-        } catch {
-          const message = 'Die Angaben konnten in diesem Browser nicht übertragen werden. Sie bleiben auf dieser Seite erhalten.';
-          host.querySelector('[role="status"]').textContent = message;
-        }
-      }
-    });
+    next.addEventListener('click',() => { if(editor)saveDraft(editor.getValue()); });
     const query = new URLSearchParams(location.search);
     const enteredEstimate = kind === 'comparison' && (['#richtpreis','#preisvergleich'].includes(location.hash) ||
       (!location.hash && (query.has('vorhaben') || query.has('vergleich'))));
