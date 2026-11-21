@@ -68,10 +68,25 @@ function approvedScenario(job) {
   return null;
 }
 const routes = {entsorgung:'#raeumungsrechner',entruempelung:'#raeumungsrechner',umzug:'#preisfinder'};
-const serviceNotes = {
-  entsorgung:'Für Abholung und Entsorgung erhalten Sie Ihr Angebot direkt vom Entsorger.',
-  entruempelung:'Eine Abfallabholung beauftragen Sie direkt beim Entsorger. Für vereinbarte Arbeiten vor Ort erhalten Sie unser Angebot.',
-  umzug:'Nach Prüfung von Umzugsgut, Adressen und Zugang erhalten Sie Ihr persönliches Angebot.'
+const offers = {
+  entsorgung:{
+    priceLabel:'Regionaler Richtwert inkl. Entsorgung',
+    basis:'Der Bruttowert umfasst Tragen, Abholung und Entsorgung eines einzelnen Möbelstücks in Nürnberg.',
+    note:'FrankenPackt hilft Ihnen, den Entsorgungsweg zu klären. Das Angebot für Abholung und Entsorgung erhalten Sie direkt vom Entsorger.',
+    requestLabel:'Entsorgungsweg mit uns klären'
+  },
+  entruempelung:{
+    priceLabel:'Regionaler Richtwert inkl. Entsorgung',
+    basis:'Dieser Bruttowert richtet sich nach der Fläche des Kellerabteils. Füllstand, Etage und Trageweg berücksichtigen wir im persönlichen Angebot.',
+    note:'Unser Angebot gilt für das Sortieren und Tragen vor Ort. Abholung und Entsorgung vereinbaren Sie separat mit dem Entsorger.',
+    requestLabel:'Angebot für die Arbeiten vor Ort anfragen'
+  },
+  umzug:{
+    priceLabel:'Regionaler Richtwert für den Umzug',
+    basis:'Dieser Bruttowert umfasst Laden, Fahrt und Entladen. Benötigtes Packmaterial kommt hinzu.',
+    note:'FrankenPackt erstellt Ihr Umzugsangebot nach Prüfung von Umzugsgut, Adressen und Zugang.',
+    requestLabel:'Umzugsangebot anfragen'
+  }
 };
 const measurement = (value,unit) => value === 'unknown' ? 'noch unbekannt' : amountFormat.format(Number(value))+' '+unit;
 function factsText(job) {
@@ -92,14 +107,13 @@ export function evaluateActualJob(input,expectedService) {
   const euros = scenario && scenarioPrices[scenario];
   const estimatedCents = Number.isFinite(euros) ? Math.round(euros*100) : null;
   const description = factsText(job);
-  const note = serviceNotes[job.service];
-  const basis = estimatedCents !== null ? ({
-    entsorgung:'Regionaler Planungswert für die Abholung eines einzelnen Möbelstücks in Nürnberg einschließlich Tragen und Entsorgung.',
-    entruempelung:'Regionaler Planungswert für ein Kellerabteil dieser Größe in Nürnberg einschließlich Entsorgung. Der Füllstand und der Zugang beeinflussen das Angebot.',
-    umzug:'Regionaler Richtwert für Laden, Fahrt und Entladen. Benötigtes Packmaterial kommt hinzu.'
-  })[job.service] : 'Für diesen Umfang ist eine individuelle Einschätzung nötig. Übernehmen Sie Ihre Angaben in die Anfrage.';
-  const summary = [serviceNames[job.service]+'.',description+'.', estimatedCents === null ? '' : 'Unverbindlicher Richtwert '+formatStartingPrice(estimatedCents)+' brutto.',basis,note].filter(Boolean).join(' ');
-  return {service:job.service,scenario,estimatedCents,description,basis,note,summary,route:routes[job.service],params:new URLSearchParams({vorhaben:job.service})};
+  const offer = offers[job.service];
+  const priceLabel = estimatedCents === null ? 'Individuelle Einschätzung' : offer.priceLabel;
+  const basis = estimatedCents === null ? 'Für Ihre Auswahl ist eine individuelle Einschätzung nötig.' : offer.basis;
+  const price = estimatedCents === null ? '' : priceLabel+' · '+formatStartingPrice(estimatedCents)+'.';
+  const summary = [serviceNames[job.service]+'.',description+'.',price,basis,offer.note].filter(Boolean).join(' ');
+  return {service:job.service,scenario,estimatedCents,description,priceLabel,basis,note:offer.note,requestLabel:offer.requestLabel,
+    summary,route:routes[job.service],params:new URLSearchParams({vorhaben:job.service})};
 }
 
 export function serviceFromQuery(query) {

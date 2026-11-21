@@ -82,7 +82,7 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
     if(!config.live)res.setHeader('X-Robots-Tag','noindex, nofollow');
     try{
       const url=new URL(req.url,'http://localhost');
-      if(req.method==='GET'&&url.pathname==='/api/config'){json(res,200,config.public);return;}
+      if(['GET','HEAD'].includes(req.method)&&url.pathname==='/api/config'){json(res,200,config.public);return;}
       if(req.method==='GET'&&url.pathname==='/healthz'){json(res,200,{ok:true,mode:config.public.mode});return;}
       const contactEvent=url.pathname==='/api/contact-events';
       if(req.method==='POST'&&(url.pathname==='/api/leads'||contactEvent)){

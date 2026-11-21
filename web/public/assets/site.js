@@ -60,7 +60,7 @@ function writeInterest(url, interest, pack, units) {
 }
 
 function updateProjectLinks(interest,pack,units,writeContext) {
-  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .footer-main [data-contact="callback"], [data-handoff-callback]';
+  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-handoff-callback]';
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);
@@ -233,6 +233,15 @@ const estimate = document.querySelector('#estimate');
 if (estimate) enableEstimate(estimate);
 
 if (estimate) {
+  document.addEventListener('pricing-view-change',event => {
+    const {service,view} = event.detail;
+    if (view === 'packages') {
+      const pack = document.querySelector('#paket').value;
+      updateProjectLinks(serviceForPackage(pack,pageInterest),pack,document.querySelector('#extra-units')?.value);
+    } else if (view === 'quick') {
+      updateProjectLinks(service,null,null,url => url.searchParams.set('vorhaben',service));
+    } else updateProjectLinks(service);
+  });
   import('/assets/scope-flow.js').then(({calculatorScopes}) => {
     function selection(kind) {
       let url;

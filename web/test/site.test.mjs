@@ -5,6 +5,24 @@ import { mkdtemp,rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { startServer } from '../server.mjs';
+import { priceGuideRoute } from '../public/assets/price-guide.js';
+
+test('pricing links open one appropriate view, including existing links from ads and shared package estimates',()=>{
+  const cases = [
+    ['',null,null], ['#richtpreis',null,null],
+    ['?vorhaben=entruempelung','entruempelung','quick'],
+    ['?leistung=entsorgung&vergleich=sofa#richtpreis','entsorgung','quick'],
+    ['?vorhaben=umzug','umzug','quick'],
+    ['?service=seniorenumzug&paket=drei#preisfinder','umzug','packages'],
+    ['?service=moebeltaxi','umzug','packages'],
+    ['#preisfinder','umzug','packages'], ['#raeumungsrechner','entruempelung','clearance'],
+    ['?leistung=entsorgung#raeumungsrechner','entsorgung','clearance'],
+    ['?service=umzug&vorhaben=entsorgung',null,null]
+  ];
+  for (const [suffix,service,view] of cases) {
+    assert.deepEqual(priceGuideRoute(new URL('https://example.invalid/preise/'+suffix)),{service,view},suffix);
+  }
+});
 
 test('generated website serves all routes and assets, live legal copy before JavaScript',async t=>{
   const dir=await mkdtemp(path.join(os.tmpdir(),'frankenpackt-pages-'));

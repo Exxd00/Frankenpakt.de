@@ -63,6 +63,14 @@ Website im Browser über `http://127.0.0.1:8787/` öffnen. Eine vom Startskript 
 | OPS_NOTIFY_URL, OPS_NOTIFY_TOKEN | Gemeinsam und nur für einen freigegebenen betrieblichen Empfänger setzen. Token im Secret Store des Dienstes hinterlegen. |
 | TRUST_LOCAL_PROXY, MAX_SUBMITS_PER_MINUTE | Nur wenn der lokale Reverse-Proxy ein eingehendes `X-Real-IP` zuverlässig mit der Clientadresse überschreibt, `TRUST_LOCAL_PROXY=1` setzen. Standardlimit 30 Formularversuche pro Peer und Minute. |
 
+### Vercel mit dem Auftragseingang verbinden
+
+Die Projektwurzel auf Vercel ist `web/public`. Ohne Betriebsanbindung liefert `/api/config` den Status `preview` und `leadIntake: false`. Für den Produktivbetrieb läuft `node web/server.mjs` mit den oben genannten Betreiberangaben und dem dauerhaften Datenträger auf dem HTTPS-Server des Betriebs. `PUBLIC_ORIGIN` dieses Dienstes ist die öffentliche Adresse der Website. Dienst und Vercel verwenden denselben Projektstand.
+
+In Vercel für die Umgebung **Production** die Variable `FRANKENPACKT_INTAKE_ORIGIN` auf den separaten HTTPS-Ursprung dieses Dienstes setzen und neu deployen. Über diese Verbindung laufen die öffentlichen HTML-Seiten und die Formular- und Kontaktendpunkte. Der Betrieb bearbeitet Anfragen mit `ops.mjs` direkt am dauerhaften Datenspeicher. Eine Vorschau auf einem anderen Branch verwendet weiterhin Beispieldaten.
+
+Nach dem Umschalten zeigt `/api/config` auf der öffentlichen Website `mode: "live"`, `leadIntake: true` und die bestätigten Betriebskontakte. Eine als Test gekennzeichnete Anfrage und einen Rückruf über die Website senden. Die Vorgangsnummer der Bestätigung mit `node web/ops.mjs show VORGANG` und die Rückrufbitte mit `node web/ops.mjs callbacks` prüfen. Telefon und WhatsApp mit den betreuten Geschäftsnummern abgleichen.
+
 ## Tagesgeschäft
 
 Den Arbeitstag mit `node ops.mjs callbacks` beginnen. Die interne Liste zeigt die älteste offene Rückrufbitte zuerst, dazu Referenz, Name, Telefonnummer, Leistung und das vom Kunden eingetragene Zeitfenster. Bei einer ausführlichen Umzugsanfrage bezeichnet `moveWindow` den Umzugszeitraum. Beim kurzen Rückrufformular bezeichnet `callbackWindow` die gewünschte Erreichbarkeit. Die Freitexte des Kunden stehen unter `show VORGANG`.

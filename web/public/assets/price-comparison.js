@@ -88,13 +88,13 @@ function mountEstimator(form) {
       calculator.setAttribute('href',estimate.route);
       calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Räumung und externe Entsorgungspreise ansehen';
     }
-    title.textContent = hasAmount ? 'Unverbindlicher Richtwert inkl. MwSt.' : estimate ? 'Individuelle Einschätzung' : 'Ihre Angaben';
+    title.textContent = estimate?.priceLabel || 'Ihre Angaben';
     amount.textContent = hasAmount ? formatStartingPrice(estimate.estimatedCents) : '';
     amount.hidden = !hasAmount;
     explanation.textContent = estimate ? estimate.basis : prompts[service];
     note.textContent = estimate?.note || '';
     note.hidden = !note.textContent;
-    inquiry.textContent = hasAmount ? 'Persönliches Angebot anfragen' : 'Angebot für meine Angaben anfragen';
+    if (estimate) inquiry.textContent = estimate.requestLabel;
   }
   function restore(draft) {
     const service = select.value;

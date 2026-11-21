@@ -10,11 +10,12 @@ function moveField(key,label,unit,allowUnknown) {
 export function priceComparison(scopeSlot = '') {
   return `<section id="preisvergleich" class="wrap price-comparison" aria-labelledby="richtpreis">
     <h2 id="richtpreis">Ihr Vorhaben einschätzen</h2>
-    <p>Was soll erledigt werden? Tragen Sie Ihre Mengen und Maße ein. Ein Richtwert erscheint, wenn für Ihre Angaben ein Preis hinterlegt ist.</p>
     <div class="comparison-layout" hidden>
       <form id="comparison-form" autocomplete="off" novalidate>
-        <label for="comparison-topic">Welche Hilfe brauchen Sie?</label>
-        <select id="comparison-topic" name="topic"><option value="" disabled selected>Bitte wählen</option>${options(serviceNames)}</select>
+        <div data-quick-service>
+          <label for="comparison-topic">Welche Leistung interessiert Sie?</label>
+          <select id="comparison-topic" name="topic"><option value="" disabled selected>Bitte wählen</option>${options(serviceNames)}</select>
+        </div>
         <div data-job-panel="entsorgung" hidden>
           <p class="actual-hint">Fassen Sie gleiche Gegenstände in einer Position zusammen.</p>
           <div data-item-rows></div><button type="button" data-add-item>+ Gegenstand hinzufügen</button>
@@ -41,10 +42,10 @@ export function priceComparison(scopeSlot = '') {
       </form>
       <div class="comparison-result" hidden>
         <div role="status" aria-live="polite" aria-atomic="true"><h3 data-comparison-title></h3><p class="comparison-amount" data-comparison-amount></p><p data-comparison-message></p><p class="comparison-note" data-estimate-scope-note></p></div>
-        <div class="comparison-actions"><a href="/anfrage/" data-comparison-inquiry hidden>Persönliches Angebot anfragen</a><a href="#raeumungsrechner" data-scenario-calculator hidden></a></div>
+        <div class="comparison-actions"><a href="/anfrage/" data-comparison-inquiry hidden>Angaben zur Anfrage übernehmen</a><a href="#raeumungsrechner" data-scenario-calculator hidden></a></div>
       </div>
     </div>
     ${scopeSlot}
-    <noscript><p>Für die Einschätzung eigener Mengen und Maße benötigt dieser Rechner JavaScript. Weiter unten finden Sie <a href="#raeumungsrechner">Räumung und externe Entsorgungspreise</a> sowie die <a href="#preisfinder">Umzugspakete</a>.</p></noscript>
+    <noscript><p>Für eine Berechnung mit eigenen Angaben aktivieren Sie JavaScript. Hier finden Sie <a href="#raeumungsrechner">externe Entsorgungspreise</a> und die <a href="#preisfinder">Umzugspakete</a>.</p></noscript>
   </section>`;
 }

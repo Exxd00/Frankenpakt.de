@@ -10,11 +10,25 @@ const clearance = (...rooms) => ({service:'entruempelung',rooms});
 const move = (overrides={}) => ({service:'umzug',rooms:'2',area:'50',volume:'15',distance:'20',...overrides});
 const estimate = draft => evaluateActualJob(draft)?.estimatedCents;
 
-test('each quick estimate carries a single nonbinding starting price into the inquiry', () => {
-  for (const [job, expected] of [[disposal(item('Sofa')),'78'],[clearance(room('Keller','4')),'148'],[move(),'298']]) {
-    const {summary} = evaluateActualJob(job);
-    assert.match(summary, new RegExp('Unverbindlicher Richtwert ab '+expected+'\\s*€ brutto'));
+test('the inquiry identifies each regional starting price and who provides the offer', () => {
+  for (const [job, expected, label, action] of [
+    [disposal(item('Sofa')), '78', 'Regionaler Richtwert inkl. Entsorgung', 'Entsorgungsweg mit uns klären'],
+    [clearance(room('Keller','4')), '148', 'Regionaler Richtwert inkl. Entsorgung', 'Angebot für die Arbeiten vor Ort anfragen'],
+    [move(), '298', 'Regionaler Richtwert für den Umzug', 'Umzugsangebot anfragen']
+  ]) {
+    const {summary,priceLabel,requestLabel,note} = evaluateActualJob(job);
+    assert.equal(priceLabel,label);
+    assert.equal(requestLabel,action);
+    assert.ok(summary.replaceAll('\u00a0',' ').includes(label+' · ab '+expected+' €'));
+    assert.ok(summary.includes(note));
+    if (job.service !== 'umzug') assert.match(note,/Entsorger/);
     assert.equal([...summary.matchAll(/€/g)].length,1);
+  }
+  for (const fill of ['little','full']) {
+    const {summary,estimatedCents} = evaluateActualJob(clearance(room('Keller','6',fill)));
+    assert.equal(estimatedCents,14800);
+    assert.match(summary,/Fläche des Kellerabteils/);
+    assert.match(summary,/Füllstand, Etage und Trageweg/);
   }
 });
 
