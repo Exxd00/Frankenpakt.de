@@ -40,3 +40,25 @@ test('no outgoing requests before opt-in or after revocation, including persiste
   const otherTab=new Event('storage');otherTab.key='frankenpakt.statistik.v1';win.dispatchEvent(otherTab);
   doc.dispatchEvent(new Event('fp-contact-handoff'));assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
 });
+
+test('only the first view of an opted-in live receipt measures a GA lead, without sending another event to Sheets',()=>{
+  const location=new URL('https://frankenpakt.de/danke/?src=google&name=PRIVATE');
+  for(const callback of [false,true]){
+    const lead={mode:'live',reference:'AN-ABCDEF0123456789',service:'umzug',callback};
+    const history={state:{frankenpacktReceipt:lead,frankenpacktMeasureLead:true},replaceState(next){this.state=next;}};
+    const win=Object.assign(new EventTarget(),{history});
+    const doc=new EventTarget(),toggle=new EventTarget();
+    toggle.setAttribute=()=>{};
+    doc.querySelector=()=>toggle;
+    const sent=[];
+    const mount=(optIn=true)=>mountMetrics({doc,win,location,storage:{getItem:()=>optIn?'yes':'no'},
+      send:()=>assert.fail('Saved leads are already logged by the server.'),
+      frameFactory:()=>({send:(...args)=>sent.push(args)})});
+    mount(); mount();
+    assert.deepEqual(sent,[[{event:'generate_lead',service:'umzug',source:'google'},'/danke/',{leadType:callback?'callback':'quote'}]]);
+    assert.equal(history.state.frankenpacktReceipt,lead);
+    history.state.frankenpacktMeasureLead=true;mount(false);mount();
+    history.state={frankenpacktMeasureLead:true,frankenpacktReceipt:{...lead,mode:'preview'}};mount();
+    assert.equal(sent.length,1);
+  }
+});

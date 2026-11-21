@@ -2,7 +2,7 @@
   'use strict';
   if (window.parent === window) return;
   const owner = new URL(location.href).origin;
-  const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
+  const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent','generate_lead']);
   const categories = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf','unbekannt']);
   const channels = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt']);
   const paths = new Set(['/','/preise/','/anfrage/','/danke/','/umzug/','/seniorenumzug/','/moebeltaxi/','/entsorgung/','/raeumung/','/datenschutz/','/impressum/']);
@@ -30,7 +30,13 @@
       script.src='https://www.googletagmanager.com/gtag/js?id='+id;
       document.head.append(script);
     } else if (d.cmd === 'event' && id && events.has(d.name) && categories.has(d.service) && channels.has(d.source) && paths.has(d.path)) {
-      tag('event',d.name,{send_to:id,service_category:d.service,source_category:d.source,
+      const parameters={};
+      if(d.name==='contact_intent' && ['phone','whatsapp'].includes(d.channel))parameters.contact_channel=d.channel;
+      if(d.name==='generate_lead'){
+        if(d.path!=='/danke/' || !['callback','quote'].includes(d.leadType))return;
+        parameters.lead_type=d.leadType;
+      }
+      tag('event',d.name,{send_to:id,service_category:d.service,source_category:d.source,...parameters,
         page_location:'https://frankenpakt.de'+d.path,page_referrer:'',page_title:'FrankenPackt'});
     }
   });

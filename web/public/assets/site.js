@@ -301,7 +301,8 @@ function goToReceipt(receipt) {
   if (source !== 'unbekannt') target.searchParams.set('src', source);
   if (adVariant) target.searchParams.set('anzeige',adVariant);
   if (largeType) target.searchParams.set('schrift', 'gross');
-  history.pushState({frankenpacktReceipt: receipt}, '', target);
+  const measureLead = receipt.mode === 'live' && document.querySelector('[data-statistics]')?.getAttribute('aria-pressed') === 'true';
+  history.pushState({frankenpacktReceipt: receipt, frankenpacktMeasureLead:measureLead}, '', target);
   location.reload();
 }
 

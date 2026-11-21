@@ -1,5 +1,5 @@
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
-export const GA_MEASUREMENT_ID = '';
+export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
 const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
 const choiceKey = 'frankenpakt.statistik.v1';
 const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
@@ -9,12 +9,16 @@ const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','
 const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
 const pageServices = {'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
 
-export function publicMetric(name, explicitService, location, uuid) {
-  if (!events.has(name) || !sites.has(location.hostname) || !pages.has(location.pathname)) return null;
+function metricCategories(explicitService,location) {
   const q = new URLSearchParams(location.search);
   const category = [explicitService,q.get('leistung'),q.get('service'),q.get('vorhaben'),pageServices[location.pathname]].find(value => services.has(value)) || 'unbekannt';
   const src = (q.get('src') || q.get('utm_source') || '').toLowerCase();
-  return {id:uuid(),event:name,service:category,source:sources.has(src) ? src : 'unbekannt',count:1,consent:true};
+  return {service:category,source:sources.has(src) ? src : 'unbekannt'};
+}
+
+export function publicMetric(name, explicitService, location, uuid) {
+  if (!events.has(name) || !sites.has(location.hostname) || !pages.has(location.pathname)) return null;
+  return {id:uuid(),event:name,...metricCategories(explicitService,location),count:1,consent:true};
 }
 
 function analyticsFrame(id) {
@@ -37,8 +41,8 @@ function analyticsFrame(id) {
   window.addEventListener('message',listen);
   document.body.append(frame);
   return {
-    send(metric,path) {
-      const data = {cmd:'event',name:metric.event,service:metric.service,source:metric.source,path};
+    send(metric,path,parameters={}) {
+      const data = {cmd:'event',name:metric.event,service:metric.service,source:metric.source,path,...parameters};
       if (ready) post(data); else if (pending.length < 25) pending.push(data);
     },
     close() {
@@ -71,16 +75,26 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     toggle.setAttribute('aria-pressed',String(enabled));
     toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
   }
-  function record(name, service) {
+  function record(name, service, parameters) {
     if (!enabled) return;
     const metric = publicMetric(name,service,location,uuid);
     if (!metric) return;
     send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
       headers:{'Content-Type':'application/json'},body:JSON.stringify(metric)}).catch(()=>{});
-    frame?.send(metric,location.pathname);
+    frame?.send(metric,location.pathname,parameters);
   }
   toggle.hidden=false;
   set(read());
+  // A real submission owns a single history entry. Refreshes and shared thank-you links do not create leads.
+  const entry=win.history?.state;
+  if(location.pathname==='/danke/' && entry?.frankenpacktMeasureLead===true) {
+    win.history.replaceState({...entry,frankenpacktMeasureLead:false},'');
+    const receipt=entry.frankenpacktReceipt;
+    if(enabled && receipt?.mode==='live' && /^AN-[A-F0-9]{16}$/.test(receipt.reference)) {
+      frame?.send({event:'generate_lead',...metricCategories(receipt.service,location)},location.pathname,
+        {leadType:receipt.callback===true?'callback':'quote'});
+    }
+  }
   toggle.addEventListener('click',()=>{
     const value=!enabled;
     try{(storage || win.localStorage).setItem(choiceKey,value?'yes':'no');}catch{}
@@ -100,7 +114,10 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     if(event.isTrusted && event.target.matches?.('#service,#comparison-topic') && services.has(event.target.value)) record('service_chosen',event.target.value);
   });
   doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
-  doc.addEventListener('fp-contact-handoff',()=>record('contact_intent',doc.querySelector('#service')?.value));
+  doc.addEventListener('fp-contact-handoff',e=>{
+    const channel=e.detail?.channel;
+    if(channel==='phone'||channel==='whatsapp')record('contact_intent',doc.querySelector('#service')?.value,{channel});
+  });
   doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));
 }
 
