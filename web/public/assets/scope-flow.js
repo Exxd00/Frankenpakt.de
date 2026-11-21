@@ -2,6 +2,9 @@ import {mountJobScope} from './job-scope.js';
 import {validateJobScope} from './job-scope-model.js';
 import {inquiryEstimate} from './clearance-calculator.js';
 import {scopeConditionNotes,normalizeJobContext} from './job-scope-conditions.js';
+import {readEstimateFacts,writeEstimateFacts} from './estimate-draft.js';
+import {factsFromEditedScope,scopeWithEstimateFacts} from './estimate-scope.js';
+import {evaluateActualJob,normalizeActualJob} from './actual-job.js';
 
 const services = new Set(['umzug','seniorenumzug','moebeltaxi','transport','entruempelung','entsorgung']);
 const memory = new Map();
@@ -37,6 +40,22 @@ function saveDraft(draft) {
 export function clearDraft(service) {
   memory.delete(service);
   try { sessionStorage.removeItem(key(service)); } catch {}
+  writeEstimateFacts(service,null);
+  notifyEstimate(service,null);
+}
+
+function notifyEstimate(service,facts) {
+  document.querySelector('#comparison-form')?.dispatchEvent(new CustomEvent('actual-job-restore',{detail:{service,facts,draft:facts}}));
+  document.dispatchEvent(new CustomEvent('actual-job-detail-change',{detail:{service,facts}}));
+}
+
+export function currentFacts(service,scope) {
+  const raw=readEstimateFacts(service);
+  const facts=scope ? factsFromEditedScope(raw,scope) : raw;
+  return normalizeActualJob(facts,service);
+}
+export function currentEstimate(service,scope) {
+  return evaluateActualJob(currentFacts(service,scope),service);
 }
 
 export function completeDraft(service) {
@@ -74,7 +93,8 @@ function createEditor(host, service, isCalculator, getContext) {
   const reset = textElement('button','Auftragsdetails löschen','scope-reset');
   reset.type = 'button';
   host.replaceChildren(privacy,inner,conditions,status,reset);
-  let draft = readDraft(service);
+  const load = () => readDraft(service) || scopeWithEstimateFacts(null,readEstimateFacts(service));
+  let draft = load();
   let automaticRoute;
   function withRoute(value, updateAutomatic = false) {
     const query = getContext();
@@ -100,6 +120,9 @@ function createEditor(host, service, isCalculator, getContext) {
   const widget = mountJobScope(inner,{service,initial:withRoute(draft),onChange(value) {
     if (value.fields.wasteRoute !== automaticRoute) automaticRoute = undefined;
     draft = value;
+    const updatedFacts = factsFromEditedScope(readEstimateFacts(service),value);
+    writeEstimateFacts(service,updatedFacts);
+    notifyEstimate(service,updatedFacts);
     review(value);
     if (!saveDraft(value)) status.textContent = isCalculator
       ? 'Ihr Browser kann den Entwurf nicht zwischenspeichern. Nutzen Sie „Mit diesen Angaben zur Anfrage“, um ihn direkt zu übernehmen.'
@@ -109,7 +132,7 @@ function createEditor(host, service, isCalculator, getContext) {
   function restore(nextService) {
     service = nextService;
     automaticRoute = undefined;
-    draft = readDraft(service);
+    draft = load();
     widget.setService(service,withRoute(draft));
     showStatus();
     review(widget.getValue());
@@ -155,11 +178,14 @@ export function inquiryScope(host,service,getContext) {
 // Remove the private handoff from the new history entry as soon as it is read.
 export function recoverHandoff(service) {
   const handoff = history.state?.frankenpacktJobHandoff;
-  if (!handoff) return;
+  const facts = history.state?.frankenpacktEstimateHandoff;
+  if (!handoff && !facts) return;
   const state = {...history.state};
   delete state.frankenpacktJobHandoff;
+  delete state.frankenpacktEstimateHandoff;
   history.replaceState(state,'');
-  if (handoff.service === service && handoff.version === 1 && handoff.fields && services.has(service)) saveDraft(handoff);
+  if (handoff?.service === service && handoff.version === 1 && handoff.fields && services.has(service)) saveDraft(handoff);
+  if(facts?.service===service)writeEstimateFacts(service,facts);
 }
 
 export function calculatorScopes(getSelection,onActivate) {
@@ -196,6 +222,32 @@ export function calculatorScopes(getSelection,onActivate) {
     });
     const selector = {moving:'#estimate',clearance:'#clearance-calculator',comparison:'#comparison-form'}[kind];
     const form = document.querySelector(selector);
+    if(kind==='comparison'){
+      form.addEventListener('actual-job-change',event=>{
+        const {service,draft}=event.detail;
+        if(!services.has(service)||!draft)return;
+        const current=readDraft(service);
+        const value=scopeWithEstimateFacts(current,draft);
+        if(value && (current||Object.keys(value.fields).length))saveDraft(value);
+        if(slot.open&&editor)editor.restore(service);
+        refresh(false,true);
+      });
+      // Keep facts private even if this browser disallows tab storage.
+      document.addEventListener('click',event=>{
+        const link=event.target.closest('a[href]');
+        if(!link||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+        const url=new URL(link.href,location.href);
+        if(url.origin!==location.origin||url.pathname!=='/anfrage/')return;
+        const service=url.searchParams.get('leistung')||url.searchParams.get('service');
+        const facts=readEstimateFacts(service);
+        if(!facts||writeEstimateFacts(service,facts))return;
+        event.preventDefault();
+        try{
+          history.pushState({frankenpacktEstimateHandoff:facts,frankenpacktJobHandoff:readDraft(service)},'',url);
+          location.reload();
+        }catch{host.textContent='Der Entwurf konnte nicht übertragen werden. Ihre Eingaben bleiben auf dieser Seite.';}
+      });
+    }
     const changed = () => queueMicrotask(() => refresh(false,true));
     form.addEventListener('change',changed);
     form.addEventListener('input',changed);

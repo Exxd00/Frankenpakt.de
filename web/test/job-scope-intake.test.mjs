@@ -74,4 +74,14 @@ test('a scoped inquiry reaches the private quote review with independent address
   assert.ok(disposalLead.jobScopeSummary.join('\n').includes('Entsorgung durch Dritte'));
   assert.equal(disposalLead.quote,null);
   assert.ok(disposalLead.person.jobConditionNotes.some(note=>note.includes('Entsorgungsweg')));
+  const rooms=exampleJobScope('entruempelung');
+  const actualRoom={name:'Keller',area:'18',fill:'most'};
+  rooms.fields.roomBreakdown=JSON.stringify([actualRoom]);
+  const amended=await post({...inquiry,requestId:randomUUID(),service:'entruempelung',jobScope:rooms,
+    estimateFacts:{service:'entruempelung',rooms:[{...actualRoom,area:'5'}]}});
+  assert.equal(amended.status,201);
+  const revised=ops('show',(await amended.json()).reference);
+  assert.deepEqual(revised.person.estimateFacts.rooms,[actualRoom]);
+  assert.equal(revised.person.priceOrientation.estimatedCents,64800);
+  assert.equal(revised.gross_cents,null);
 });

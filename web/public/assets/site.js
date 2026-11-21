@@ -345,7 +345,8 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
 
 function enableInquiry(form, contexts, draftTools) {
   const service = form.elements.service;
-  const initialService = pageInterest;
+  const requestedTopic = params.get('vorhaben') || params.get('vergleich');
+  const initialService = pageInterest || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
   const pack = contexts.length || Object.hasOwn(clearance,initialService) ? null : params.get('paket');
   const requestedService = Object.hasOwn(packageLabels,pack) ? serviceForPackage(pack,initialService) : initialService;
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
@@ -360,28 +361,37 @@ function enableInquiry(form, contexts, draftTools) {
   draftTools.recoverHandoff(service.value);
   const editor = callback ? null : draftTools.inquiryScope(document.querySelector('#inquiry-job-scope'),service.value,() => new URLSearchParams(location.search));
   const savedForCallback = callback ? draftTools.completeDraft(service.value) : null;
-  document.querySelector('#callback-draft-choice').hidden = !savedForCallback;
+  const callbackFacts = callback ? draftTools.currentFacts(service.value,savedForCallback) : null;
+  document.querySelector('#callback-draft-choice').hidden = !savedForCallback && !callbackFacts;
   function showServiceFields() {
     const topic = Object.hasOwn(clearance,service.value) ? clearance[service.value] : null;
     scope.hidden = !topic;
     scope.textContent = topic?.scope || '';
   }
   showServiceFields();
-  let comparison = contexts.find(context => context.params.has('vorhaben'));
   const estimate = contexts.find(context => context.params.has('hilfe'));
-  const comparisonNote = comparison ? node('p', comparison.summary, 'note compact') : null;
-  if (comparisonNote) {
-    comparisonNote.id = 'comparison-context';
-    details.labels[0].before(comparisonNote);
-    details.setAttribute('aria-describedby', comparisonNote.id);
+  const comparisonNote=node('p','','note compact');
+  comparisonNote.id='comparison-context';
+  details.labels[0].before(comparisonNote);
+  function updateFactSummary(useScope=true){
+    const orientation=draftTools.currentEstimate(service.value,useScope ? editor?.getValue() || savedForCallback : null);
+    comparisonNote.hidden=!orientation;
+    comparisonNote.textContent=orientation?.summary || '';
+    if(orientation)details.setAttribute('aria-describedby',comparisonNote.id);
+    else details.removeAttribute('aria-describedby');
+    return orientation;
   }
+  updateFactSummary();
+  document.addEventListener('actual-job-detail-change',event=>{
+    if(event.detail.service===service.value)updateFactSummary(false);
+  });
   if (estimate) details.value = estimate.summary;
   if (Object.hasOwn(packageLabels, pack)) {
     const units = Number(params.get('zusatz'));
     const addition = ['drei', 'sieben'].includes(pack) && [1, 2, 3, 4].includes(units) ? ' mit ' + units * 30 + ' Minuten gewünschter Verlängerung' : '';
     details.value = 'Interesse am Paket ' + packageLabels[pack] + addition + '.';
   }
-  const context = callback ? [serviceOption?.label, comparison?.summary, details.value].filter(Boolean).join(' · ') : '';
+  const context = callback ? [serviceOption?.label, details.value].filter(Boolean).join(' · ') : '';
   const switchLink = document.querySelector('#inquiry-switch');
   const switchTarget = new URL('/anfrage/', location.href);
   if (callback) {
@@ -397,7 +407,12 @@ function enableInquiry(form, contexts, draftTools) {
     form.elements.callbackTime.disabled = false;
     const hint = document.querySelector('#callback-context');
     const topic = Object.hasOwn(clearance,initialService) ? clearance[initialService] : null;
-    hint.textContent = topic ? context + (context.endsWith('.') ? ' ' : '. ') + topic.scope : context;
+    const base = topic ? context + (context.endsWith('.') ? ' ' : '. ') + topic.scope : context;
+    hint.textContent = base;
+    document.querySelector('#callback-draft').addEventListener('change',event=>{
+      const withFacts = event.target.checked ? updateFactSummary()?.summary : '';
+      hint.textContent=[base,withFacts].filter(Boolean).join(' ');
+    });
     hint.hidden = !context;
     switchLink.textContent = 'Zur ausführlichen Anfrage';
     submit.textContent = 'Musterrückruf prüfen';
@@ -415,6 +430,7 @@ function enableInquiry(form, contexts, draftTools) {
   if (params.has('vergleich') || params.has('vorhaben')) {
     const canonical = new URL(location.href);
     writeContext(canonical);
+    if(serviceOption)writeInterest(canonical,serviceOption.value,currentPack,params.get('zusatz'));
     if (canonical.href !== location.href) history.replaceState(history.state,'',canonical);
   }
   function updateFormLinks(interest) {
@@ -429,11 +445,6 @@ function enableInquiry(form, contexts, draftTools) {
     showServiceFields();
     if (contexts.length && service.value !== contexts[0].service) {
       if (estimate) details.value = details.value.replace(estimate.summary, '').trim();
-      if (comparison) {
-        comparisonNote.remove();
-        details.removeAttribute('aria-describedby');
-        comparison = null;
-      }
       contexts = [];
     }
     if (Object.hasOwn(packageLabels,currentPack) && serviceForPackage(currentPack,service.value) !== service.value) {
@@ -445,6 +456,7 @@ function enableInquiry(form, contexts, draftTools) {
     writeContext(url);
     history.replaceState(history.state,'',url);
     editor?.select(service.value);
+    updateFactSummary();
     updateFormLinks(service.value);
   });
   function selectContact() {
@@ -512,11 +524,11 @@ function enableInquiry(form, contexts, draftTools) {
         summary.textContent = 'Bitte verwenden Sie vorübergehend die Kontaktdaten im Impressum.';
         return;
       }
-      const jobScope = callback
-        ? (document.querySelector('#callback-draft').checked ? savedForCallback : null)
-        : editor.getValue();
+      const attach = !callback || document.querySelector('#callback-draft').checked;
+      const jobScope = callback ? (attach ? savedForCallback : null) : editor.getValue();
+      const facts = attach ? draftTools.currentFacts(service.value,jobScope) : null;
       if (mode !== 'live') {
-        finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value},jobScope);
+        finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value},jobScope||facts);
         return;
       }
       const body = Object.fromEntries(new FormData(form));
@@ -525,7 +537,7 @@ function enableInquiry(form, contexts, draftTools) {
         const jobContext = draftTools.offerContext(jobScope.service,new URLSearchParams(location.search));
         if (jobContext) body.jobContext = jobContext;
       }
-      if (comparison) body.vorhaben = comparison.params.get('vorhaben');
+      if (facts) body.estimateFacts = facts;
       if (callback) {
         body.service = 'rueckruf';
         if (serviceOption && projectServices.has(serviceOption.value)) body.requestedService = serviceOption.value;
@@ -548,7 +560,7 @@ function enableInquiry(form, contexts, draftTools) {
       if (!answer.ok || answer.mode !== 'live' || !/^AN-[A-F0-9]{16}$/.test(answer.reference)) throw new Error('invalid');
       form.reset();
       lastId = '';
-      finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope);
+      finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope||facts);
     } catch (error) {
       summary.textContent = error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
     } finally {
@@ -560,9 +572,6 @@ function enableInquiry(form, contexts, draftTools) {
 if (form) {
   form.addEventListener('submit',event => event.preventDefault());
   const contexts = [];
-  if (params.has('vorhaben') || params.has('vergleich')) {
-    contexts.push(import('/assets/price-comparison.js').then(({inquiryComparison}) => inquiryComparison(params)));
-  }
   if (params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
     contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
   }

@@ -6,7 +6,8 @@ import { cleanMoney, InputError, isGoogleAdVariant } from './inputs.mjs';
 import { openOffers } from './offers.mjs';
 import { validateJobScope, summarizeJobScope, summarizeJobTiming } from '../public/assets/job-scope-model.js';
 import { normalizeJobContext, scopeConditionNotes } from '../public/assets/job-scope-conditions.js';
-import { inquiryComparison } from '../public/assets/price-comparison.js';
+import { normalizeActualJob, evaluateActualJob } from '../public/assets/actual-job.js';
+import { factsFromEditedScope } from '../public/assets/estimate-scope.js';
 export { InputError } from './inputs.mjs';
 
 const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
@@ -31,12 +32,8 @@ export function mobileNumber(phone){
   const e164=plain.startsWith('00')?'+'+plain.slice(2):plain.startsWith('0')?'+49'+plain.slice(1):plain;
   return /^\+?[1-9][0-9]{6,14}$/.test(e164)?e164:'';
 }
-function scenarioOrientation(scenario,service){
-  if(typeof scenario!=='string'||!['umzug','entsorgung','entruempelung'].includes(service))return null;
-  const params=new URLSearchParams({vorhaben:scenario});
-  params.set(service==='umzug'?'service':'leistung',service);
-  return inquiryComparison(params);
-}
+// Keep the service identifiers from older form submissions for receipt replays.
+const formerTopics = new Map([['sofa','entsorgung'],['keller','entruempelung'],['kleinumzug','umzug']]);
 export function validate(body){
   if(!body||Array.isArray(body)||typeof body!=='object')throw new InputError('Anfrage bitte prüfen.');
   if(body.website)throw new InputError('Anfrage bitte prüfen.');
@@ -74,10 +71,14 @@ export function validate(body){
     if(!services.has(body.requestedService)||body.requestedService==='rueckruf')throw new InputError('Gewünschte Leistung bitte prüfen.');
     lead.requestedService=body.requestedService;
   }
+  const requestedService=lead.requestedService||service;
   if(body.vorhaben!=null){
-    if(!scenarioOrientation(body.vorhaben,lead.requestedService||service))throw new InputError('Das Vorhaben passt nicht zur ausgewählten Leistung.');
+    if(!['umzug','entsorgung','entruempelung'].includes(requestedService)||(formerTopics.get(body.vorhaben)||body.vorhaben)!==requestedService)throw new InputError('Das Vorhaben passt nicht zur ausgewählten Leistung.');
     lead.vorhaben=body.vorhaben;
   }
+  const facts=normalizeActualJob(body.estimateFacts,requestedService);
+  if(body.estimateFacts!=null&&!facts)throw new InputError('Bitte die Angaben für die Preiseinschätzung prüfen.');
+  if(facts)lead.estimateFacts=facts;
   return lead;
 }
 export function validateContactClick(body){
@@ -171,10 +172,15 @@ export function openStore(filename){
         const created=!found;
         if(created){
           const ref='AN-'+randomUUID().replaceAll('-','').slice(0,16).toUpperCase();
-          if(person.vorhaben){
-            const estimate=scenarioOrientation(person.vorhaben,person.requestedService||service);
+          const effectiveService=person.requestedService||service;
+          const estimateFacts=person.jobScope
+            ? normalizeActualJob(factsFromEditedScope(person.estimateFacts||null,person.jobScope),effectiveService)
+            : person.estimateFacts;
+          if(estimateFacts){
+            person.estimateFacts=estimateFacts;
+            const estimate=evaluateActualJob(estimateFacts,effectiveService);
             if(estimate)person.priceOrientation={estimatedCents:estimate.estimatedCents,summary:estimate.summary};
-          }
+          }else delete person.estimateFacts;
           if(person.jobContext){
             const checks=scopeConditionNotes(person.jobScope,new URLSearchParams(person.jobContext));
             if(checks.length)person.jobConditionNotes=checks;

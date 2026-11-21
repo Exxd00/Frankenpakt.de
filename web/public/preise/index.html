@@ -1,26 +1,41 @@
 <!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="Tragehilfe, Sperrmüll und Container für Nürnberg selbst einschätzen. Bruttopreise, Bedingungen und regionale Vergleichswerte direkt ansehen."><title>Preisrechner für Entrümpelung, Entsorgung und Umzug · FrankenPackt</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css"><link rel="stylesheet" href="/assets/job-scope.css"><link rel="stylesheet" href="/assets/clearance-calculator.css"><link rel="stylesheet" href="/assets/price-comparison.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script></head><body><a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="188" height="54"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg> Menü</button><nav aria-label="Hauptnavigation" id="primary"><a href="/raeumung/">Entrümpelung</a><a href="/entsorgung/">Entsorgung</a><a href="/umzug/">Umzüge</a><a href="/preise/" aria-current="page">Preise</a></nav><a class="button head-cta" href="/anfrage/">Anfrage stellen</a></div></header><main id="inhalt" tabindex="-1"><div class="subhead pricing-heading" id="raeumungskosten"><div class="wrap narrowhero"><nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>Preise</span></nav><h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead"><a href="#richtpreis">Richtpreis für mein Vorhaben ansehen</a> oder direkt <a href="#raeumungsrechner">Tragehilfe und Entsorgung</a> bzw. ein <a href="#preisfinder">Umzugspaket</a> berechnen.</p></div></div><section id="preisvergleich" class="wrap price-comparison" aria-labelledby="richtpreis">
-    <h2 id="richtpreis">Richtpreis nach Leistung</h2>
-    <p>Wählen Sie Ihre Leistung. Sie sehen sofort, welche Kosten Sie für Ihr Vorhaben einplanen können.</p>
+    <h2 id="richtpreis">Ihr Vorhaben einschätzen</h2>
+    <p>Was soll erledigt werden? Tragen Sie Ihre Mengen und Maße ein. Ein Richtwert erscheint, wenn für Ihre Angaben ein Preis hinterlegt ist.</p>
     <div class="comparison-layout" hidden>
-      <form id="comparison-form">
-        <label for="comparison-topic">Was möchten Sie erledigen?</label>
-        <select id="comparison-topic" name="topic"><option value="" disabled selected>Bitte Leistung wählen</option><option value="sofa">Ein Sofa entsorgen</option><option value="keller">Kellerabteil bis 6 m² räumen</option><option value="kleinumzug">Kleine Wohnung regional umziehen</option><option value="entruempelung">Andere Räume entrümpeln</option><option value="entsorgung">Andere Gegenstände entsorgen</option><option value="umzug">Anderen Umzug planen</option></select>
+      <form id="comparison-form" autocomplete="off" novalidate>
+        <label for="comparison-topic">Welche Hilfe brauchen Sie?</label>
+        <select id="comparison-topic" name="topic"><option value="" disabled selected>Bitte wählen</option><option value="entsorgung">Gegenstände entsorgen</option><option value="entruempelung">Räume entrümpeln</option><option value="umzug">Umzug planen</option></select>
+        <div data-job-panel="entsorgung" hidden>
+          <p class="actual-hint">Fassen Sie gleiche Gegenstände in einer Position zusammen.</p>
+          <div data-item-rows></div><button type="button" data-add-item>+ Gegenstand hinzufügen</button>
+        </div>
+        <div data-job-panel="entruempelung" hidden>
+          <p class="actual-hint">Tragen Sie jeden betroffenen Raum mit seiner geschätzten Fläche ein.</p>
+          <div data-room-rows></div><button type="button" data-add-room>+ Raum hinzufügen</button>
+        </div>
+        <div data-job-panel="umzug" class="actual-move" hidden>
+          <div class="actual-field"><label><span>Anzahl der Zimmer</span><input type="text" inputmode="decimal" name="moveRooms" maxlength="9"></label></div>
+          <div class="actual-field"><label><span>Wohnfläche (m²)</span><input type="text" inputmode="decimal" name="moveArea" maxlength="9"></label><label class="actual-unknown"><input type="checkbox" name="unknownArea"> Noch unbekannt</label></div>
+          <div class="actual-field"><label><span>Umzugsgut (m³)</span><input type="text" inputmode="decimal" name="moveVolume" maxlength="9"></label><label class="actual-unknown"><input type="checkbox" name="unknownVolume"> Noch unbekannt</label></div>
+          <div class="actual-field"><label><span>Einfache Fahrstrecke (km)</span><input type="text" inputmode="decimal" name="moveDistance" maxlength="9"></label><label class="actual-unknown"><input type="checkbox" name="unknownDistance"> Noch unbekannt</label></div>
+        </div>
+        <template data-item-template><fieldset data-item-row><legend></legend><div class="actual-item-fields">
+          <label><span>Was möchten Sie entsorgen?</span><input name="itemName" type="text" maxlength="120"></label>
+          <label><span>Stückzahl</span><input name="itemQuantity" type="text" inputmode="numeric" maxlength="4"></label>
+        </div><button type="button" data-remove-row>Entfernen</button></fieldset></template>
+        <template data-room-template><fieldset data-room-row><legend></legend><div class="actual-room-fields">
+          <label><span>Welcher Raum?</span><input name="roomName" type="text" maxlength="120"></label>
+          <label><span>Fläche (m²)</span><input name="roomArea" type="text" inputmode="decimal" maxlength="9"></label>
+          <label><span>Füllstand</span><select name="roomFill"><option value="">Bitte wählen</option><option value="little">Leicht gefüllt</option><option value="half">Etwa halb voll</option><option value="most">Überwiegend gefüllt</option><option value="full">Voll oder dicht zugestellt</option></select></label>
+        </div><button type="button" data-remove-row>Entfernen</button></fieldset></template>
       </form>
-      <div class="comparison-result">
-        <div role="status" aria-live="polite" aria-atomic="true">
-          <h3 data-comparison-title></h3>
-          <p class="comparison-amount" data-comparison-amount></p>
-          <p data-comparison-message></p>
-          <p class="comparison-note" data-estimate-scope-note></p>
-        </div>
-        <div class="comparison-actions">
-          <a href="#raeumungsrechner" data-scenario-calculator hidden></a>
-          <a href="/anfrage/" data-comparison-inquiry>Endpreis anfragen</a>
-        </div>
+      <div class="comparison-result" hidden>
+        <div role="status" aria-live="polite" aria-atomic="true"><h3 data-comparison-title></h3><p class="comparison-amount" data-comparison-amount></p><p data-comparison-message></p><p class="comparison-note" data-estimate-scope-note></p></div>
+        <div class="comparison-actions"><a href="/anfrage/" data-comparison-inquiry hidden>Endpreis anfragen</a><a href="#raeumungsrechner" data-scenario-calculator hidden></a></div>
       </div>
     </div>
     <details class="calculator-scope" data-calc-scope="comparison" name="calculator-job-details"><summary>Auftragsdetails für mein Angebot eingeben</summary><div data-scope-mount></div></details>
-    <noscript><ul class="comparison-static"><li><strong>Ein Sofa entsorgen · ab 78 € brutto</strong><p>Regionaler Planungswert für das Heraustragen und die Entsorgung eines einzelnen Sofas in Nürnberg. Abholung und Entsorgung buchen Sie direkt beim Entsorger. Er nennt Ihnen seinen Endpreis.</p></li><li><strong>Kellerabteil bis 6 m² räumen · ab 148 € brutto</strong><p>Regionaler Planungswert für die Räumung eines Kellerabteils bis 6 m² in Nürnberg einschließlich Entsorgung. Eine Abfallabholung buchen Sie direkt beim Entsorger. Für vereinbarte Arbeiten vor Ort erhalten Sie von uns ein eigenes Angebot.</p></li><li><strong>Kleine Wohnung regional umziehen · ab 298 € brutto</strong><p>Für 1–2 Zimmer bis 60 m², 10–20 m³ Umzugsgut und bis zu 50 km. Laden, Fahrt und Entladen sind berücksichtigt. Packmaterial kommt bei Bedarf hinzu. Den Endpreis nennen wir Ihnen nach Prüfung der Adressen, des Umzugsguts und der Zugänge.</p></li></ul><p>Für andere Leistungen finden Sie die <a href="#raeumungsrechner">Räumungskosten</a> und die <a href="#preisfinder">Umzugspakete</a> auf dieser Seite.</p></noscript>
+    <noscript><p>Für die Einschätzung eigener Mengen und Maße benötigt dieser Rechner JavaScript. Die <a href="#raeumungsrechner">Preise für Tragehilfe und Entsorgungswege</a> und die <a href="#preisfinder">Umzugspakete</a> stehen weiter unten.</p></noscript>
   </section><section id="raeumungsrechner" class="wrap clearance-estimator" aria-labelledby="clearance-calc-heading">
     <h2 id="clearance-calc-heading">Räumungskosten berechnen</h2>
     <p class="calc-intro">Wählen Sie Tragehilfe und Entsorgungsweg. Sie sehen Ihren Richtpreis direkt und ohne Kontaktdaten.</p>

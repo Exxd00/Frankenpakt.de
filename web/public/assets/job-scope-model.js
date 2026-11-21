@@ -1,4 +1,5 @@
 import {scopePlanningLines,itemWeightKg} from './job-scope-planning.js';
+import {normalizeActualJob} from './actual-job.js';
 
 export const movingServices = ['umzug','seniorenumzug','moebeltaxi','transport'];
 export const clearanceServices = ['entruempelung','entsorgung'];
@@ -55,22 +56,28 @@ const wasteRoutes = [['none','Keine Abfälle'],['city','Kommunale Abholung selbs
 const wasteTypes = [['bulky','Sperrmüll / Möbel'],['wood','Holz'],['metal','Metall'],['electrical','Elektrogeräte'],['rubble','Bauschutt'],['mixed','Gemischte Abfälle'],['special','Farben, Batterien oder unbekannte Gefahrstoffe'],['other','Andere Materialien']];
 const measurementModes=[['known','Gemessen / laut Unterlagen'],['estimated','Grob geschätzt'],['unknown','Unbekannt']];
 const hasRetained = f=>readItems(f.items).some(r=>['give','keep'].includes(r.destination));
-const inventoryFields = isMove=>{
+const inventoryFields = (isMove,service)=>{
  const haveLoad=f=>isMove||hasRetained(f);
  return [
   field('items','Gegenstände und Mengen','items',{hint:isMove?'Gleiche Stücke können Sie in einer Position zusammenfassen.':'Geben Sie je Position Menge und vorgesehenen Verbleib an.'}),
   ...(isMove?[
+    ...(service==='umzug'?[
+      field('moveRooms','Anzahl der Zimmer','moveMetric',{required:false,metric:'rooms',hint:'Zum Beispiel 2 oder 2,5.'}),
+      field('moveArea','Wohnfläche (m²)','moveMetric',{required:false,hint:'Schätzwert oder „unbekannt“.'}),
+      field('moveDistance','Strecke von der Abholung zum Ziel (km)','moveMetric',{required:false,hint:'Schätzwert oder „unbekannt“.'})
+    ]:[]),
     checkboxes('tasks','Gewünschte Zusatzarbeiten',movingTasks),
     paragraph('taskDetails','Welche Möbel, Kartons oder Räume betrifft das?',400,{when:f=>Boolean(f.tasks)&&f.tasks!=='none',placeholder:'z. B. Schrank 250 cm abbauen und am Ziel aufbauen'}),
     select('stops','Weitere Lade- oder Entladeadresse?',yesNo),
     paragraph('stopDetails','Adresse und Zugang jedes Zwischenstopps',700,{when:f=>f.stops==='yes',hint:'Je Stopp Straße, PLZ, Ort, Geschoss, Aufzug, Parken, Trageweg, Helfer und die dortigen Stücke aufführen.'})
   ]:[
     select('extent','Was soll bearbeitet werden?',[['items','Einzelne Gegenstände'],['rooms','Einzelne Räume / Kellerabteil'],['unit','Ganze Wohnung / ganzes Haus'],['other','Mehrere Teilflächen']]),
-    textField('areas','Betroffene Räume oder Flächen',150,{placeholder:'z. B. Kellerabteil und Garage'}),
-    field('areaSqm','Betroffene Fläche insgesamt (m²)','decimal',{min:0.01,max:99999,when:f=>Boolean(f.extent)&&f.extent!=='items'}),
+    field('roomBreakdown','Räume, Fläche und Füllstand','rooms',{required:false,when:f=>f.extent==='rooms'}),
+    textField('areas','Betroffene Räume oder Flächen',150,{placeholder:'z. B. Kellerabteil und Garage',when:f=>f.extent!=='rooms'||!f.roomBreakdown}),
+    field('areaSqm','Betroffene Fläche insgesamt (m²)','decimal',{min:0.01,max:99999,when:f=>Boolean(f.extent)&&f.extent!=='items'&&!(f.extent==='rooms'&&f.roomBreakdown)}),
     select('fill','Wie voll sind die Räume ungefähr?',[
       ['little','Leicht gefüllt (bis etwa ¼)'],['half','Etwa zur Hälfte gefüllt'],['most','Überwiegend gefüllt (bis etwa ¾)'],['full','Voll oder dicht zugestellt']
-    ],{when:f=>Boolean(f.extent)&&f.extent!=='items'}),
+    ],{when:f=>Boolean(f.extent)&&f.extent!=='items'&&!(f.extent==='rooms'&&f.roomBreakdown)}),
     select('clearanceWork','Gewünschter Umfang vor Ort',[
       ['advice','Nur Entsorgungsweg klären'],['sorting','Sichten und sortieren'],['carry','Weiterverwendbare Stücke hinaustragen'],
       ['both','Sortieren und weiterverwendbare Stücke tragen']
@@ -95,7 +102,7 @@ const inventoryFields = isMove=>{
 export function jobSections(service) {
   if(!services.includes(service)) return [];
   const moving=movingServices.includes(service);
-  const inventory={key:'inventory',title:moving?'Transportgut und Arbeiten':'Hausrat und Entsorgungsweg',fields:inventoryFields(moving)};
+  const inventory={key:'inventory',title:moving?'Transportgut und Arbeiten':'Hausrat und Entsorgungsweg',fields:inventoryFields(moving,service)};
   const destination={key:'to',title:'Zieladresse und Zugang',fields:addressFields('to')};
   return [
     {key:'from',title:moving?'Abholadresse und Zugang':'Einsatzadresse und Zugang',fields:addressFields('from')},
@@ -152,6 +159,16 @@ export function itemError(rows,moving) {
 function fieldError(d,value,fields,moving) {
   if(!value)return d.required?'Bitte ausfüllen.':'';
   if(d.type==='items')return itemError(readItems(value),moving);
+  if(d.type==='rooms'){
+    if(value.length>24000)return 'Bitte die Raumliste kürzen.';
+    let rooms;
+    try{rooms=JSON.parse(value);}catch{return 'Bitte die Raumliste prüfen.';}
+    return normalizeActualJob({service:'entruempelung',rooms},'entruempelung')?'':'Je Raum Bezeichnung, Fläche und Füllstand prüfen.';
+  }
+  if(d.type==='moveMetric'&&value.toLowerCase()!=='unbekannt'&&value!=='unknown'){
+    const n=Number(value.replace(',','.')),min=d.metric==='rooms'?0.5:d.key==='moveDistance'?0:0.01;
+    if(!/^\d{1,5}(?:[.,]\d{1,2})?$/.test(value)||n<min||n>(d.metric==='rooms'?999:99999))return 'Bitte eine gültige Zahl eingeben.';
+  }
   if(d.type==='select'&&!d.options.some(([key])=>key===value))return 'Bitte eine der angebotenen Antworten auswählen.';
   if(d.type==='multiple'){
     const keys=value.split(',');
@@ -219,6 +236,8 @@ export function summarizeJobScope(scope){
       if(!f[d.key])continue;
       if(d.type==='items'){
         for(const r of readItems(f.items))lines.push([r.quantity+' × '+r.name,optionLabel(itemTypes,r.type),r.size&&'Maße (cm) '+r.size,r.weight&&'Gewicht/Stück (kg) '+r.weight,r.destination&&optionLabel(destinations,r.destination)].filter(Boolean).join(' · '));
+      }else if(d.type==='rooms'){
+        for(const r of JSON.parse(f.roomBreakdown)) lines.push(r.name+' · '+r.area+' m² · '+({little:'leicht gefüllt',half:'halb gefüllt',most:'überwiegend gefüllt',full:'voll'}[r.fill] || r.fill));
       }else{
         const display=d.type==='multiple'?f[d.key].split(',').map(k=>optionLabel(d.options,k)).join(', '):optionLabel(d.options,f[d.key]);
         lines.push(d.label+' – '+display);

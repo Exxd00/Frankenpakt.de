@@ -104,7 +104,7 @@ function detail(d) {
   const fullDay = d.s === 'umzug' ? prices.find(p => p.id === 'sieben') : null;
   const request = '/anfrage/?service=' + d.s + (fullDay ? '&amp;paket=' + fullDay.id : '');
   const priceUrl = '/preise/?service=' + d.s + '&amp;paket=';
-  const smallMoveComparison = fullDay ? '<p class="comparison-shortcut">Sie ziehen aus einer kleinen Wohnung um? <a href="/preise/?vorhaben=kleinumzug#richtpreis">Richtpreis für 1–2 Zimmer ansehen</a></p>' : '';
+  const smallMoveComparison = fullDay ? '<p class="comparison-shortcut"><a href="/preise/?vorhaben=umzug#richtpreis">Wohnungsgröße und Strecke für meinen Umzug eingeben</a></p>' : '';
   const leadOffer = fullDay ? '<div class="lead-offer"><strong>' + euro(fullDay.price) + ' · 2 Personen und Fahrzeug</strong><span>7 Stunden ab und bis 90453 Nürnberg · bis 50 km Gesamtroute. Endpreis inkl. 19 % USt.</span></div>' : '';
   return '<div class="subhead service-heading" data-interest-service="'+d.s+'" data-interest-package="'+(fullDay?.id||'')+'"><div class="wrap">' + crumb(d.t) +
     '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p>' + leadOffer + '<div class="actions">' +
@@ -119,12 +119,10 @@ function detail(d) {
 }
 function planningPage(page) {
   const cards=page.steps.map(([title,copy,icon])=>'<article>'+ic(icon,28)+'<h3>'+title+'</h3><p>'+copy+'</p></article>').join('');
-  const comparison=page.service==='entsorgung'
-    ? '<p class="comparison-shortcut"><a href="/preise/?vorhaben=sofa#richtpreis">Was kostet die Abholung eines Sofas?</a></p>'
-    : '<p class="comparison-shortcut"><a href="/preise/?vorhaben=keller#richtpreis">Was kostet das Räumen eines Kellerabteils bis 6 m²?</a></p>';
+  const calculatorLink='<p class="comparison-shortcut"><a href="/preise/?leistung='+page.service+'#raeumungsrechner">Tragehilfe, Sperrmüllabholung oder Container berechnen</a></p>';
   return '<section class="subhead clearance-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero">'+
     crumb(page.name)+'<h1>'+page.heading+'</h1><p class="lead">'+page.intro+'</p><div class="actions">'+
-    btn('Preis berechnen','/preise/?leistung='+page.service+'#raeumungsrechner')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+comparison+contactChoices(page.service)+'</div></section>'+
+    btn('Richtpreis ermitteln','/preise/?vorhaben='+page.service+'#richtpreis')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+calculatorLink+contactChoices(page.service)+'</div></section>'+
     '<section id="'+page.anchor+'" class="wrap section service-facts"><h2>'+page.section+'</h2><div class="info-grid">'+cards+
     '</div><div class="mobile-facts">'+faq(page.steps)+'</div></section>'+
     '<section class="faq-section" id="kosten"><div class="wrap faq-layout"><h2>'+page.faqTitle+'</h2>'+faq(page.questions)+'</div></section>';

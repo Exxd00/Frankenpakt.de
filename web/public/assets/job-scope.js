@@ -82,7 +82,7 @@ export function mountJobScope(container,{service='',initial=null,onChange=()=>{}
         if(focus){
           group.el.open=true;
           const {wrap,input}=controls.get(d.key);
-          const first=d.type==='items'?wrap.querySelector('select, input, button'):d.type==='multiple'?wrap.querySelector('input'):input;
+          const first=['items','rooms'].includes(d.type)?wrap.querySelector('select, input, button'):d.type==='multiple'?wrap.querySelector('input'):input;
           first?.focus();
         }
         return false;
@@ -154,9 +154,45 @@ export function mountJobScope(container,{service='',initial=null,onChange=()=>{}
     draw();
     return {wrap,input,err};
   }
+  function roomList(d,id) {
+    const wrap=element('div','job-scope-field job-scope-wide');
+    const head=element('div','job-scope-label',d.label);head.id=id+'-label';
+    const input=element('div','job-scope-inventory');input.id=id;
+    input.setAttribute('role','group');input.setAttribute('aria-labelledby',head.id);
+    const add=button('Raum hinzufügen','job-scope-link');
+    const err=element('p','job-scope-error');err.id=id+'-error';input.setAttribute('aria-describedby',err.id);
+    let rows=readItems(fields[d.key]).map(r=>({...r}));
+    const store=()=>change(d.key,rows.length?JSON.stringify(rows):'');
+    function render(){
+      input.replaceChildren();
+      for(const [i,row] of rows.entries()){
+        const line=element('fieldset','job-scope-item');
+        line.append(element('legend','', 'Raum '+(i+1)));
+        const grid=element('div','job-scope-item-grid');
+        for(const [key,label] of [['name','Raumbezeichnung'],['area','Fläche (m²)'],['fill','Füllstand']]){
+          const holder=element('label','job-scope-item-field');
+          const control=element(key==='fill'?'select':'input');
+          control.id=id+'-'+i+'-'+key;
+          if(key==='fill')options(control,[['little','Leicht gefüllt'],['half','Etwa zur Hälfte'],['most','Überwiegend gefüllt'],['full','Voll oder dicht zugestellt']]);
+          else {control.type='text';control.maxLength=key==='name'?120:12;if(key==='area')control.inputMode='decimal';}
+          control.value=row[key]||'';
+          control.addEventListener(key==='fill'?'change':'input',()=>{row[key]=control.value;store();});
+          holder.append(element('span','',label),control);grid.append(holder);
+        }
+        const remove=button('Raum entfernen','job-scope-link');remove.setAttribute('aria-label','Raum '+(i+1)+' entfernen');
+        remove.addEventListener('click',()=>{rows.splice(i,1);render();store();add.focus();});
+        line.append(grid,remove);input.append(line);
+      }
+      add.hidden=rows.length>=30;
+    }
+    add.addEventListener('click',()=>{if(rows.length>=30)return;rows.push({});render();store();input.lastElementChild.querySelector('input').focus();});
+    wrap.append(head,input,add,err);render();
+    return {wrap,input,err};
+  }
   function buildField(d) {
     const id=prefix+d.key;
     if(d.type==='items')return inventory(d,id);
+    if(d.type==='rooms')return roomList(d,id);
     const wrap=element('div','job-scope-field'+(['multiple','textarea'].includes(d.type)?' job-scope-wide':''));
     const multiple=d.type==='multiple';
     const label=element(multiple?'div':'label','job-scope-label',d.label+(d.required?' *':''));
@@ -201,7 +237,14 @@ export function mountJobScope(container,{service='',initial=null,onChange=()=>{}
     fields=Object.create(null);
     if(draft?.version===1&&draft.service===service&&draft.fields&&typeof draft.fields==='object')
       for(const [k,v] of Object.entries(draft.fields))if(typeof v==='string')fields[k]=v;
-    attempted=new Set();controls=new Map();groups=jobSections(service);
+    attempted=new Set();controls=new Map();
+    const sections=jobSections(service);
+    groups=[...sections.filter(s=>s.key==='inventory'),...sections.filter(s=>s.key!=='inventory')];
+    if(service==='entruempelung'){
+      const inventory=groups[0];
+      const roomKeys=['extent','roomBreakdown','areas','areaSqm','fill'];
+      inventory.fields=[...inventory.fields.filter(d=>roomKeys.includes(d.key)),...inventory.fields.filter(d=>!roomKeys.includes(d.key))];
+    }
     container.replaceChildren();planning=null;
     for(const [idx,g] of groups.entries()){
       const details=element('details','job-scope-part');details.open=idx===0;

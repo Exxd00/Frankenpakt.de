@@ -1,59 +1,74 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {comparisonTopics, inquiryComparison} from '../public/assets/price-comparison.js';
+import {normalizeActualJob,evaluateActualJob,inquiryComparison,serviceFromQuery} from '../public/assets/actual-job.js';
 import {priceComparison} from '../price-comparison.mjs';
 
-test('the selected scenario supplies its own estimate and scope', () => {
-  for (const [key,service,amount,scope] of [
-    ['sofa','entsorgung',78,/einzelnen Sofas/],
-    ['keller','entruempelung',148,/bis 6 m²/],
-    ['kleinumzug','umzug',298,/10–20 m³/]
-  ]) {
-    const params = new URLSearchParams({[service === 'umzug' ? 'service' : 'leistung']:service, vorhaben:key});
-    const estimate = inquiryComparison(params);
-    assert.equal(estimate.service,service);
-    assert.equal(estimate.estimatedCents,amount*100);
-    assert.deepEqual([...estimate.params],[['vorhaben',key]]);
-    assert.match(estimate.summary,new RegExp('ab '+amount+'\\s€ brutto'));
-    assert.match(estimate.summary,scope);
-    if (service !== 'umzug') assert.match(estimate.summary,/direkt beim Entsorger/);
+const item = (name,quantity='1') => ({name,quantity});
+const room = (name,area,fill='half') => ({name,area,fill});
+const disposal = (...items) => ({service:'entsorgung',items});
+const clearance = (...rooms) => ({service:'entruempelung',rooms});
+const move = (overrides={}) => ({service:'umzug',rooms:'2',area:'50',volume:'15',distance:'20',...overrides});
+const estimate = draft => evaluateActualJob(draft)?.estimatedCents;
+
+test('customers name actual goods and quantities; only one usual furniture item triggers the single-item rate',()=>{
+  for(const name of ['ein kleines Sofa','2-Sitzer-Sofa','Couch (3-Sitzer)','Kleiderschrank','Schrank','Esstisch','Bücherregal']) {
+    assert.equal(estimate(disposal(item(name))),7800,name);
   }
+  for(const job of [
+    disposal(item('Sofa','2')),disposal(item('Sofa'),item('Schreibtisch')),
+    disposal(item('Sofa und zwei Stühle')),disposal(item('Klavier')),disposal(item('Gefrierschrank')),disposal(item('Schrankwand'))
+  ]) assert.equal(estimate(job),null);
+  assert.equal(normalizeActualJob(disposal(item('  ','2'))),null);
+  assert.equal(normalizeActualJob(disposal(item('Tisch','-1'))),null);
+  assert.equal(normalizeActualJob(disposal(item('Tisch','1,5'))),null);
+  assert.equal(normalizeActualJob(disposal()),null);
 });
 
-test('prices and kinds supplied via old or altered links cannot change the rate', () => {
-  const current = inquiryComparison(new URLSearchParams({leistung:'entsorgung',vorhaben:'sofa'}));
-  for (const key of ['vorhaben','vergleich']) {
-    const query = new URLSearchParams({leistung:'entsorgung',[key]:'sofa',vergleichcent:'99999999',vergleichart:'gesamt',preisziel:'1',endpreis:'9'});
-    query.append('vergleichcent','250');
-    const actual = inquiryComparison(query);
-    assert.equal(actual.summary,current.summary);
-    assert.equal(actual.estimatedCents,7800);
-    assert.deepEqual([...actual.params],[['vorhaben','sofa']]);
+test('a self-described basement uses the matching bracket; no rate is extrapolated to other rooms or multiple areas',()=>{
+  for(const [area,cents] of [['3',14800],['6',14800],['6,01',34800],['12',34800],['12.01',64800],['25',64800],['25.01',null]]){
+    assert.equal(estimate(clearance(room('Kellerabteil',area))),cents,area);
   }
-  for (const raw of [
-    'service=umzug&vorhaben=sofa','leistung=entsorgung&service=umzug&vorhaben=sofa',
-    'leistung=entsorgung&vorhaben=sofa&vorhaben=keller','leistung=entsorgung&vorhaben=sofa&vergleich=keller',
-    'leistung=entsorgung&vorhaben=other','leistung=entsorgung&vergleichcent=8000',
-    'vorhaben=sofa','leistung=entsorgung&leistung=entsorgung&vorhaben=sofa'
-  ]) assert.equal(inquiryComparison(new URLSearchParams(raw)),null,raw);
+  assert.equal(estimate(clearance(room('Garage','5'))),null);
+  assert.equal(estimate(clearance(room('Keller','4'),room('Keller','2'))),null);
+  assert.equal(normalizeActualJob(clearance(room('Keller','5',''))),null);
+  assert.equal(normalizeActualJob(clearance(room('Keller','0'))),null);
+  const canonical=normalizeActualJob(clearance(room('  Dachboden ','18,50','full')));
+  assert.equal(canonical.rooms[0].area,'18.5');
+  assert.match(evaluateActualJob(canonical).description,/Dachboden.*18,5 m².*voll/i);
 });
 
-test('broader projects point to the appropriate calculator and carry no invented estimate', () => {
-  for (const [service,route] of [['entsorgung','#raeumungsrechner'],['entruempelung','#raeumungsrechner'],['umzug','#preisfinder']]) {
-    const params = new URLSearchParams({[service === 'umzug'?'service':'leistung']:service,vergleich:service,vergleichcent:'50000',vergleichart:'ab'});
-    const result = inquiryComparison(params);
-    assert.equal(result.estimatedCents,null);
-    assert.equal(result.service,service);
-    assert.doesNotMatch(result.summary,/€|Preisziel|Fremdpreis/);
-    assert.equal(comparisonTopics.get(service).route,route);
+test('the move amount requires entered rooms, area, load volume and route inside the published scope',()=>{
+  for(const values of [{},{rooms:'1',area:'60',volume:'10',distance:'50'},{rooms:'1,5',volume:'20',distance:'0'}]) {
+    assert.equal(estimate(move(values)),29800);
   }
+  for(const values of [{area:'60,1'},{rooms:'3'},{volume:'9,9'},{volume:'20,01'},{distance:'50,5'},
+    {area:'unknown'},{distance:'unknown'},{volume:'unknown'}]) assert.equal(estimate(move(values)),null);
+  assert.equal(normalizeActualJob(move({volume:''})),null);
 });
 
-test('the customer can choose a service without any control for setting a price', () => {
-  const html = priceComparison();
-  assert.equal((html.match(/<select\b/g) || []).length,1);
-  assert.match(html,/id="richtpreis"/);
-  assert.match(html,/id="preisvergleich"/);
-  assert.doesNotMatch(html,/<input\b|<textarea\b|Preisziel|Fremdpreis|Angebot eines anderen|Art des Preises|2\s*€|Bruttopreis eines/);
-  for (const price of [78,148,298]) assert.match(html,new RegExp('ab '+price+'\\s€ brutto'));
+test('links select a service, never invent dimensions, inventory, or a price',()=>{
+  for (const [preset,service] of [['sofa','entsorgung'],['keller','entruempelung'],['kleinumzug','umzug']]) {
+    const key=service==='umzug'?'service':'leistung';
+    const legacy=new URLSearchParams({[key]:service,vergleich:preset,vergleichcent:'1',preisziel:'200'});
+    assert.equal(serviceFromQuery(legacy),service);
+    const empty=inquiryComparison(legacy);
+    assert.equal(empty.estimatedCents,null);
+    assert.equal(empty.params.get('vorhaben'),service);
+    assert.doesNotMatch(empty.summary,/€/);
+  }
+  const params=new URLSearchParams({leistung:'entsorgung',vorhaben:'entsorgung',area:'6',preis:'7'});
+  assert.equal(inquiryComparison(params,disposal(item('Kommode'))).estimatedCents,7800);
+  assert.equal(inquiryComparison(params,clearance(room('Keller','5'))),null);
+  assert.equal(inquiryComparison(new URLSearchParams('leistung=umzug&vorhaben=kleinumzug')),null);
+  assert.equal(serviceFromQuery(new URLSearchParams('vorhaben=keller&vorhaben=sofa')),null);
+});
+
+test('only three general service choices are exposed; job facts and amounts start empty',()=>{
+  const html=priceComparison();
+  const choices=html.match(/<select id="comparison-topic"[\s\S]*?<\/select>/)[0];
+  assert.equal((choices.match(/<option\b/g)||[]).length,4);
+  assert.doesNotMatch(html,/vorhaben=sofa|>.*Sofa.*<|bis 6 m²|Fremdpreis|Preisziel|name="price"/);
+  assert.match(html,/name="itemName"/);
+  assert.match(html,/name="roomArea"/);
+  assert.match(html,/name="moveDistance"/);
 });

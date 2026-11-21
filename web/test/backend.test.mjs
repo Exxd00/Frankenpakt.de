@@ -10,12 +10,22 @@ import { notificationSettings,deliverDue } from '../lib/notify.mjs';
 import { configuration,startServer } from '../server.mjs';
 import { saveDailyReport } from '../lib/snapshot.mjs';
 import {bookTestOffer} from '../test-support/booking.mjs';
+import {exampleJobScope} from '../test-support/job-scope.mjs';
 
 const sample=()=>({service:'umzug',zipFrom:'90453',zipTo:'90402',details:'Tisch und Stuhl',contactMethod:'email',email:'test@example.invalid',name:'Testperson',source:'google',requestId:randomUUID()});
-test('inquiry and callback keep the catalog estimate separate from user-entered notes and final price',t=>{
+test('inquiry and callback estimate only customer-entered job facts; older links cannot set prices',t=>{
   const db=openStore(':memory:');t.after(()=>db.close());
-  for(const [scenario,service,cents] of [['sofa','entsorgung',7800],['keller','entruempelung',14800],['kleinumzug','umzug',29800]]){
-    const payload={...sample(),service,vorhaben:scenario,details:'Eigener Hinweis',
+  const jobs=[
+    [{service:'entsorgung',items:[{name:'Sofa',quantity:'1'}]},7800],
+    [{service:'entruempelung',rooms:[{name:'Keller',area:'5,5',fill:'half'}]},14800],
+    [{service:'entruempelung',rooms:[{name:'Keller',area:'12',fill:'most'}]},34800],
+    [{service:'entruempelung',rooms:[{name:'Keller',area:'19',fill:'most'}]},64800],
+    [{service:'umzug',rooms:'2',area:'50',volume:'14',distance:'20'},29800],
+    [{service:'entsorgung',items:[{name:'Altreifen',quantity:'8'}]},null]
+  ];
+  for(const [estimateFacts,cents] of jobs){
+    const service=estimateFacts.service;
+    const payload={...sample(),service,estimateFacts,details:'Eigener Hinweis',
       priceOrientation:{estimatedCents:5},vergleichcent:'5',gross_cents:5};
     const full=validate(payload);
     const saved=db.submit(full);
@@ -31,6 +41,13 @@ test('inquiry and callback keep the catalog estimate separate from user-entered 
   assert.throws(()=>validate({...sample(),vorhaben:'1.25'}));
   const ordinary=validate({...sample(),priceOrientation:{estimatedCents:5}});
   assert.equal(db.get(db.submit(ordinary).reference).person.priceOrientation,undefined);
+  const old=validate({...sample(),service:'entsorgung',vorhaben:'sofa',vergleichcent:'8000'});
+  assert.equal(db.get(db.submit(old).reference).person.priceOrientation,undefined);
+  const jobScope=exampleJobScope('entsorgung');
+  jobScope.fields.items=JSON.stringify([{type:'other',quantity:'4',name:'Altreifen',size:'',weight:'',destination:'discard'}]);
+  const changed=db.get(db.submit(validate({...sample(),service:'entsorgung',zipTo:'',jobScope,estimateFacts:jobs[0][0]})).reference);
+  assert.notEqual(changed.person.priceOrientation?.estimatedCents,7800);
+  assert.equal(changed.person.estimateFacts?.items[0].name,'Altreifen');
 });
 
 test('required fields, spam trap and minimum disclosure',()=>{
