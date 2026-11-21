@@ -59,7 +59,7 @@
     number.hidden = !phone || preview;
     number.textContent = !number.hidden ? href.slice(4) : '';
     previewNote.hidden = !preview;
-    previewNote.textContent = preview ? 'Private Vorschau. Sie können den Ablauf ohne Verbindung testen.' : '';
+    previewNote.textContent = preview ? 'Vorschau. Sie können den Ablauf ohne Verbindung testen.' : '';
     demoResult.hidden = true;
     demoResult.textContent = '';
     consent.checked = false;

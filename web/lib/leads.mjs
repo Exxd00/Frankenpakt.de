@@ -6,7 +6,7 @@ import { cleanMoney, InputError, isGoogleAdVariant } from './inputs.mjs';
 import { openOffers } from './offers.mjs';
 export { InputError } from './inputs.mjs';
 
-const services = new Set(['umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
+const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
 const sources = new Set(['direkt','google','kleinanzeigen','empfehlung','sonstige','unbekannt']);
 const contactMethods = new Set(['phone','email']);
 const contactClicks = new Set(['phone_click','whatsapp_click','callback_click']);
@@ -35,7 +35,7 @@ export function validate(body){
   if(typeof requestId!=='string'||!requestIdPattern.test(requestId))throw new InputError('Anfragenummer ungültig.');
   if(!services.has(service)||!contactMethods.has(contactMethod))throw new InputError('Leistung und Kontaktweg bitte prüfen.');
   if(service==='rueckruf'&&contactMethod!=='phone')throw new InputError('Für einen Rückruf bitte eine Telefonnummer angeben.');
-  const zipFrom=string(body.zipFrom,5,'Start-PLZ',{required:service!=='rueckruf'}),zipTo=string(body.zipTo,5,'Ziel-PLZ');
+  const zipFrom=string(body.zipFrom,5,'PLZ des Einsatzorts',{required:service!=='rueckruf'}),zipTo=string(body.zipTo,5,'Ziel-PLZ');
   if((zipFrom&&!/^\d{5}$/.test(zipFrom))||(zipTo&&!/^\d{5}$/.test(zipTo)))throw new InputError('Bitte eine fünfstellige PLZ angeben.');
   const name=string(body.name,120,'Name',{required:true});
   const contact=contactMethod==='email'?string(body.email,254,'E-Mail',{required:true}).toLowerCase():mobileNumber(string(body.phone,55,'Telefon',{required:true}));

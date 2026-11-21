@@ -1,7 +1,14 @@
 .hero-grid { position: relative; }
-.service-card.clearance-card,
 .mobile-caption,
 .process-steps > summary { display: none; }
+
+@media screen and (min-width: 781px) {
+  #leistungen .service-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hero-copy h1 { max-width: none; font-size: clamp(3.1rem, 5vw, 4.7rem); }
+}
+@media screen and (min-width: 1060px) {
+  #leistungen .service-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 
 @media screen and (max-width: 780px) {
   .mast {
@@ -76,7 +83,7 @@
   #leistungen .service-card h3 { font-size: clamp(1.05rem, 4.6vw, 1.35rem); line-height: 1.18; }
   #leistungen .mobile-caption { display: block; color: var(--muted); font-size: .94rem; line-height: 1.35; }
   #leistungen .service-card p, #leistungen .card-link, #leistungen .clear-link { display: none; }
-  #leistungen .clearance-card { background: #E8E3D9; border-color: #D8D1C4; }
+  .hero-copy .hero-heading h1 { max-width: none; }
 
   .how { padding-block: .12rem; }
   .how .how-title { display: none; }

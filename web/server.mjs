@@ -43,7 +43,7 @@ async function body(req){
   for await(const part of req){size+=part.length;if(size>12*1024)throw new InputError('Anfrage zu groß.',413);parts.push(part);}
   try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
-const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
+const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/entsorgung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
 export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1'}={}){
   const config=configuration(env);
   if(!Number.isInteger(config.retention)||config.retention<1)throw new Error('CLOSED_RETENTION_DAYS must be a positive integer.');

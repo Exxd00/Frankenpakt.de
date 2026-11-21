@@ -18,17 +18,22 @@ if (liveUrls) {
 }
 const files = new Map();
 const landingColumn = liveUrls ? 'Final URL' : 'Relative landing path';
-const variants = new Set(['privatumzug-team','seniorenumzug-team']);
+const variants = new Set(['entruempelung-nuernberg','entsorgung-nuernberg','privatumzug-team','seniorenumzug-team']);
+const sections = {
+  '/preise/': ['preisfinder'],
+  '/raeumung/': ['ablauf'],
+  '/entsorgung/': ['entsorgungswege', 'kosten']
+};
 const destinations = new Set();
 function dest(relative,variant) {
   const base = publicOrigin || 'https://frankenpackt.invalid';
   const url = new URL(relative,base);
-  if (!relative.startsWith('/') || url.origin !== base || !['/umzug/','/seniorenumzug/','/preise/','/anfrage/'].includes(url.pathname)) throw Error('Invalid landing: '+relative);
-  const allowed = {service:['umzug','seniorenumzug'],paket:['sieben','drei'],kontakt:['telefon']};
+  if (!relative.startsWith('/') || url.origin !== base || !['/umzug/','/seniorenumzug/','/preise/','/anfrage/','/raeumung/','/entsorgung/'].includes(url.pathname)) throw Error('Invalid landing: '+relative);
+  const allowed = {service:['umzug','seniorenumzug'],leistung:['entruempelung','entsorgung'],paket:['sieben','drei'],kontakt:['telefon']};
   for(const [key,value] of url.searchParams) {
     if(!Object.hasOwn(allowed,key)||!allowed[key].includes(value)||url.searchParams.getAll(key).length!==1) throw Error('Invalid landing parameter: '+relative);
   }
-  if(url.hash && (url.pathname !== '/preise/' || url.hash !== '#preisfinder')) throw Error('Invalid section: '+relative);
+  if(url.hash && !sections[url.pathname]?.includes(url.hash.slice(1))) throw Error('Invalid section: '+relative);
   if(!variants.has(variant)) throw Error('Unknown ad variant: '+variant);
   url.searchParams.set('src','google');
   url.searchParams.set('anzeige',variant);
@@ -51,33 +56,41 @@ const keywords = [['Campaign','Ad group','Keyword','Match type','Status']];
 const groups = [['Campaign','Ad group','Ad group status']];
 const negatives = [['Campaign','Keyword','Type']];
 const links = [['Campaign','Ad group','Link text',landingColumn]];
-const release = [['Startstufe','Anzeigengruppe','Keyword','Zielseite']];
+const release = [['Startstufe','Kampagne','Anzeigengruppe','Keyword','Zielseite']];
 const opening = new Set(plan.openingKeywords);
 const allKeywords = plan.groups.flatMap(group => group.keywords);
 if (opening.size !== 2 || ![...opening].every(keyword => allKeywords.includes(keyword))) {
   throw Error('The first test needs exactly two planned keywords.');
 }
 unique(plan.groups.map(group=>group.adVariant));
+unique(Object.values(plan.campaigns).map(campaign=>campaign.name));
+for (const [key,campaign] of Object.entries(plan.campaigns)) {
+  unique([...plan.negativePhrases,...campaign.negativeExact]);
+  const targeted=plan.groups.filter(group=>group.campaign===key).flatMap(group=>group.keywords);
+  unique(targeted);
+  if (targeted.some(keyword=>campaign.negativeExact.includes(keyword))) throw Error('Targeted keyword excluded in '+campaign.name);
+  for (const keyword of plan.negativePhrases) negatives.push([campaign.name,'"' + keyword + '"','Campaign negative']);
+  for (const keyword of campaign.negativeExact) negatives.push([campaign.name,'[' + keyword + ']','Campaign negative']);
+}
 for (const group of plan.groups) {
+  const campaign=plan.campaigns[group.campaign].name;
   if (group.headlines.length !== titles.length || group.descriptions.length !== descriptions.length) throw Error('Missing RSA assets');
   lengths(group.headlines, 30);
   lengths(group.descriptions, 90);
   lengths([group.path,'nuernberg'], 15);
   unique(group.keywords);
-  groups.push([plan.campaign,group.name,'Paused']);
+  groups.push([campaign,group.name,'Paused']);
   const landing = dest(group.landing,group.adVariant);
-  ads.push([plan.campaign,group.name,'Responsive search ad','Paused',...group.headlines,...group.descriptions,group.path,'nuernberg',landing]);
+  ads.push([campaign,group.name,'Responsive search ad','Paused',...group.headlines,...group.descriptions,group.path,'nuernberg',landing]);
   for (const keyword of group.keywords) {
-    keywords.push([plan.campaign, group.name, keyword, 'Exact','Paused']);
-    release.push([opening.has(keyword) ? 'Erster Test' : 'Reserve', group.name, keyword, landing]);
+    keywords.push([campaign, group.name, keyword, 'Exact','Paused']);
+    const stage=group.hold || (opening.has(keyword) ? 'Erster Test nach Freigabe' : 'Reserve');
+    release.push([stage, campaign, group.name, keyword, landing]);
   }
   lengths(group.sitelinks.map(link=>link.title),25);
   unique(group.sitelinks.map(link=>link.landing));
-  for (const link of group.sitelinks) links.push([plan.campaign,group.name,link.title,dest(link.landing,group.adVariant)]);
+  for (const link of group.sitelinks) links.push([campaign,group.name,link.title,dest(link.landing,group.adVariant)]);
 }
-unique([...plan.negativePhrases,...plan.negativeExact]);
-for (const keyword of plan.negativePhrases) negatives.push([plan.campaign,'"' + keyword + '"','Campaign negative']);
-for (const keyword of plan.negativeExact) negatives.push([plan.campaign,'[' + keyword + ']','Campaign negative']);
 files.set('01-gruppen.csv',groups);
 files.set('02-suchwoerter.csv',keywords);
 files.set('03-anzeigen.csv',ads);
@@ -91,6 +104,8 @@ if (liveUrls) {
     if (resp.status !== 200 || !/text\/html/i.test(resp.headers.get('content-type') || '')) throw Error('Landing not available: ' + u);
     const html = await resp.text();
     if (!/<title[^>]*>[^<]*FrankenPackt[^<]*<\/title>/i.test(html)) throw Error('Check landing identity: ' + u);
+    const fragment = new URL(u).hash.slice(1);
+    if (fragment && !html.includes('id="' + fragment + '"')) throw Error('Missing landing section: ' + u);
   }
 }
 if (command !== 'check') {

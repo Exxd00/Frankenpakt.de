@@ -1,10 +1,10 @@
 export function inquiry(crumb, ic) {
   const details = '<p>Für einen Rückruf genügen Ihr Name und Ihre Telefonnummer. Auf Wunsch kann eine Vertrauensperson die Anfrage übernehmen.</p>';
-  const agreement = '<p>Preis, Leistungen und Termin vereinbaren wir mit Ihnen persönlich.</p>';
+  const agreement = '<p>Für den Transport von weiterverwendetem Hausrat vereinbaren wir Preis und Termin mit Ihnen. Eine Abfallabholung buchen Sie direkt bei der zuständigen Stelle oder einem Fachbetrieb.</p>';
   const livePhone = '<p data-live-phone hidden></p>';
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
-    ${crumb('Anfrage')}<h1 id="inquiry-title">Erzählen Sie uns<br><em>von Ihrem Umzug.</em></h1>
-    <p class="lead" id="inquiry-lead">Für eine erste Einschätzung genügen die wichtigsten Eckdaten. Sie können telefonisch oder per E-Mail um Antwort bitten.</p>
+    ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
+    <p class="lead" id="inquiry-lead">Geht es um eine Entrümpelung, einzelne Gegenstände oder einen Umzug? Wählen Sie Ihr Anliegen und wie wir Sie erreichen.</p>
     <a class="inquiry-switch" id="inquiry-switch" href="/anfrage/?kontakt=telefon">Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>
@@ -15,15 +15,18 @@ export function inquiry(crumb, ic) {
         <div class="fields">
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>
             <select id="service" name="service" required>
+              <option value="" disabled selected>Bitte auswählen</option>
+              <option value="entruempelung">Entrümpelung planen</option><option value="entsorgung">Entsorgungsweg klären</option>
               <option value="umzug">Privatumzug</option><option value="seniorenumzug">Seniorenumzug</option>
               <option value="moebeltaxi">Möbeltaxi</option><option value="transport">Transportanteil bei Wohnungsauflösung</option>
             </select></div>
           <div><label for="timeframe">Wunschzeitraum</label><input id="timeframe" name="timeframe" maxlength="80" placeholder="Zum Beispiel Anfang Dezember"></div>
-          <div><label for="zipFrom">Start-PLZ <span>*</span></label><input id="zipFrom" name="zipFrom" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" required placeholder="90453"></div>
-          <div><label for="zipTo">Ziel-PLZ</label><input id="zipTo" name="zipTo" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" placeholder="Falls bekannt"></div>
+          <div><label for="zipFrom">PLZ des Einsatzorts <span>*</span></label><input id="zipFrom" name="zipFrom" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" required placeholder="90453"></div>
+          <div id="destination-field"><label for="zipTo">Ziel-PLZ (bei Transport)</label><input id="zipTo" name="zipTo" type="text" pattern="[0-9]{5}" inputmode="numeric" maxlength="5" placeholder="Falls bekannt"></div>
         </div>
-        <label for="details">Was soll mitkommen?</label>
-        <textarea name="details" id="details" rows="4" maxlength="1400" placeholder="Zum Beispiel 15 Kartons, ein Sofa und zwei Tische. Start im 1. Stock, am Ziel gibt es einen Aufzug."></textarea>
+        <p id="service-scope" class="fine" hidden></p>
+        <label for="details">Welche Gegenstände sind es?</label>
+        <textarea name="details" id="details" rows="3" maxlength="1400" placeholder="Zum Beispiel ein Schrank und sechs Kartons im zweiten Stock, ohne Aufzug."></textarea>
       </fieldset>
       <fieldset><legend>So erreichen wir Sie</legend>
         <p id="callback-context" class="fine" hidden></p>

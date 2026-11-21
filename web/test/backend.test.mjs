@@ -18,7 +18,13 @@ test('required fields, spam trap and minimum disclosure',()=>{
   assert.throws(()=>validate({...data,email:' ' }));
   assert.throws(()=>validate({...data,website:'hidden'}));
   assert.throws(()=>validate({...data,service:'other'}));
-  assert.throws(()=>validate({...data,service:'entruempelung'}));
+  for (const service of ['entruempelung','entsorgung']) {
+    const adVariant = service + '-nuernberg';
+    assert.equal(validate({...data,service,zipTo:'',adVariant}).adVariant,adVariant);
+    const callback = validate({...data,service:'rueckruf',requestedService:service,contactMethod:'phone',phone:'0911 123456',zipFrom:'',adVariant});
+    assert.equal(callback.requestedService,service);
+    assert.equal(callback.adVariant,adVariant);
+  }
   const lead=validate({...data,irrelevant:'ignore',phone:'do not store',gclid:'example',source:'untrusted'});
   assert.equal(lead.source,'unbekannt');
   assert.equal(lead.phone,undefined);assert.equal(lead.gclid,undefined);

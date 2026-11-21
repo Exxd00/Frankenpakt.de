@@ -114,6 +114,13 @@ footer{background:#EBEEE5;border-top:1px solid var(--line)}
 .detail-img{border-radius:1.3rem;overflow:hidden;aspect-ratio:1.54;background:var(--pale)}
 .detail-hero .lead,.narrowhero .lead{max-width:52ch}
 .narrowhero> .button{margin-top:1.45rem}
+.clearance-costs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(.65rem,2vw,1.5rem);max-width:62rem;margin-top:1.5rem}
+.clearance-costs article{display:flex;flex-direction:column;align-items:flex-start;padding:clamp(.85rem,2vw,1.5rem);background:var(--pale);border:1px solid var(--line);border-radius:.85rem}
+.clearance-costs h2{font-size:clamp(1.12rem,2vw,1.65rem);overflow-wrap:anywhere}
+.clearance-costs p{font-size:1rem;line-height:1.44;margin:.5rem 0 .65rem;color:var(--muted)}
+.clearance-costs a,.price-jump{display:inline-flex;align-items:center;min-height:44px;font-weight:600}
+.clearance-costs a{margin-top:auto}
+.price-jump{margin-top:.65rem}
 .info-grid{margin-top:1.8rem}
 .info-grid article{border-top:2px solid #A4B197;padding:1.35rem .45rem 0 0}
 .info-grid p{margin-top:.6rem}

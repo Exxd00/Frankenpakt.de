@@ -15,7 +15,7 @@ test('generated website serves all routes and assets, live legal copy before Jav
   t.after(async()=>{const done=once(app,'close');app.close();app.closeAllConnections();await done;await rm(dir,{recursive:true,force:true,maxRetries:5});});
   const base='http://127.0.0.1:'+app.address().port;
   const assets=new Set();
-  for(const route of ['/','/umzug/','/moebeltaxi/','/seniorenumzug/','/raeumung/','/preise/','/anfrage/','/impressum/','/datenschutz/']){
+  for(const route of ['/','/umzug/','/moebeltaxi/','/seniorenumzug/','/raeumung/','/entsorgung/','/preise/','/anfrage/','/impressum/','/datenschutz/']){
     const res=await fetch(base+route);assert.equal(res.status,200,route);
     const html=await res.text();
     assert.match(html,/<link rel="canonical"/);assert.doesNotMatch(html,/content="noindex,follow"/);

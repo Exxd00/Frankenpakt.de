@@ -5,12 +5,25 @@ const params = new URLSearchParams(location.search);
 const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
 const rawSource = (params.get('src') || params.get('utm_source') || '').toLowerCase();
 const source = channels.has(rawSource) ? rawSource : 'unbekannt';
-const adLabels = new Set(['privatumzug-team','seniorenumzug-team']);
+const adLabels = new Set(['privatumzug-team','seniorenumzug-team','entruempelung-nuernberg','entsorgung-nuernberg']);
 const rawLabel = params.get('anzeige');
 const adVariant = params.getAll('src').length === 1 && params.get('src') === 'google' &&
   params.getAll('anzeige').length === 1 && adLabels.has(rawLabel) ? rawLabel : null;
 let largeType = params.get('schrift') === 'gross';
-const projectServices = new Set(['umzug','seniorenumzug','moebeltaxi','transport']);
+const clearance = {
+  entruempelung: {
+    title: 'Entrümpelung planen', path: '/raeumung/',
+    scope: 'Beschreiben Sie die Räume und welche Gegenstände weiterverwendet werden. Für diesen Hausrat können wir einen Transport prüfen. Für Abfälle beauftragen Sie den Entsorger direkt.',
+    example: 'Zum Beispiel ein Kellerabteil und ein Schrank. Der Schrank soll zu meiner Tochter, für den Rest brauche ich einen Entsorgungsweg.'
+  },
+  entsorgung: {
+    title: 'Entsorgungsweg klären', path: '/entsorgung/',
+    scope: 'Wir können Hinweise zum Entsorgungsweg geben. Abholung und Preis vereinbaren Sie direkt mit der zuständigen Stelle oder einem Fachbetrieb.',
+    example: 'Zum Beispiel eine Matratze und drei leere Regale in Nürnberg. Ich möchte wissen, wohin ich sie geben kann.'
+  }
+};
+const projectServices = new Set(['umzug','seniorenumzug','moebeltaxi','transport',...Object.keys(clearance)]);
+const pageInterest = projectServices.has(params.get('leistung')) ? params.get('leistung') : params.get('service');
 const packageLabels = {
   taxi: 'Möbeltaxi', drei: 'Umzugsteam · 3 Stunden',
   kompakt: 'Kompaktumzug', sieben: 'Umzugsteam · 7 Stunden'
@@ -18,13 +31,13 @@ const packageLabels = {
 
 function serviceForPackage(pack, interest) {
   if (pack === 'taxi') return 'moebeltaxi';
-  if (Object.hasOwn(packageLabels,pack) && interest === 'moebeltaxi') return 'umzug';
+  if (Object.hasOwn(packageLabels,pack) && (interest === 'moebeltaxi' || Object.hasOwn(clearance,interest))) return 'umzug';
   return projectServices.has(interest) ? interest : 'umzug';
 }
 
 function writeInterest(url, interest, pack, units) {
-  for (const key of ['service','paket','zusatz']) url.searchParams.delete(key);
-  if (projectServices.has(interest)) url.searchParams.set('service',interest);
+  for (const key of ['service','leistung','paket','zusatz']) url.searchParams.delete(key);
+  if (projectServices.has(interest)) url.searchParams.set(Object.hasOwn(clearance,interest) ? 'leistung' : 'service',interest);
   if (Object.hasOwn(packageLabels,pack)) url.searchParams.set('paket',pack);
   if (['drei','sieben'].includes(pack) && /^[1-4]$/.test(units)) url.searchParams.set('zusatz',units);
 }
@@ -68,7 +81,6 @@ function applyType() {
 applyType();
 const offer = document.querySelector('[data-interest-service]');
 if (offer) updateProjectLinks(offer.dataset.interestService, offer.dataset.interestPackage);
-else if (location.pathname === '/raeumung/') updateProjectLinks('transport');
 const steps = document.querySelector('.process-steps');
 if (steps) {
   const narrow = matchMedia('screen and (max-width: 780px)');
@@ -116,9 +128,10 @@ function enableEstimate(form) {
       euro: Number(row.dataset.euro), from: row.dataset.ab === 'true'
     });
   }
-  const selected = params.get('paket');
+  const interest = pageInterest;
+  const selected = Object.hasOwn(clearance,interest) ? null : params.get('paket');
   if (packages.has(selected) && selected !== 'extra') selection.value = selected;
-  const interest = params.get('service');
+  else if (Object.hasOwn(clearance,interest)) selection.value = 'anders';
   function useSelection() {
     const units = fit.value === 'yes' ? extra.querySelector('select')?.value : '';
     updateProjectLinks(serviceForPackage(selection.value,interest), selection.value, units);
@@ -163,16 +176,18 @@ function enableEstimate(form) {
     const compatible = Boolean(pkg) && fit.value === 'yes';
     const units = Number(extra.querySelector('select')?.value || 0);
     const request = node('a', compatible ? 'Dieses Paket anfragen' : 'Umfang persönlich klären', 'button');
-    const qs = new URLSearchParams({service: serviceForPackage(selection.value,interest)});
-    if (pkg) qs.set('paket', selection.value);
-    if (compatible && units) qs.set('zusatz', String(units));
-    request.href = '/anfrage/?' + qs;
+    const service = serviceForPackage(selection.value,interest);
+    const requestUrl = new URL('/anfrage/',location.href);
+    writeInterest(requestUrl,service,selection.value,compatible && units ? String(units) : '');
+    request.href = requestUrl.pathname + requestUrl.search;
     updateLink(request);
     result.replaceChildren(icon.cloneNode(true));
     if (compatible) {
       result.append(node('h3', pkg.name), node('p', (pkg.from ? 'ab ' : '') + money.format(pkg.euro + units * packages.get('extra').euro), 'sum'));
       result.append(node('p', units ? 'Paket ' + money.format(pkg.euro) + ' plus ' + money.format(units * packages.get('extra').euro) + ' für ' + units * 30 + ' zusätzliche Minuten nach Vereinbarung.' : pkg.scope));
       result.append(node('p', 'Preisorientierung inklusive 19 % USt. Das Angebot bestätigt den konkreten Umfang.'));
+    } else if (Object.hasOwn(clearance,service)) {
+      result.append(node('h3', clearance[service].title), node('p', clearance[service].scope));
     } else {
       result.append(node('h3', 'Persönliche Kalkulation'), node('p', 'Für einen passenden Preis brauchen wir Angaben zu Umzugsgut, Strecke und Zugang. Beschreiben Sie Ihr Vorhaben in der Anfrage.'));
     }
@@ -221,6 +236,7 @@ function showReceipt() {
   const confirmed = receipt.mode === 'live' && /^AN-[A-F0-9]{16}$/.test(receipt.reference);
   if (!sample && !confirmed) return;
   const callback = receipt.callback === true;
+  const topic = Object.hasOwn(clearance,receipt.service) ? clearance[receipt.service] : null;
   const title = document.querySelector('#receipt-title');
   title.textContent = sample ? 'Vorschau der Bestätigung' : callback ? 'Danke für Ihren Rückrufwunsch.' : 'Danke für Ihre Anfrage.';
   document.querySelector('#receipt-description').textContent = sample
@@ -236,11 +252,11 @@ function showReceipt() {
   next.textContent = sample
     ? 'Nach einer echten Übermittlung finden Sie hier Ihre Vorgangsnummer und den nächsten Schritt.'
     : receipt.contactMethod === 'phone'
-      ? 'Wir melden uns unter der angegebenen Telefonnummer. Einen Termin vereinbaren wir im Gespräch mit Ihnen.'
-      : 'Wir melden uns an die angegebene E-Mail-Adresse. Einen Termin vereinbaren wir anschließend mit Ihnen.';
+      ? 'Wir melden uns unter der angegebenen Telefonnummer.'
+      : 'Wir melden uns an die angegebene E-Mail-Adresse.';
   const primary = document.querySelector('#receipt-primary');
-  primary.textContent = 'Zur Preisübersicht';
-  primary.href = '/preise/';
+  primary.textContent = topic ? topic.title : 'Zur Preisübersicht';
+  primary.href = topic ? topic.path : '/preise/';
   updateLink(primary);
   document.title = title.textContent + ' · FrankenPackt';
 }
@@ -264,8 +280,8 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
 
 function enableInquiry(form) {
   const service = form.elements.service;
-  const pack = params.get('paket');
-  const initialService = params.get('service');
+  const initialService = pageInterest;
+  const pack = Object.hasOwn(clearance,initialService) ? null : params.get('paket');
   const requestedService = Object.hasOwn(packageLabels,pack) ? serviceForPackage(pack,initialService) : initialService;
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
@@ -275,6 +291,17 @@ function enableInquiry(form) {
   const summary = document.querySelector('#form-result');
   const submit = document.querySelector('#send-lead');
   const details = form.elements.details;
+  const defaultExample = details.placeholder;
+  const scope = document.querySelector('#service-scope');
+  const destination = document.querySelector('#destination-field');
+  function showServiceFields() {
+    const topic = Object.hasOwn(clearance,service.value) ? clearance[service.value] : null;
+    scope.hidden = !topic;
+    scope.textContent = topic?.scope || '';
+    destination.hidden = form.elements.zipTo.disabled = Boolean(topic);
+    details.placeholder = topic?.example || defaultExample;
+  }
+  showServiceFields();
   if (Object.hasOwn(packageLabels, pack)) {
     const units = Number(params.get('zusatz'));
     const addition = ['drei', 'sieben'].includes(pack) && [1, 2, 3, 4].includes(units) ? ' mit ' + units * 30 + ' Minuten gewünschter Verlängerung' : '';
@@ -295,9 +322,10 @@ function enableInquiry(form) {
     document.querySelector('#callback-window').hidden = false;
     form.elements.callbackTime.disabled = false;
     const hint = document.querySelector('#callback-context');
-    hint.textContent = context;
+    const topic = Object.hasOwn(clearance,initialService) ? clearance[initialService] : null;
+    hint.textContent = topic ? context + '. ' + topic.scope : context;
     hint.hidden = !context;
-    switchLink.textContent = 'Zur ausführlichen Umzugsanfrage';
+    switchLink.textContent = 'Zur ausführlichen Anfrage';
     submit.textContent = 'Musterrückruf prüfen';
   } else {
     switchTarget.searchParams.set('kontakt', 'telefon');
@@ -312,6 +340,7 @@ function enableInquiry(form) {
   }
   updateFormLinks(serviceOption?.value);
   service.addEventListener('change', () => {
+    showServiceFields();
     if (Object.hasOwn(packageLabels,currentPack) && serviceForPackage(currentPack,service.value) !== service.value) {
       currentPack = null;
       if (details.value === presetDetails) details.value = '';
@@ -379,7 +408,7 @@ function enableInquiry(form) {
         return;
       }
       if (mode !== 'live') {
-        finish({mode:'preview', reference:null, callback, contactMethod: form.elements.contactMethod.value});
+        finish({mode:'preview', reference:null, callback, service:service.value, contactMethod: form.elements.contactMethod.value});
         return;
       }
       const body = Object.fromEntries(new FormData(form));
@@ -405,7 +434,7 @@ function enableInquiry(form) {
       if (!answer.ok || answer.mode !== 'live' || !/^AN-[A-F0-9]{16}$/.test(answer.reference)) throw new Error('invalid');
       form.reset();
       lastId = '';
-      finish({mode:'live', reference:answer.reference, callback, contactMethod:body.contactMethod});
+      finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod});
     } catch (error) {
       summary.textContent = error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
     } finally {

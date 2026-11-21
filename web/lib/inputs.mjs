@@ -11,7 +11,7 @@ export function cleanMoney(input) {
   return Math.round(Number(input)*100);
 }
 
-const googleAdVariants=new Set(['privatumzug-team','seniorenumzug-team']);
+const googleAdVariants=new Set(['privatumzug-team','seniorenumzug-team','entruempelung-nuernberg','entsorgung-nuernberg']);
 export function isGoogleAdVariant(value) {
   return googleAdVariants.has(value);
 }

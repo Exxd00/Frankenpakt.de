@@ -1,12 +1,89 @@
 {
-  "campaign": "FrankenPackt | Suche | Nürnberg | Umzüge",
+  "campaigns": {
+    "raeumen": {
+      "name": "FrankenPackt | Suche | Nürnberg | Entrümpelung und Entsorgung",
+      "negativeExact": ["umzugsunternehmen nürnberg", "seniorenumzug nürnberg", "sperrmüll abholung nürnberg", "sperrmüll kostenlos nürnberg"]
+    },
+    "umziehen": {
+      "name": "FrankenPackt | Suche | Nürnberg | Umzüge",
+      "negativeExact": ["entrümpelung nürnberg", "wohnungsauflösung nürnberg", "haushaltsauflösung nürnberg", "sperrmüll abholung nürnberg", "möbel entsorgen nürnberg"]
+    }
+  },
   "openingKeywords": [
-    "umzugsunternehmen nürnberg preise",
-    "umzugsunternehmen nürnberg"
+    "entrümpelung nürnberg",
+    "keller entrümpeln nürnberg"
   ],
   "groups": [
     {
+      "name": "Entrümpelung planen",
+      "campaign": "raeumen",
+      "landing": "/raeumung/",
+      "adVariant": "entruempelung-nuernberg",
+      "sitelinks": [
+        {"title":"Wohnung und Keller planen","landing":"/raeumung/#ablauf"},
+        {"title":"Räumung vorbereiten","landing":"/anfrage/?leistung=entruempelung"},
+        {"title":"Rückruf zur Räumung","landing":"/anfrage/?leistung=entruempelung&kontakt=telefon"},
+        {"title":"Wohin mit alten Möbeln?","landing":"/entsorgung/"}
+      ],
+      "path": "entruempelung",
+      "headlines": [
+        "Entrümpelung Nürnberg planen",
+        "Keller entrümpeln in Nürnberg",
+        "Was soll aus der Wohnung?",
+        "Welche Möbel bleiben?",
+        "Hausrat vorab sichten",
+        "Wohnungsauflösung planen",
+        "Transport für brauchbare Möbel",
+        "FrankenPackt Nürnberg"
+      ],
+      "descriptions": [
+        "Räumung vorbereiten: Hausrat zum Behalten, Weitergeben oder Entsorgen sortieren.",
+        "Für Möbel, die Sie weiter nutzen, können Sie einen Transport bei FrankenPackt anfragen.",
+        "Zimmer, Etage und Zugang beschreiben. Abfallentsorgung beauftragen Sie separat."
+      ],
+      "keywords": [
+        "entrümpelung nürnberg",
+        "keller entrümpeln nürnberg",
+        "wohnungsauflösung nürnberg",
+        "haushaltsauflösung nürnberg"
+      ]
+    },
+    {
+      "name": "Möbel entsorgen",
+      "campaign": "raeumen",
+      "hold": "Zurückgestellt: Entsorgungsangebot und Annahmekosten prüfen",
+      "landing": "/entsorgung/",
+      "adVariant": "entsorgung-nuernberg",
+      "sitelinks": [
+        {"title":"Entsorgungswege ansehen","landing":"/entsorgung/#entsorgungswege"},
+        {"title":"Kostenfaktoren ansehen","landing":"/entsorgung/#kosten"},
+        {"title":"Entsorgung planen","landing":"/anfrage/?leistung=entsorgung"},
+        {"title":"Rückruf zur Planung","landing":"/anfrage/?leistung=entsorgung&kontakt=telefon"}
+      ],
+      "path": "entsorgung",
+      "headlines": [
+        "Möbel entsorgen in Nürnberg",
+        "Wohin mit dem alten Sofa?",
+        "Sperrmüll in Nürnberg planen",
+        "Was ist noch brauchbar?",
+        "Möbel aus dem Keller sortieren",
+        "Entsorgungswege in Nürnberg",
+        "Annahme und Zugang klären",
+        "FrankenPackt Nürnberg"
+      ],
+      "descriptions": [
+        "Wege für alte Möbel vergleichen: weitergeben, Sperrmüll oder Fachbetrieb prüfen.",
+        "Menge, Material und Zugang erleichtern die Planung. Die Annahme klärt der Entsorger.",
+        "Für weiter genutzten Hausrat Transport anfragen. Entsorgung beauftragen Sie separat."
+      ],
+      "keywords": [
+        "möbel entsorgen nürnberg",
+        "sofa entsorgen nürnberg"
+      ]
+    },
+    {
       "name": "Privatumzug",
+      "campaign": "umziehen",
       "landing": "/umzug/",
       "adVariant": "privatumzug-team",
       "sitelinks": [
@@ -40,6 +117,7 @@
     },
     {
       "name": "Seniorenumzug",
+      "campaign": "umziehen",
       "landing": "/seniorenumzug/",
       "adVariant": "seniorenumzug-team",
       "sitelinks": [
@@ -95,11 +173,5 @@
     "klaviertransport",
     "tresortransport",
     "umzugsfirma gründen"
-  ],
-  "negativeExact": [
-    "entrümpelung nürnberg",
-    "wohnungsauflösung nürnberg",
-    "haushaltsauflösung nürnberg",
-    "sperrmüll abholung nürnberg"
   ]
 }
