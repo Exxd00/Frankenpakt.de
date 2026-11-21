@@ -3,11 +3,10 @@ import assert from 'node:assert/strict';
 import {normalizeJobContext,scopeConditionNotes} from '../public/assets/job-scope-conditions.js';
 const notes=(service,raw,fields)=>scopeConditionNotes({service,fields},new URLSearchParams(raw)).join('\n');
 
-test('reviews only evidenced curbside and compact-package exceptions',()=>{
+test('retires the old curbside package and reviews team-package exceptions',()=>{
   const taxi={service:'moebeltaxi',paket:'taxi'};
-  assert.equal(notes('moebeltaxi',taxi,{fromFloor:'curb',toFloor:'curb',fromHelpers:'none',items:'[{"type":"furniture","quantity":"1"}]'}),'');
-  const two=notes('moebeltaxi',taxi,{fromFloor:'3',toFloor:'curb',fromHelpers:'none',items:'[{"type":"bulky","quantity":"2"}]'});
-  assert.match(two,/mehrere Stücke/);assert.match(two,/Bordsteinen/);assert.match(two,/zweite Person/);
+  assert.equal(normalizeJobContext(taxi,'moebeltaxi'),null);
+  assert.equal(notes('moebeltaxi',taxi,{fromFloor:'3',toFloor:'curb',fromHelpers:'none',items:'[{"type":"bulky","quantity":"2"}]'}),'');
   const compact=notes('umzug',{service:'umzug',paket:'kompakt'},
     {fromFloor:'ground',toFloor:'2',fromCarry:'15',toCarry:'16',tasks:'assemble,pack',loadVolumeMode:'estimated',loadVolume:'20,1'});
   for(const term of ['Geschoss bei Ziel','Trageweg bei Ziel','über den 20','Möbelmontage','gepacktes'])assert.ok(compact.includes(term));
@@ -21,8 +20,9 @@ test('compares exact disposal route, selected size, material and private placeme
   const questionable=notes('entsorgung',selected,{wasteRoute:'container',site:'public',wasteVolume:'5',materials:'electrical'});
   for(const term of ['Privatgrund','Containergröße','Annahme'])assert.ok(questionable.includes(term));
   assert.match(notes('entsorgung',selected,{wasteRoute:'city'}),/abweicht|weicht/);
-  assert.match(notes('entsorgung',{leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'},{wasteRoute:'self'}),/weicht/);
-  assert.match(notes('entruempelung',{leistung:'entruempelung',hilfe:'one-helper',entsorgungsweg:'none'},{retainedTransport:'destination'}),/kein Fahrzeug/);
+  assert.match(notes('entsorgung',{leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'},{wasteRoute:'provider'}),/weicht/);
+  assert.match(notes('entruempelung',{leistung:'entruempelung',hilfe:'team',entsorgungsweg:'none'},{retainedTransport:'destination'}),/Transport zur Zieladresse/);
+  assert.equal(normalizeJobContext({leistung:'entruempelung',hilfe:'one-helper',entsorgungsweg:'none'},'entruempelung'),null);
 });
 
 test('untrusted extra values, stale services and incompatible terms do not become calculation context',()=>{

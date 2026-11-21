@@ -33,7 +33,7 @@ export function scopePlanningLines(scope, inventory = []) {
 
   const items = inventory.filter(item => !['discard','stay'].includes(item.destination));
   if (items.some(item => item.type === 'bulky' && [item.size,item.weight].some(value => /^unbekannt$/i.test(String(value).trim())))) {
-    lines.push('Bei einem besonders schweren oder sperrigen Stück fehlen Maße oder Gewicht. Tragehilfe und Eignung des Fahrzeugs vor der Zusage prüfen.');
+    lines.push('Bei einem besonders schweren oder sperrigen Stück fehlen Maße oder Gewicht. Unser Team prüft Personalbedarf, Trageausrüstung und Fahrzeug vor der Zusage.');
   }
   const weights = items.map(item => ({kg:itemWeightKg(item.weight), count:quantity(item.quantity)}));
   const exceedsPayload = includesTransport && weights.some(item => item.kg > planningPayloadKg);

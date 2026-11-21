@@ -24,6 +24,7 @@ test('a scoped inquiry reaches the private quote review with independent address
   const post=payload=>fetch(endpoint,{method:'POST',headers:{'content-type':'application/json',origin:env.PUBLIC_ORIGIN},body:JSON.stringify(payload)});
   const ops=(...args)=>JSON.parse(execFileSync(process.execPath,['--disable-warning=ExperimentalWarning',fileURLToPath(new URL('../ops.mjs',import.meta.url)),...args],{env:{...process.env,LEAD_DATA_DIR:dataDir},encoding:'utf8'}));
   const jobScope=exampleJobScope('umzug');
+  Object.assign(jobScope.fields,{fromHelpers:'all',fromHelperCount:'4',toHelpers:'load',toHelperCount:'2'});
   const inquiry={requestId:randomUUID(),name:'Testperson',contactMethod:'email',email:'test@example.invalid',
     service:'umzug',details:'Preisziel 498 € zur Prüfung.',jobScope,jobContext:{service:'umzug',paket:'kompakt'},jobConditionNotes:['unbestätigt']};
   const sent=await post(inquiry);
@@ -35,6 +36,7 @@ test('a scoped inquiry reaches the private quote review with independent address
   assert.equal(saved.person.zipTo,jobScope.fields.toZip);
   assert.equal(saved.person.jobScope.fields.fromFloor,jobScope.fields.fromFloor);
   assert.equal(saved.person.jobScope.fields.toFloor,jobScope.fields.toFloor);
+  for(const key of ['fromHelpers','fromHelperCount','toHelpers','toHelperCount']) assert.ok(!Object.hasOwn(saved.person.jobScope.fields,key));
   assert.deepEqual(JSON.parse(saved.person.jobScope.fields.items),JSON.parse(jobScope.fields.items));
   assert.match(saved.person.timeframe,/01\.03\.2027.*05\.03\.2027/);
   const summary=saved.jobScopeSummary.join('\n');

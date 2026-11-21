@@ -5,17 +5,17 @@ const containerPrices = new Map([
   ['container-4-5', {size: '4,5', cents: 47005}],
   ['container-7', {size: '7', cents: 64260}]
 ]);
-const helpChoices = new Set(['none', 'one-helper', 'individual']);
+const helpChoices = new Set(['team', 'none']);
 const disposalChoices = new Set(['none', 'asn', 'individual', ...containerPrices.keys()]);
 const formatEstimate = cents => cents === 0 ? 'kostenfrei' : formatStartingPrice(cents);
 
 export function calculateEstimate({help, disposal, asnEligible = false, containerEligible = false}) {
   const lines = [];
   if (!helpChoices.has(help) || !disposalChoices.has(disposal) || (help === 'none' && disposal === 'none')) {
-    return {service: null, lines, totalCents: null, title: 'Ihre Preisorientierung', note: 'Wählen Sie die gewünschte Hilfe oder einen Entsorgungsweg.'};
+    return {service: null, lines, totalCents: null, title: 'Externe Kosten einschätzen', note: 'Wählen Sie einen Entsorgungsweg, um die Anbieterpreise zu sehen.'};
   }
-  if (help === 'one-helper') lines.push({label: '3 Stunden Tragehilfe für Hausrat zur Weiternutzung, ohne Fahrzeug', cents: 16100});
-  if (help === 'individual') lines.push({label: 'Individuelle Räumhilfe – Angebot erforderlich', cents: null});
+  const teamRequested = help === 'team';
+  if (teamRequested) lines.push({label: 'Sortieren und Tragen durch das FrankenPackt-Team · individuelles Angebot', cents: null});
 
   if (disposal === 'asn') {
     lines.push(asnEligible
@@ -30,24 +30,15 @@ export function calculateEstimate({help, disposal, asnEligible = false, containe
     lines.push({label: 'Andere Entsorgung – Preis beim Anbieter erfragen', cents: null});
   }
 
-  const priced = lines.filter(line => line.cents !== null);
-  const totalCents = priced.length ? priced.reduce((sum, line) => sum + line.cents, 0) : null;
-  const service = help === 'none' ? 'entsorgung' : 'entruempelung';
-  if (priced.length < lines.length) {
-    if (totalCents === 0) {
-      return {service, lines, totalCents: null, title: 'Gesamtpreis noch offen',
-        note: 'Die städtische Abholung ist unter den gewählten Bedingungen kostenlos. Für die Räumhilfe benötigen Sie ein individuelles Angebot.'};
-    }
-    const title = priced.length ? 'Bekannter Teilbetrag' : 'Preis noch offen';
-    const note = priced.length ? 'Für die offenen Positionen kommt gegebenenfalls ein weiterer Betrag hinzu.' : 'Für Ihre Auswahl braucht es eine Klärung der Bedingungen oder ein individuelles Angebot.';
-    return {service, lines, totalCents, title, note};
+  if (teamRequested) {
+    return {service: 'entruempelung', lines, totalCents: null, title: 'Ihr persönliches Angebot',
+      note: disposal === 'none' ? 'Nach Prüfung von Inventar und Zugang erhalten Sie unser Angebot für die Teamarbeiten.'
+        : 'Für die Teamarbeiten erhalten Sie unser Angebot. Abholung oder Container beauftragen Sie separat beim Entsorger.'};
   }
-  const title = lines.length > 1 ? 'Geschätzte Gesamtkosten' : 'Richtwert für Ihre Auswahl';
-  let note = 'Unverbindlicher Einstiegspreis inklusive MwSt. Ihr persönliches Angebot erhalten Sie nach Prüfung Ihrer Angaben.';
+  let note = 'Die Annahmebedingungen und den Preis klären Sie direkt mit dem Entsorger.';
   if (disposal === 'asn') note = 'Die Abholung beantragen Sie direkt beim ASN. Die Stadt prüft Ihre Anmeldung.';
-  if (containerPrices.has(disposal)) note = 'Der Containerpreis ist ein externer Brutto-Richtwert. Angebot und Buchung erhalten Sie direkt bei Schutt Karl.';
-  if (lines.length > 1) note += ' Die Tragehilfe vereinbaren Sie separat mit FrankenPackt.';
-  return {service, lines, totalCents, title, note};
+  if (containerPrices.has(disposal)) note = 'Den Container buchen Sie direkt bei Schutt Karl. Für die Befüllung durch einen Fachbetrieb ist ein separates Angebot erforderlich.';
+  return {service: 'entsorgung', lines, totalCents: lines[0].cents, title: 'Kosten beim Entsorger', note};
 }
 
 function selectionParams(choice) {
@@ -66,7 +57,7 @@ export function inquiryEstimate(params) {
   const estimate = calculateEstimate(choice);
   if (!estimate.service || estimate.service !== params.get('leistung')) return null;
   const lines = estimate.lines.map(({label,cents}) => cents === null ? label : label+' · '+formatEstimate(cents));
-  const summary = lines.join('. ')+'.'+(estimate.totalCents !== null && lines.length > 1 ? ' '+estimate.title+' · '+formatEstimate(estimate.totalCents)+'.' : '');
+  const summary = lines.join('. ')+'.';
   return {service: estimate.service, params: selectionParams(choice), summary};
 }
 

@@ -3,11 +3,17 @@
 document.documentElement.classList.add('js');
 const pageUrl = new URL(location.href);
 const obsoleteAmountKeys = ['vergleichcent','vergleichart'];
-if (obsoleteAmountKeys.some(key => pageUrl.searchParams.has(key))) {
-  for (const key of obsoleteAmountKeys) pageUrl.searchParams.delete(key);
-  history.replaceState(history.state,'',pageUrl);
-}
 const params = pageUrl.searchParams;
+for (const key of obsoleteAmountKeys) params.delete(key);
+if (params.get('paket') === 'taxi') {
+  params.delete('paket');
+  params.delete('zusatz');
+  if (!params.has('leistung')) params.set('service','moebeltaxi');
+}
+if (['one-helper','individual'].includes(params.get('hilfe'))) {
+  for (const key of ['hilfe','entsorgungsweg','asn','container']) params.delete(key);
+}
+if (pageUrl.href !== location.href) history.replaceState(history.state,'',pageUrl);
 const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
 const rawSource = (params.get('src') || params.get('utm_source') || '').toLowerCase();
 const source = channels.has(rawSource) ? rawSource : 'unbekannt';
@@ -31,7 +37,7 @@ const clearance = {
 const projectServices = new Set(['umzug','seniorenumzug','moebeltaxi','transport',...Object.keys(clearance)]);
 const pageInterest = projectServices.has(params.get('leistung')) ? params.get('leistung') : params.get('service');
 const packageLabels = {
-  taxi: 'Möbeltaxi', drei: 'Umzugsteam · 3 Stunden',
+  drei: 'Umzugsteam · 3 Stunden',
   kompakt: 'Kompaktumzug', sieben: 'Umzugsteam · 7 Stunden'
 };
 const priceContextKeys = ['hilfe','entsorgungsweg','asn','container','vorhaben'];
@@ -41,7 +47,7 @@ function clearEstimateContext(url) {
 }
 
 function serviceForPackage(pack, interest) {
-  if (pack === 'taxi') return 'moebeltaxi';
+  if (pack === 'moebeltaxi') return 'moebeltaxi';
   if (Object.hasOwn(packageLabels,pack) && (interest === 'moebeltaxi' || Object.hasOwn(clearance,interest))) return 'umzug';
   return projectServices.has(interest) ? interest : 'umzug';
 }
@@ -152,6 +158,7 @@ function enableEstimate(form) {
   const interest = pageInterest;
   const selected = Object.hasOwn(clearance,interest) ? null : params.get('paket');
   if (packages.has(selected) && selected !== 'extra') selection.value = selected;
+  else if (interest === 'moebeltaxi') selection.value = 'moebeltaxi';
   else if (Object.hasOwn(clearance,interest)) selection.value = 'anders';
   function useSelection() {
     const units = fit.value === 'yes' ? extra.querySelector('select')?.value : '';
@@ -208,6 +215,8 @@ function enableEstimate(form) {
       result.append(node('h3', pkg.name), node('p', startingPrice(pkg.euro + extension), 'sum'));
       result.append(node('p', units ? 'Paket ' + startingPrice(pkg.euro) + ' · ' + units * 30 + ' Minuten Verlängerung ' + startingPrice(extension) + '.' : pkg.scope));
       result.append(node('p', 'Unverbindliche Schätzung inklusive 19 % USt. Ihr persönliches Angebot erhalten Sie nach Prüfung Ihrer Angaben.'));
+    } else if (service === 'moebeltaxi') {
+      result.append(node('h3', 'Ihr Möbeltransport'), node('p', 'Unser Team trägt, lädt und transportiert Ihr Möbelstück. Für Ihr Angebot nennen Sie uns bitte Maße, Strecke und Zugang an beiden Adressen.'));
     } else if (Object.hasOwn(clearance,service)) {
       result.append(node('h3', clearance[service].title), node('p', clearance[service].scope));
     } else {

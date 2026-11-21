@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {validateJobScope,summarizeJobScope,summarizeJobTiming,readItems,movingServices,clearanceServices} from '../public/assets/job-scope-model.js';
+import {validateJobScope,summarizeJobScope,summarizeJobTiming,readItems,movingServices,clearanceServices,jobSections} from '../public/assets/job-scope-model.js';
 import {exampleJobScope} from '../test-support/job-scope.mjs';
 
 test('each supported service normalizes a scoped example and keeps address-specific access',()=>{
@@ -30,10 +30,30 @@ test('retained goods can require a full destination while waste collection has i
   scope.fields.wasteRoute='none';assert.ok(validateJobScope(scope,scope.service).errors.wasteRoute);
 });
 test('conditional access and measurement fields are validated without inventing zero quantities',()=>{
-  const scope=exampleJobScope();Object.assign(scope.fields,{fromFloor:'multi',fromLift:'part',toHelpers:'carry',toHelperCount:'0',fromCarry:'-1',loadWeight:'',dateEnd:'2027-02-28'});
-  const result=validateJobScope(scope,scope.service);for(const k of ['fromFloorItems','toHelperCount','fromCarry','loadWeight','dateEnd'])assert.ok(result.errors[k],k);
-  scope.fields.fromFloor='curb';scope.fields.loadWeightMode='unknown';scope.fields.toHelpers='none';
-  const checked=validateJobScope(scope,scope.service);for(const k of ['fromLift','fromFloorItems','toHelperCount','loadWeight'])assert.equal(Object.hasOwn(checked.value.fields,k),false,k);
+  const scope=exampleJobScope();Object.assign(scope.fields,{fromFloor:'multi',fromLift:'part',fromCarry:'-1',loadWeight:'',dateEnd:'2027-02-28'});
+  const result=validateJobScope(scope,scope.service);for(const k of ['fromFloorItems','fromCarry','loadWeight','dateEnd'])assert.ok(result.errors[k],k);
+  scope.fields.fromFloor='curb';scope.fields.loadWeightMode='unknown';
+  const checked=validateJobScope(scope,scope.service);for(const k of ['fromLift','fromFloorItems','loadWeight'])assert.equal(Object.hasOwn(checked.value.fields,k),false,k);
+});
+test('new requests never rely on customer labour even when restored from an old draft',()=>{
+  const retired={fromHelpers:'all',fromHelperCount:'3',toHelpers:'load',toHelperCount:'1',clearanceWork:'carry'};
+  for(const service of [...movingServices,...clearanceServices]){
+    const defs=jobSections(service).flatMap(group=>group.fields);
+    const scope=exampleJobScope(service);
+    Object.assign(scope.fields,retired);
+    const result=validateJobScope(scope,service);
+    assert.ok(result.ok,JSON.stringify(result.errors));
+    for(const key of Object.keys(retired)){
+      assert.ok(!defs.some(def=>def.key===key));
+      assert.ok(!Object.hasOwn(result.value.fields,key));
+    }
+    assert.doesNotMatch(summarizeJobScope(result.value),/privat[\w]* Helfer|Trageperson/i);
+    if(clearanceServices.includes(service)){
+      assert.ok(!defs.find(def=>def.key==='wasteRoute').options.some(([value])=>value==='self'));
+      scope.fields.wasteRoute='self';
+      assert.ok(validateJobScope(scope,service).errors.wasteRoute);
+    }
+  }
 });
 test('item counts and special handling details are bounded and invalid structured inputs are rejected',()=>{
   const scope=exampleJobScope();const row={type:'bulky',quantity:'1',name:'Massivholzschrank',size:'180 x 80 x 45',weight:'unbekannt'};

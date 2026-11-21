@@ -2,7 +2,7 @@
 
 ## Angebot kalkulieren und Absage einordnen
 
-`node ops.mjs show VORGANG` zeigt bei detaillierten Website-Anfragen die Einsatzdaten unter `jobScopeSummary`. Bei einem Umzug stehen Abhol- und Zieladresse mit ihrem jeweiligen Zugang getrennt im Vorgang. Für die Einsatzplanung sind die tatsächlich nutzbare Nutzlast des Fahrzeugs, Tragewege, verfügbare Helfer und der vereinbarte Umgang mit den Gegenständen maßgeblich. Bei einer Räumung prüfen Sie auch, welche Stücke der Kunde behalten will und welche Abholung er beim Entsorger beauftragt.
+`node ops.mjs show VORGANG` zeigt bei detaillierten Website-Anfragen die Einsatzdaten unter `jobScopeSummary`. Bei einem Umzug stehen Abhol- und Zieladresse mit ihrem jeweiligen Zugang getrennt im Vorgang. Für die Einsatzplanung sind die tatsächlich nutzbare Nutzlast des Fahrzeugs, Tragewege, das eingeplante Personal des Betriebs und der vereinbarte Umgang mit den Gegenständen maßgeblich. Bei einer Räumung prüfen Sie auch, welche Stücke der Kunde behalten will und welche Abholung er beim Entsorger beauftragt.
 
 Kunden beschreiben ihre Gegenstände und Mengen, die zu räumenden Flächen oder die Größe und Strecke ihres Umzugs. Nur zu einer passenden Leistungsklasse berechnet das System einen numerischen Richtwert. Bei Eingang der Anfrage übernimmt es die Angaben und berechnet die Preisorientierung aus den dazu passenden Marktdaten. Der Endpreis wird nach Prüfung des gesamten Auftrags dokumentiert.
 

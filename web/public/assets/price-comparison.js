@@ -86,7 +86,7 @@ function mountEstimator(form) {
     calculator.hidden = !estimate || hasAmount;
     if (estimate && !hasAmount) {
       calculator.setAttribute('href',estimate.route);
-      calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Kosten für Tragehilfe und Entsorgung ansehen';
+      calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Räumung und externe Entsorgungspreise ansehen';
     }
     title.textContent = hasAmount ? 'Unverbindlicher Richtwert inkl. MwSt.' : estimate ? 'Individuelle Einschätzung' : 'Ihre Angaben';
     amount.textContent = hasAmount ? formatStartingPrice(estimate.estimatedCents) : '';

@@ -22,7 +22,8 @@ test('generated website serves all routes and assets, live legal copy before Jav
     if(route==='/preise/'){
       const mobileAmounts = Array.from(html.matchAll(/class="tile-price">([^<]+)</g), m => m[1]);
       const desktopAmounts = Array.from(html.matchAll(/class="amount"><strong>([^<]+)</g), m => m[1]);
-      assert.equal(mobileAmounts.length, 5);
+      assert.equal(mobileAmounts.length, 4);
+      assert.doesNotMatch(html,/data-paket="taxi"|value="one-helper"/);
       assert.deepEqual(desktopAmounts, mobileAmounts);
       for(const amount of mobileAmounts) assert.match(amount, /^ab [\d.]+\s€$/);
     }

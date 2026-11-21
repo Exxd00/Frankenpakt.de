@@ -1,18 +1,17 @@
 export function clearanceCalculator(scopeSlot = '') {
   return `<section id="raeumungsrechner" class="wrap clearance-estimator" aria-labelledby="clearance-calc-heading">
     <h2 id="clearance-calc-heading">Räumungskosten berechnen</h2>
-    <p class="calc-intro">Wählen Sie Tragehilfe und Entsorgungsweg. Sie sehen Ihren Richtpreis direkt und ohne Kontaktdaten.</p>
+    <p class="calc-intro">Unser Team übernimmt das vereinbarte Sortieren und Tragen von Hausrat zur Weiternutzung. Hier können Sie die Arbeiten anfragen und externe Abhol- oder Containerkosten einschätzen.</p>
     <div class="calc-layout">
       <form id="clearance-calculator" class="calc-inputs">
         <div class="calc-fields">
-          <div><label for="calc-help">Welche Hilfe brauchen Sie?</label>
+          <div><label for="calc-help">Was möchten Sie anfragen?</label>
             <select id="calc-help" name="help">
-              <option value="none">Keine Tragehilfe</option>
-              <option value="one-helper">3 Std. · 1 Tragehelfer</option>
-              <option value="individual">Sortieren oder mehr Hilfe</option>
+              <option value="team">Räumung durch das FrankenPackt-Team</option>
+              <option value="none">Nur externe Abhol- und Containerpreise ansehen</option>
             </select>
           </div>
-          <div><label for="calc-disposal">Wie entsorgen Sie?</label>
+          <div><label for="calc-disposal">Welcher Entsorgungsweg kommt infrage?</label>
             <select id="calc-disposal" name="disposal">
               <option value="none">Keine Entsorgung</option>
               <option value="asn">Stadt · Sperrmüll</option>
@@ -31,7 +30,7 @@ export function clearanceCalculator(scopeSlot = '') {
         </div>
         <div class="calc-conditions" data-container-confirm hidden>
           <p>Wie groß ist der Stapel? Länge × Breite × Höhe in Metern ergibt das ungefähre Volumen. Bei 2 × 1 × 1 Metern sind es etwa 2 m³.</p>
-          <label><input type="checkbox" name="containerEligible" disabled><span>Ich habe Platz auf Privatgrund, fülle selbst zugelassenen Sperrmüll ein und brauche höchstens fünf Wochentage Mietzeit.</span></label>
+          <label><input type="checkbox" name="containerEligible" disabled><span>Der Container steht auf Privatgrund. Es geht um zugelassenen Sperrmüll und höchstens fünf Wochentage Mietzeit.</span></label>
         </div>
         <button id="clearance-calc-submit" class="button" type="submit">Richtpreis berechnen</button>
       </form>
@@ -40,7 +39,7 @@ export function clearanceCalculator(scopeSlot = '') {
           <h3 data-estimate-title>Ihr Richtpreis</h3>
           <p data-estimate-total class="calc-total"></p>
           <ul data-estimate-lines class="calc-lines"></ul>
-          <p data-estimate-note>Wählen Sie die gewünschte Hilfe oder einen Entsorgungsweg.</p>
+          <p data-estimate-note>Für die Teamarbeiten erhalten Sie nach Prüfung Ihrer Angaben ein persönliches Angebot.</p>
         </div>
         <a data-estimate-inquiry href="/anfrage/?leistung=entruempelung">Vorhaben anfragen</a>
       </div>
@@ -48,9 +47,9 @@ export function clearanceCalculator(scopeSlot = '') {
     ${scopeSlot}
     <details class="calc-sources">
       <summary>Preise und Bedingungen nachlesen</summary>
-      <p><strong>Tragehilfe</strong> · ab 161 € inklusive 19 % MwSt. für eine Person und drei Stunden vor Ort zum Tragen von Hausrat, den Sie weiterverwenden. Hin- und Rückfahrt des Helfers sind bis zusammen 30 Minuten enthalten. Ein gegebenenfalls benötigtes Fahrzeug stellen Sie.</p>
+      <p><strong>Räumung durch unser Team</strong> · Den Aufwand für das Sortieren und Tragen von Hausrat zur Weiternutzung berechnen wir anhand von Inventar, Etage, Aufzug und Trageweg.</p>
       <p><strong>Städtische Abholung</strong> · Für berechtigte Nürnberger Privathaushalte einmal pro Kalenderjahr kostenfrei. Sie melden Ihre Gegenstände vorab selbst an. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/sperrmuell.html">Bedingungen der Stadt Nürnberg</a></p>
-      <p><strong>Sperrmüllcontainer von Schutt Karl</strong> · 2 m³ ab 301,07 €, 4,5 m³ ab 470,05 €, 7 m³ ab 642,60 €. Diese Richtwerte enthalten 19 % MwSt., Lieferung auf Privatgrund, fünf mietfreie Wochentage, Abholung und Entsorgung. Sie befüllen den Container und klären Lieferadresse, Termin und Tagespreis direkt mit dem Anbieter. <a href="https://www.schuttkarl.de/wp-content/uploads/2026/01/Schutt-Karl-Preisliste-Neulinge-2026.pdf">Preisliste vom 1. Januar 2026 (PDF)</a></p>
+      <p><strong>Sperrmüllcontainer von Schutt Karl</strong> · 2 m³ ab 301,07 €, 4,5 m³ ab 470,05 €, 7 m³ ab 642,60 €. Diese Richtwerte enthalten 19 % MwSt., Lieferung auf Privatgrund, fünf mietfreie Wochentage, Abholung und Entsorgung. Für die Befüllung durch einen Fachbetrieb ist ein separates Angebot erforderlich. Lieferadresse, Termin und Tagespreis klären Sie direkt mit Schutt Karl. <a href="https://www.schuttkarl.de/wp-content/uploads/2026/01/Schutt-Karl-Preisliste-Neulinge-2026.pdf">Preisliste vom 1. Januar 2026 (PDF)</a></p>
     </details>
     <noscript><p>Öffnen Sie „Preise und Bedingungen nachlesen“ für die Einzelpreise. Für eine persönliche Einschätzung können Sie einen <a href="/anfrage/?kontakt=telefon&amp;leistung=entruempelung">Rückruf vorbereiten</a>.</p></noscript>
   </section>`;

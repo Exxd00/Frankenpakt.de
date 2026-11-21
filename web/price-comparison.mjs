@@ -45,6 +45,6 @@ export function priceComparison(scopeSlot = '') {
       </div>
     </div>
     ${scopeSlot}
-    <noscript><p>Für die Einschätzung eigener Mengen und Maße benötigt dieser Rechner JavaScript. Die <a href="#raeumungsrechner">Preise für Tragehilfe und Entsorgungswege</a> und die <a href="#preisfinder">Umzugspakete</a> stehen weiter unten.</p></noscript>
+    <noscript><p>Für die Einschätzung eigener Mengen und Maße benötigt dieser Rechner JavaScript. Weiter unten finden Sie <a href="#raeumungsrechner">Räumung und externe Entsorgungspreise</a> sowie die <a href="#preisfinder">Umzugspakete</a>.</p></noscript>
   </section>`;
 }

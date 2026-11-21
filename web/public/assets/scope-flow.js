@@ -1,5 +1,5 @@
 import {mountJobScope} from './job-scope.js';
-import {validateJobScope} from './job-scope-model.js';
+import {currentJobFields,validateJobScope} from './job-scope-model.js';
 import {inquiryEstimate} from './clearance-calculator.js';
 import {scopeConditionNotes,normalizeJobContext} from './job-scope-conditions.js';
 import {readEstimateFacts,writeEstimateFacts} from './estimate-draft.js';
@@ -26,12 +26,15 @@ function readDraft(service) {
     const raw = sessionStorage.getItem(key(service));
     if (!raw || raw.length > 65536) return null;
     const draft = JSON.parse(raw);
-    if (draft?.version === 1 && draft.service === service && draft.fields && typeof draft.fields === 'object') return draft;
+    if (draft?.version === 1 && draft.service === service && draft.fields && typeof draft.fields === 'object') {
+      return {...draft,fields:currentJobFields(draft.fields)};
+    }
   } catch {}
   return null;
 }
 
 function saveDraft(draft) {
+  draft={...draft,fields:currentJobFields(draft.fields)};
   memory.set(draft.service,draft);
   try { sessionStorage.setItem(key(draft.service),JSON.stringify(draft)); return true; }
   catch { return false; }

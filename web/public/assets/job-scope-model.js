@@ -42,24 +42,20 @@ function addressFields(p) {
       ['private','Privater Stellplatz / Hof mit Zufahrt'],['street','Öffentlicher Platz am Straßenrand'],['reserved','Halteverbotszone bereits reserviert'],
       ['needed','Halteverbotszone gewünscht'],['blocked','Keine Zufahrt / kein legaler Halteplatz bekannt']
     ]),
-    integer(p+'Carry','Trageweg vom möglichen Haltepunkt bis zur Übergabe (m)',0,99999,{hint:'Eine Strecke, einschließlich Hof und Flur, ohne Treppen. Eine Schätzung genügt.'}),
-    select(p+'Helpers','Wer hilft an dieser Adresse?',[
-      ['none','Keine privaten Helfer'],['carry','Private Helfer tragen mit'],['load','Private Helfer laden nur am Fahrzeug'],['all','Privates Team trägt und verlädt vollständig']
-    ]),
-    integer(p+'HelperCount','Anzahl der privaten Helfer',1,99,{when:f=>['carry','load','all'].includes(f[p+'Helpers'])})
+    integer(p+'Carry','Trageweg vom möglichen Haltepunkt bis zur Übergabe (m)',0,99999,{hint:'Eine Strecke, einschließlich Hof und Flur, ohne Treppen. Eine Schätzung genügt.'})
   ];
 }
 export const itemTypes = [['box','Kartons / Kisten'],['furniture','Möbel'],['appliance','Elektrogerät'],['bulky','Besonders schwer / sperrig'],['loose','Säcke / loses Material'],['other','Sonstiges']];
 export const destinations = [['stay','Bleibt im Raum'],['keep','Behalten / weiterverwenden'],['give','Weitergeben / spenden'],['discard','Entsorgung durch Dritte']];
 const movingTasks = [['none','Alles gepackt und demontiert'],['pack','Einpacken'],['unpack','Auspacken'],['disassemble','Möbel abbauen'],['assemble','Möbel aufbauen'],['supplies','Packmaterial bereitstellen']];
-const wasteRoutes = [['none','Keine Abfälle'],['city','Kommunale Abholung selbst buchen'],['provider','Fachbetrieb selbst beauftragen'],['container','Container selbst bestellen'],['self','Selbst entsorgen'],['undecided','Beratung zum Entsorgungsweg gewünscht']];
+const wasteRoutes = [['none','Keine Abfälle'],['city','Kommunale Abholung'],['provider','Abholung durch einen Fachbetrieb'],['container','Containerdienst'],['undecided','Beratung zum Entsorgungsweg gewünscht']];
 const wasteTypes = [['bulky','Sperrmüll / Möbel'],['wood','Holz'],['metal','Metall'],['electrical','Elektrogeräte'],['rubble','Bauschutt'],['mixed','Gemischte Abfälle'],['special','Farben, Batterien oder unbekannte Gefahrstoffe'],['other','Andere Materialien']];
 const measurementModes=[['known','Gemessen / laut Unterlagen'],['estimated','Grob geschätzt'],['unknown','Unbekannt']];
 const hasRetained = f=>readItems(f.items).some(r=>['give','keep'].includes(r.destination));
 const inventoryFields = (isMove,service)=>{
  const haveLoad=f=>isMove||hasRetained(f);
  return [
-  field('items','Gegenstände und Mengen','items',{hint:isMove?'Gleiche Stücke können Sie in einer Position zusammenfassen.':'Geben Sie je Position Menge und vorgesehenen Verbleib an.'}),
+  field('items','Gegenstände und Mengen','items',{hint:isMove?'Gleiche Stücke können Sie in einer Position zusammenfassen.':service==='entruempelung'?'Unser Team übernimmt die vereinbarten Arbeiten vor Ort. Geben Sie für jedes Stück Menge und Verbleib an.':'Geben Sie je Position Menge und vorgesehenen Verbleib an.'}),
   ...(isMove?[
     ...(service==='umzug'?[
       field('moveRooms','Anzahl der Zimmer','moveMetric',{required:false,metric:'rooms',hint:'Zum Beispiel 2 oder 2,5.'}),
@@ -69,7 +65,7 @@ const inventoryFields = (isMove,service)=>{
     checkboxes('tasks','Gewünschte Zusatzarbeiten',movingTasks),
     paragraph('taskDetails','Welche Möbel, Kartons oder Räume betrifft das?',400,{when:f=>Boolean(f.tasks)&&f.tasks!=='none',placeholder:'z. B. Schrank 250 cm abbauen und am Ziel aufbauen'}),
     select('stops','Weitere Lade- oder Entladeadresse?',yesNo),
-    paragraph('stopDetails','Adresse und Zugang jedes Zwischenstopps',700,{when:f=>f.stops==='yes',hint:'Je Stopp Straße, PLZ, Ort, Geschoss, Aufzug, Parken, Trageweg, Helfer und die dortigen Stücke aufführen.'})
+    paragraph('stopDetails','Adresse und Zugang jedes Zwischenstopps',700,{when:f=>f.stops==='yes',hint:'Bitte pro Stopp Adresse, Geschoss, Aufzug, Parkmöglichkeit, Trageweg und die dortigen Stücke angeben.'})
   ]:[
     select('extent','Was soll bearbeitet werden?',[['items','Einzelne Gegenstände'],['rooms','Einzelne Räume / Kellerabteil'],['unit','Ganze Wohnung / ganzes Haus'],['other','Mehrere Teilflächen']]),
     field('roomBreakdown','Räume, Fläche und Füllstand','rooms',{required:false,when:f=>f.extent==='rooms'}),
@@ -78,10 +74,6 @@ const inventoryFields = (isMove,service)=>{
     select('fill','Wie voll sind die Räume ungefähr?',[
       ['little','Leicht gefüllt (bis etwa ¼)'],['half','Etwa zur Hälfte gefüllt'],['most','Überwiegend gefüllt (bis etwa ¾)'],['full','Voll oder dicht zugestellt']
     ],{when:f=>Boolean(f.extent)&&f.extent!=='items'&&!(f.extent==='rooms'&&f.roomBreakdown)}),
-    select('clearanceWork','Gewünschter Umfang vor Ort',[
-      ['advice','Nur Entsorgungsweg klären'],['sorting','Sichten und sortieren'],['carry','Weiterverwendbare Stücke hinaustragen'],
-      ['both','Sortieren und weiterverwendbare Stücke tragen']
-    ]),
     select('handover','Gewünschter Zustand bei Übergabe',[['selected','Nur vereinbarte Stücke bearbeiten'],['empty','Vereinbarten Raum leer übergeben'],['swept','Leer und besenrein gewünscht']]),
     select('retainedTransport','Was geschieht mit weiterverwendbaren Stücken?',[
       ['onsite','Am Einsatzort belassen / zur Abholung bereitstellen'],['destination','Zu einer Zieladresse transportieren']
@@ -128,6 +120,16 @@ function hasStreetAddress(value) {
   return /(?:^|[\s.,])\d{1,6}(?:\s*[a-z])?(?:\s*[-–/]+\s*\d{1,6}[a-z]?)?(?=$|[\s,;/)])/i.test(value);
 }
 const plain = v=>v!==null && typeof v==='object' && !Array.isArray(v);
+export function currentJobFields(fields) {
+  const current={...fields};
+  for(const prefix of ['from','to']){
+    delete current[prefix+'Helpers'];
+    delete current[prefix+'HelperCount'];
+  }
+  delete current.clearanceWork;
+  if(current.wasteRoute==='self')delete current.wasteRoute;
+  return current;
+}
 export function readItems(encoded) {
   if(typeof encoded!=='string' || encoded.length>24000)return [];
   try{const rows=JSON.parse(encoded);return Array.isArray(rows)&&rows.length<=50&&rows.every(plain)?rows:[];}catch{return [];}
@@ -195,7 +197,7 @@ export function validateJobScope(input,expectedService) {
   const moving=movingServices.includes(service);
   const sections=jobSections(service);
   const defs=sections.flatMap(s=>s.fields);
-  const source=input.fields;
+  const source=currentJobFields(input.fields);
   if(Object.keys(source).some(k=>!defs.some(d=>d.key===k))){
     errors.scope='Unbekannte Felder in den Auftragsdetails.';
   }

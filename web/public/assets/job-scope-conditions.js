@@ -1,10 +1,10 @@
-import {movingServices,readItems} from './job-scope-model.js';
+import {movingServices} from './job-scope-model.js';
 import {inquiryEstimate} from './clearance-calculator.js';
 
 const containerVolumes=new Map([['container-2',2],['container-4-5',4.5],['container-7',7]]);
 const addresses=[['from','Abholung'],['to','Ziel']];
 const contextKeys=new Set(['service','leistung','paket','zusatz','hilfe','entsorgungsweg','asn','container']);
-const movingPackages=new Set(['taxi','drei','kompakt','sieben']);
+const movingPackages=new Set(['drei','kompakt','sieben']);
 
 // Retain only the current calculation inputs that identify a published package or disposal estimate.
 export function normalizeJobContext(raw,service) {
@@ -13,7 +13,7 @@ export function normalizeJobContext(raw,service) {
   const query=new URLSearchParams(raw);
   if(movingServices.includes(service)){
     const pack=query.get('paket');
-    if(raw.service!==service||!movingPackages.has(pack)||(service==='moebeltaxi')!==(pack==='taxi'))return null;
+    if(raw.service!==service||!movingPackages.has(pack)||service==='moebeltaxi')return null;
     if(Object.keys(raw).some(k=>!['service','paket','zusatz'].includes(k)))return null;
     const result={service,paket:pack};
     if(query.has('zusatz')){
@@ -33,14 +33,6 @@ export function normalizeJobContext(raw,service) {
 function movingConditions(pack,fields) {
   const notes=[];
   const tasks=(fields.tasks||'').split(',');
-  if(pack==='taxi'){
-    const items=readItems(fields.items);
-    if(items.reduce((n,row)=>n+(Number(row.quantity)||0),0)>1)notes.push('Das Möbeltaxi-Paket gilt für ein vereinbartes Möbelstück. Die Liste enthält mehrere Stücke.');
-    const inside=addresses.filter(([p])=>fields[p+'Floor']&&fields[p+'Floor']!=='curb');
-    if(inside.length)notes.push('Möbeltaxi: Übergabe an beiden Bordsteinen klären. Innenräume sind angegeben ('+inside.map(([,place])=>place).join(', ')+').');
-    const alone=addresses.filter(([p])=>fields[p+'Helpers']==='none');
-    if(alone.length&&items.some(r=>r.type==='bulky'))notes.push('Für das sperrige Stück ist bei '+alone.map(([,place])=>place).join(' und ')+' keine private Hilfe angegeben. Beim Möbeltaxi stellt der Kunde eine benötigte zweite Person.');
-  }
   if(pack==='kompakt'){
     const upper=addresses.filter(([p])=>fields[p+'Floor']&&!['curb','ground'].includes(fields[p+'Floor']));
     if(upper.length)notes.push('Kompaktumzug ist für Erdgeschoss zu Erdgeschoss kalkuliert. Abweichendes Geschoss bei '+upper.map(([,place])=>place).join(' und ')+'.');
@@ -65,7 +57,7 @@ function disposalConditions(query,fields) {
     if(Number((fields.wasteVolume||'').replace(',','.'))>size)notes.push('Das angegebene Abfallvolumen übersteigt die gewählte Containergröße. Größe mit dem Anbieter abgleichen.');
     if((fields.materials||'').split(',').some(v=>['special','electrical','rubble','mixed','other'].includes(v)))notes.push('Für die angegebenen Abfallarten die Annahme gesondert prüfen. Der Container-Richtwert gilt für zugelassenen Sperrmüll.');
   }
-  if(help==='one-helper'&&fields.retainedTransport==='destination')notes.push('Transport zur Zieladresse gewünscht. Im Helfer-Richtwert ist kein Fahrzeug enthalten.');
+  if(help==='team'&&fields.retainedTransport==='destination')notes.push('Der gewünschte Transport zur Zieladresse wird bei der Angebotserstellung mit eingeplant.');
   return notes;
 }
 
