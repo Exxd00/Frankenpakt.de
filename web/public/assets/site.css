@@ -114,6 +114,8 @@ footer{background:#EBEEE5;border-top:1px solid var(--line)}
 .detail-img{border-radius:1.3rem;overflow:hidden;aspect-ratio:1.54;background:var(--pale)}
 .detail-hero .lead,.narrowhero .lead{max-width:52ch}
 .narrowhero> .button{margin-top:1.45rem}
+.comparison-shortcut{margin-top:.75rem;line-height:1.45}
+.comparison-shortcut a{display:inline-block;padding-block:.4rem;font-weight:650}
 .household-guide details{max-width:54rem;border-block:1px solid var(--line)}
 .household-guide summary{cursor:pointer;padding:.9rem 0;font-weight:650}
 .household-guide p{max-width:68ch;margin:.3rem 0 1rem}

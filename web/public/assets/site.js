@@ -42,11 +42,12 @@ function writeInterest(url, interest, pack, units) {
   if (['drei','sieben'].includes(pack) && /^[1-4]$/.test(units)) url.searchParams.set('zusatz',units);
 }
 
-function updateProjectLinks(interest,pack,units) {
+function updateProjectLinks(interest,pack,units,writeContext) {
   const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .footer-main [data-contact="callback"], [data-handoff-callback]';
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);
+    if (writeContext && url.pathname === '/anfrage/') writeContext(url);
     link.setAttribute('href',url.pathname + url.search + url.hash);
     updateLink(link);
   }
@@ -278,10 +279,10 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, estimate = null) {
+function enableInquiry(form, contexts = []) {
   const service = form.elements.service;
   const initialService = pageInterest;
-  const pack = Object.hasOwn(clearance,initialService) ? null : params.get('paket');
+  const pack = contexts.length || Object.hasOwn(clearance,initialService) ? null : params.get('paket');
   const requestedService = Object.hasOwn(packageLabels,pack) ? serviceForPackage(pack,initialService) : initialService;
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
@@ -302,13 +303,21 @@ function enableInquiry(form, estimate = null) {
     details.placeholder = topic?.example || defaultExample;
   }
   showServiceFields();
+  let comparison = contexts.find(context => context.params.has('vergleich'));
+  const estimate = contexts.find(context => context.params.has('hilfe'));
+  const comparisonNote = comparison ? node('p', comparison.summary, 'note compact') : null;
+  if (comparisonNote) {
+    comparisonNote.id = 'comparison-context';
+    details.labels[0].before(comparisonNote);
+    details.setAttribute('aria-describedby', comparisonNote.id);
+  }
   if (estimate) details.value = estimate.summary;
   if (Object.hasOwn(packageLabels, pack)) {
     const units = Number(params.get('zusatz'));
     const addition = ['drei', 'sieben'].includes(pack) && [1, 2, 3, 4].includes(units) ? ' mit ' + units * 30 + ' Minuten gewünschter Verlängerung' : '';
     details.value = 'Interesse am Paket ' + packageLabels[pack] + addition + '.';
   }
-  const context = callback ? [serviceOption ? serviceOption.label : '', details.value].filter(Boolean).join(' · ') : '';
+  const context = callback ? [serviceOption?.label, comparison?.summary, details.value].filter(Boolean).join(' · ') : '';
   const switchLink = document.querySelector('#inquiry-switch');
   const switchTarget = new URL('/anfrage/', location.href);
   if (callback) {
@@ -324,7 +333,7 @@ function enableInquiry(form, estimate = null) {
     form.elements.callbackTime.disabled = false;
     const hint = document.querySelector('#callback-context');
     const topic = Object.hasOwn(clearance,initialService) ? clearance[initialService] : null;
-    hint.textContent = topic ? context + '. ' + topic.scope : context;
+    hint.textContent = topic ? context + (context.endsWith('.') ? ' ' : '. ') + topic.scope : context;
     hint.hidden = !context;
     switchLink.textContent = 'Zur ausführlichen Anfrage';
     submit.textContent = 'Musterrückruf prüfen';
@@ -333,22 +342,35 @@ function enableInquiry(form, estimate = null) {
   }
   let currentPack = pack;
   const presetDetails = details.value;
+  const contextKeys = contexts.flatMap(context => Array.from(context.params.keys()));
+  function writeContext(url) {
+    for (const key of contextKeys) url.searchParams.delete(key);
+    for (const context of contexts) {
+      for (const [key, value] of context.params) url.searchParams.set(key, value);
+    }
+  }
   function updateFormLinks(interest) {
     writeInterest(switchTarget,interest,currentPack,params.get('zusatz'));
-    if (estimate) {
-      for (const [key, value] of estimate.params) switchTarget.searchParams.set(key, value);
-    }
+    writeContext(switchTarget);
     switchLink.setAttribute('href',switchTarget.pathname + switchTarget.search);
     updateLink(switchLink);
-    updateProjectLinks(interest,currentPack,params.get('zusatz'));
+    updateProjectLinks(interest,currentPack,params.get('zusatz'),writeContext);
   }
   updateFormLinks(serviceOption?.value);
   service.addEventListener('change', () => {
     showServiceFields();
-    if (estimate && service.value !== estimate.service) {
-      for (const key of estimate.params.keys()) switchTarget.searchParams.delete(key);
-      if (details.value.startsWith(estimate.summary)) details.value = details.value.slice(estimate.summary.length).trimStart();
-      estimate = null;
+    if (contexts.length && service.value !== contexts[0].service) {
+      if (estimate) details.value = details.value.replace(estimate.summary, '').trim();
+      if (comparison) {
+        comparisonNote.remove();
+        details.removeAttribute('aria-describedby');
+        comparison = null;
+      }
+      contexts = [];
+      const url = new URL(location.href);
+      writeInterest(url,service.value);
+      writeContext(url);
+      history.replaceState(history.state, '', url);
     }
     if (Object.hasOwn(packageLabels,currentPack) && serviceForPackage(currentPack,service.value) !== service.value) {
       currentPack = null;
@@ -421,6 +443,7 @@ function enableInquiry(form, estimate = null) {
         return;
       }
       const body = Object.fromEntries(new FormData(form));
+      if (comparison && !callback) body.details = [comparison.summary,body.details].filter(Boolean).join('\n');
       if (callback) {
         body.service = 'rueckruf';
         if (serviceOption && projectServices.has(serviceOption.value)) body.requestedService = serviceOption.value;
@@ -452,17 +475,24 @@ function enableInquiry(form, estimate = null) {
     }
   });
 }
-if (form && params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
-  const submit = form.querySelector('#send-lead');
-  submit.disabled = true;
-  import('/assets/clearance-calculator.js').then(
-    ({inquiryEstimate}) => inquiryEstimate(params),
-    () => null
-  ).then(estimate => {
-    submit.disabled = false;
-    enableInquiry(form, estimate);
-  });
-} else if (form) {
-  enableInquiry(form);
+if (form) {
+  const contexts = [];
+  if (params.has('vergleich')) {
+    contexts.push(import('/assets/price-comparison.js').then(({inquiryComparison}) => inquiryComparison(params)));
+  }
+  if (params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
+    contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
+  }
+  if (contexts.length) {
+    const submit = form.querySelector('#send-lead');
+    submit.disabled = true;
+    Promise.allSettled(contexts).then(results => {
+      const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
+      submit.disabled = false;
+      enableInquiry(form, valid.map(result => result.value));
+    });
+  } else {
+    enableInquiry(form);
+  }
 }
 
