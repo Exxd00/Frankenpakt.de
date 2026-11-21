@@ -278,7 +278,7 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form) {
+function enableInquiry(form, estimate = null) {
   const service = form.elements.service;
   const initialService = pageInterest;
   const pack = Object.hasOwn(clearance,initialService) ? null : params.get('paket');
@@ -302,6 +302,7 @@ function enableInquiry(form) {
     details.placeholder = topic?.example || defaultExample;
   }
   showServiceFields();
+  if (estimate) details.value = estimate.summary;
   if (Object.hasOwn(packageLabels, pack)) {
     const units = Number(params.get('zusatz'));
     const addition = ['drei', 'sieben'].includes(pack) && [1, 2, 3, 4].includes(units) ? ' mit ' + units * 30 + ' Minuten gewünschter Verlängerung' : '';
@@ -334,6 +335,9 @@ function enableInquiry(form) {
   const presetDetails = details.value;
   function updateFormLinks(interest) {
     writeInterest(switchTarget,interest,currentPack,params.get('zusatz'));
+    if (estimate) {
+      for (const [key, value] of estimate.params) switchTarget.searchParams.set(key, value);
+    }
     switchLink.setAttribute('href',switchTarget.pathname + switchTarget.search);
     updateLink(switchLink);
     updateProjectLinks(interest,currentPack,params.get('zusatz'));
@@ -341,6 +345,11 @@ function enableInquiry(form) {
   updateFormLinks(serviceOption?.value);
   service.addEventListener('change', () => {
     showServiceFields();
+    if (estimate && service.value !== estimate.service) {
+      for (const key of estimate.params.keys()) switchTarget.searchParams.delete(key);
+      if (details.value.startsWith(estimate.summary)) details.value = details.value.slice(estimate.summary.length).trimStart();
+      estimate = null;
+    }
     if (Object.hasOwn(packageLabels,currentPack) && serviceForPackage(currentPack,service.value) !== service.value) {
       currentPack = null;
       if (details.value === presetDetails) details.value = '';
@@ -443,5 +452,17 @@ function enableInquiry(form) {
     }
   });
 }
-if (form) enableInquiry(form);
+if (form && params.has('hilfe') && params.has('entsorgungsweg') && Object.hasOwn(clearance, pageInterest)) {
+  const submit = form.querySelector('#send-lead');
+  submit.disabled = true;
+  import('/assets/clearance-calculator.js').then(
+    ({inquiryEstimate}) => inquiryEstimate(params),
+    () => null
+  ).then(estimate => {
+    submit.disabled = false;
+    enableInquiry(form, estimate);
+  });
+} else if (form) {
+  enableInquiry(form);
+}
 

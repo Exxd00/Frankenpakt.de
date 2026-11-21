@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {inquiry,legal,thankYou} from './form-pages.mjs';
+import {clearanceCalculator} from './clearance-calculator.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 const brand='FrankenPackt';
 const iconpaths={
@@ -60,7 +61,9 @@ function header(pathname){
 function footer(pathname){
   const includeContacts=['/anfrage/','/danke/','/datenschutz/','/impressum/','/404/'].includes(pathname);
   return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="49" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button></div></div></footer>';}
-function shell(pathname,title,desc,body){return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css">'+(['/anfrage/','/danke/'].includes(pathname)?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
+function shell(pathname,title,desc,body){
+  const priceAssets=pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/clearance-calculator.css"><script type="module" src="/assets/clearance-calculator.js"></script>' : '';
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css">'+(['/anfrage/','/danke/'].includes(pathname)?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
 function crumb(text){return '<nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>'+text+'</span></nav>';}
 function endCta(service='umzug'){return '<section class="endcta"><div class="wrap end-inner"><div><h2>Was steht bei Ihnen an?</h2><p>Beschreiben Sie kurz, was mitkommen soll und wie die Räume erreichbar sind.</p></div><div class="actions">'+btn('Anfrage vorbereiten','/anfrage/?service='+service)+contactChoices(service)+'</div></div></section>';}
 function serviceCards(){
@@ -83,7 +86,7 @@ function steps(){
 }
 const home='<section class="hero"><div class="wrap hero-grid"><div class="hero-copy"><div class="hero-heading"><div class="location">'+ic('pin',17)+
   ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Wir sortieren mit Ihnen vor Ort und tragen heraus, was Sie behalten oder weitergeben möchten. Für Abfälle buchen Sie die Abholung direkt bei der Stadt oder einem Fachbetrieb.</p>'+
-  '<div class="actions">'+btn('Räumung vorbereiten','/anfrage/?leistung=entruempelung')+btn('Entsorgungswege','/entsorgung/',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
+  '<div class="actions">'+btn('Preis berechnen','/preise/#raeumungsrechner')+btn('Entsorgungswege','/entsorgung/',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
   '<div class="hero-picture"><img src="/assets/entruempelung-franken.webp" width="1200" height="800" fetchpriority="high" alt="Zwei Frauen sortieren eine Schale und weiteren Hausrat"></div></div></section>'+
   serviceCards()+steps();
 const serviceContent={
@@ -112,7 +115,7 @@ function planningPage(page) {
   const cards=page.steps.map(([title,copy,icon])=>'<article>'+ic(icon,28)+'<h3>'+title+'</h3><p>'+copy+'</p></article>').join('');
   return '<section class="subhead clearance-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero">'+
     crumb(page.name)+'<h1>'+page.heading+'</h1><p class="lead">'+page.intro+'</p><div class="actions">'+
-    btn(page.cta,'/anfrage/?leistung='+page.service)+btn(page.jumpLabel,'#'+page.anchor,true)+'</div>'+contactChoices(page.service)+'</div></section>'+
+    btn('Preis berechnen','/preise/?leistung='+page.service+'#raeumungsrechner')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+contactChoices(page.service)+'</div></section>'+
     '<section id="'+page.anchor+'" class="wrap section service-facts"><h2>'+page.section+'</h2><div class="info-grid">'+cards+
     '</div><div class="mobile-facts">'+faq(page.steps)+'</div></section>'+
     '<section class="faq-section" id="kosten"><div class="wrap faq-layout"><h2>'+page.faqTitle+'</h2>'+faq(page.questions)+'</div></section>';
@@ -120,7 +123,7 @@ function planningPage(page) {
 const clear=planningPage({
   service:'entruempelung',name:'Entrümpelung',heading:'Entrümpelung in<br><em>Nürnberg planen.</em>',
   intro:'Wir gehen mit Ihnen durch Keller oder Wohnung, sortieren gemeinsam den Hausrat und tragen die vereinbarten Stücke hinaus. Was Sie behalten oder verschenken, bringen wir auf Wunsch zur neuen Adresse. Für Abfälle beauftragen Sie die Stadt oder einen Fachbetrieb direkt.',
-  cta:'Räumung vorbereiten',jumpLabel:'Zum Ablauf',anchor:'ablauf',section:'Was steht in Ihren Räumen?',
+  cta:'Räumung anfragen',anchor:'ablauf',section:'Was steht in Ihren Räumen?',
   steps:[
     ['Keller und Dachboden','Notieren Sie sperrige Stücke und die Zahl der Kisten. Messen Sie bei großen Möbeln die engste Stelle im Treppenhaus aus.','box'],
     ['Wohnungsauflösung','Wir kennzeichnen mit Ihnen die Möbel zur Mitnahme oder Weitergabe. Sie bestimmen, welche Unterlagen, Fotos und Erinnerungsstücke zuerst gesichert werden sollen.','home'],
@@ -136,7 +139,7 @@ const clear=planningPage({
 const disposal=planningPage({
   service:'entsorgung',name:'Entsorgung',heading:'Was möchten Sie<br><em>entsorgen?</em>',
   intro:'Ein ausgedientes Sofa, ein Kühlschrank oder Reste von Lack gehören an unterschiedliche Stellen. Hier finden Sie die Anlaufstellen in Nürnberg. Die Abholung vereinbaren Sie direkt mit der Stadt oder Ihrem Entsorgungsbetrieb.',
-  cta:'Entsorgung planen',jumpLabel:'Zu den Anlaufstellen',anchor:'entsorgungswege',section:'Wohin mit diesen Dingen?',
+  cta:'Entsorgungsweg klären',anchor:'entsorgungswege',section:'Wohin mit diesen Dingen?',
   steps:[
     ['Möbel und Matratzen','Ein Sofa, ein Schrank oder eine Matratze können zum Sperrmüll gehören. Nürnberger Haushalte können einmal im Kalenderjahr kostenlos eine Abholung beantragen. Geben Sie die Stücke und ihre Anzahl an. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/sperrmuell.html">Sperrmüll bei der Stadt Nürnberg anmelden</a>.','home'],
     ['Elektrogeräte','Für Kühlschränke und Waschmaschinen kommen Nürnberger Wertstoffhöfe infrage. Prüfen Sie vor der Fahrt die Annahmebedingungen und Mengen. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/wertstoffhoefe.html">Annahme am Wertstoffhof prüfen</a>.','layers'],
@@ -156,13 +159,20 @@ function pricePage() {
     return '<details><summary><span class="tile-name">' + item.name + '</span><span class="tile-price">' + value +
       '</span><span class="tile-unit">' + item.unit + '</span></summary><p>' + item.scope + '</p></details>';
   }).join('');
-  const clearanceCosts = '<div class="clearance-costs" id="raeumungskosten">' +
-    '<article><h2>Entrümpelung</h2><p>Räume, Möbelmenge, Treppen und Tragewege bestimmen den Aufwand. Nennen Sie uns die Eckdaten für Ihre Räumhilfe.</p><a href="/anfrage/?leistung=entruempelung">Aufwand klären</a></article>' +
-    '<article><h2>Entsorgung</h2><p>Material und Menge bestimmen den Preis. Bei Containern zählen auch Lieferung, Standzeit und Abholung. Den Preis nennt Ihr Anbieter.</p><a href="/entsorgung/">Anlaufstellen finden</a></article></div>';
+  const marketExamples = [
+    ['1 Zimmer, bis 40 m²','400–750 €'], ['2 Zimmer, bis 65 m²','650–1.200 €'],
+    ['3 Zimmer, bis 90 m²','1.000–1.800 €'], ['4 Zimmer','1.400–2.600 €'],
+    ['Einfamilienhaus','1.800–5.000 €']
+  ];
+  const householdGuide = '<div class="wrap household-guide"><details><summary>Was kostet eine komplette Haushaltsauflösung?</summary>' +
+    '<p>LV Transporte nennt für abgeschlossene Räumungen in Nürnberg und Umgebung diese Gesamtpreise einschließlich Entsorgung und Mehrwertsteuer. Diese Vergleichswerte gelten für den gesamten Auftrag beim Fremdanbieter.</p>' +
+    '<table><thead><tr><th scope="col">Wohnung oder Haus</th><th scope="col">Preisspanne</th></tr></thead><tbody>' +
+    marketExamples.map(([home,range])=>'<tr><th scope="row">'+home+'</th><td>'+range+'</td></tr>').join('') +
+    '</tbody></table><p>Füllmenge, Treppen und verwertbare Möbel beeinflussen das Angebot. <a href="https://entrumpelungnurnberg.de/haushaltsaufloesung-nuernberg">Preisbeispiele von LV Transporte, September 2026</a></p></details></div>';
   const overview = '<section class="wrap mobile-prices"><h2>Preisbeispiele für Umzüge</h2><p class="tile-hint">Paket antippen und Bedingungen ansehen.</p>' +
     '<div class="price-tiles">' + mobileRows + '</div><details class="price-note"><summary>Stand und weitere Kosten</summary><p>' + note + '</p></details></section>';
   const desktopRows = prices.map(i=>'<article data-paket="'+i.id+'" data-euro="'+i.price+'" data-ab="'+Boolean(i.ab)+'"><div><h3>'+i.name+'</h3><p>'+i.scope+'</p></div><div class="amount"><strong>'+(i.ab?'ab ':'')+euro(i.price)+'</strong><small>'+i.unit+'</small></div></article>').join('');
-  return '<div class="subhead pricing-heading"><div class="wrap narrowhero">'+crumb('Preise')+'<h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead">Bei einer Räumung hängen die Kosten davon ab, was Sie behalten und was Sie abgeben möchten.</p>'+clearanceCosts+'<a class="price-jump" href="#preisfinder">Zum Preisfinder für Umzüge ↓</a></div></div>' + overview +
+  return '<div class="subhead pricing-heading" id="raeumungskosten"><div class="wrap narrowhero">'+crumb('Preise')+'<h1>Was kostet<br><em>mein Vorhaben?</em></h1><p class="lead">Schätzen Sie Tragehilfe und Entsorgung direkt hier. Für Ihren Umzug gibt es einen <a href="#preisfinder">eigenen Preisfinder</a>.</p></div></div>' + clearanceCalculator() + householdGuide + overview +
     '<section class="wrap section" id="preisfinder"><div class="estimate-layout"><div><h2>Preisfinder für Umzüge</h2><p>Alle Preisbeispiele sind Endpreise für Privatkunden inklusive 19 % Umsatzsteuer. Wir prüfen Umfang, Gewicht, Zugang und Route, bevor Sie buchen.</p><form id="estimate" class="tool-form"><label for="paket">Gewünschte Leistung</label><select id="paket" name="paket">'+prices.filter(i=>i.id!=='extra').map(c=>'<option value="'+c.id+'"'+(c.id==='drei'?' selected':'')+'>'+c.name+'</option>').join('')+'<option value="anders">Andere Leistung oder unklarer Umfang</option></select><div id="estimate-conditions"></div><div id="estimate-extra"></div><label for="fit">Passen die genannten Bedingungen?</label><select id="fit"><option value="unknown">Das möchte ich prüfen lassen</option><option value="yes">Ja, voraussichtlich</option><option value="no">Nein, der Umfang weicht ab</option></select><button class="button js-only" type="submit">Preis einschätzen</button></form><noscript><p>Alle Paketpreise und Bedingungen finden Sie in der Preisübersicht. Über die Anfrage können Sie den passenden Umfang klären.</p></noscript></div><div class="estimate-result" id="estimate-result" role="status" aria-live="polite"><span class="large-icon">'+ic('tag',32)+'</span><h3>Ihre Preisorientierung</h3><p>Nach Ihrer Auswahl sehen Sie hier den passenden Richtpreis oder den nächsten Schritt zur persönlichen Kalkulation.</p></div></div></section>' +
     '<section class="price-section desktop-prices"><div class="wrap"><h2>Preisbeispiele für Umzüge</h2><div class="tariffs">' + desktopRows +
     '</div><p class="fine">' + note + '</p></div></section>' + endCta();
@@ -173,7 +183,7 @@ const pages=[
  ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc,detail(d)]),
  ['/raeumung/','Entrümpelung in Nürnberg planen','Kellerentrümpelung und Wohnungsauflösung vorbereiten. Hausrat sortieren, Zugang prüfen und den Transport weiter genutzter Möbel in Nürnberg anfragen.',clear],
  ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Alte Möbel, Elektrogeräte und Lacke in Nürnberg entsorgen. Städtische Sperrmüllabholung, Wertstoffhöfe und das Schadstoffmobil direkt finden.',disposal],
- ['/preise/','Kosten für Entrümpelung, Entsorgung und Umzug','Was die Kosten einer Räumung bestimmt, wer die Entsorgung abrechnet und welche Preisbeispiele für Möbeltransporte ab 90453 Nürnberg gelten.',pricePage()],
+ ['/preise/','Preisrechner für Entrümpelung, Entsorgung und Umzug','Tragehilfe, Sperrmüll und Container für Nürnberg selbst einschätzen. Bruttopreise, Bedingungen und regionale Vergleichswerte direkt ansehen.',pricePage()],
  ['/anfrage/','Anfrage zu Entrümpelung, Entsorgung oder Umzug','Anliegen in Nürnberg beschreiben, Entsorgungswege klären oder einen Transport anfragen und den gewünschten Rückmeldeweg wählen.',inquiry(crumb,ic)],
  ['/danke/','Rückmeldung zu Ihrer Anfrage','Rückmeldung zu Ihrer Anfrage bei FrankenPackt.',thankYou(crumb,ic)],
  ['/impressum/','Impressum','Anbieterangaben zur Website von FrankenPackt.',legal(crumb,false)],
