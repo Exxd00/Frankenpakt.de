@@ -1,4 +1,5 @@
 import { createHmac, randomBytes, randomUUID } from 'node:crypto';
+import {openStaffMailQueue} from './mail-delivery.mjs';
 import { DatabaseSync, backup } from 'node:sqlite';
 import { mkdirSync, chmodSync, existsSync } from 'node:fs';
 import path from 'node:path';
@@ -117,6 +118,7 @@ export function openStore(filename){
   const key=Buffer.from(db.prepare("SELECT value FROM settings WHERE key='identity_key'").get().value,'hex');
   const sign=(msg)=>createHmac('sha256',key).update(msg).digest('hex');
   function transaction(action){db.exec('BEGIN IMMEDIATE');try{const out=action();db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}}
+  const mail = openStaffMailQueue(db,transaction);
   const netPaid="COALESCE((SELECT SUM(CASE WHEN p.direction='payment' THEN p.amount ELSE -p.amount END) FROM payments p WHERE p.ref=l.ref),0)";
   const settled="l.status='completed' AND l.gross_cents>0 AND "+netPaid+">=l.gross_cents";
   function updateSettlement(ref,ms){
@@ -143,6 +145,7 @@ export function openStore(filename){
   // Historical callbacks without a selected service keep their original category.
   const effectiveService="COALESCE(json_extract(l.person,'$.requestedService'),l.service)";
   return {
+    mail,
     close(){db.close();},
     quote:offers.quote,
     book:offers.book,
@@ -152,7 +155,7 @@ export function openStore(filename){
       await backup(db,target);
       if(process.platform!=='win32')chmodSync(target,0o600);
     },
-    submit(lead,ms=Date.now(),notify=false,entry='manual'){
+    submit(lead,ms=Date.now(),notify=false,entry='manual',mailRoute=null){
       const {requestId,source,adVariant,contactMethod,contact,service,...fields}=lead;
       const person={...fields,contactMethod,contact};
       const fingerprint=sign(JSON.stringify([source,service,person]));
@@ -189,6 +192,7 @@ export function openStore(filename){
           if(source==='google' && isGoogleAdVariant(adVariant))db.prepare('INSERT INTO ad_attribution(ref,variant) VALUES(?,?)').run(ref,adVariant);
           db.prepare("INSERT INTO events VALUES(?,'new',?)").run(ref,iso(ms));found={ref};
           if(notify)db.prepare('INSERT INTO notices(ref,due) VALUES(?,?)').run(ref,ms);
+          if(entry==='web' && mailRoute)mail.enqueue(ref,mailRoute,ms);
         }
         db.prepare('INSERT INTO receipts VALUES(?,?,?)').run(requestId,found.ref,fingerprint);
         return receipt(found.ref,created);
@@ -277,6 +281,7 @@ export function openStore(filename){
         db.prepare("UPDATE leads SET status='linked',updated=? WHERE ref=?").run(iso(ms),secondary);
         db.prepare("INSERT INTO events VALUES(?,'linked',?)").run(secondary,iso(ms));
         db.prepare('DELETE FROM notices WHERE ref=?').run(secondary);
+        mail.discard(secondary);
         return {created:true};
       });
     },
@@ -328,6 +333,7 @@ export function openStore(filename){
       const googleAdCohorts=by("COALESCE("+adForLead+",'unbekannt') AS adVariant",'1'," AND l.source='google'");
       const summary=db.prepare('SELECT COUNT(*) AS inquiries,COUNT(DISTINCT identity) AS distinctContactDetails FROM leads l'+dates).get(start,end);
       const notices=db.prepare('SELECT COUNT(*) AS awaitingDelivery,COALESCE(MAX(attempts),0) AS maximumAttempts FROM notices').get();
+      notices.awaitingStaffMail = mail.count();
       const contactOutcomes=db.prepare('SELECT l.source,c.event,COUNT(*) AS inquiries FROM contact_events c JOIN leads l ON l.ref=c.ref'+dates+' GROUP BY l.source,c.event ORDER BY l.source,c.event').all(start,end);
       const contactIntentClicks=db.prepare('SELECT day,source,event,hits FROM contact_counts WHERE day BETWEEN ? AND ? ORDER BY day DESC,source,event').all(start,end);
       const lossReasons=db.prepare(`SELECT l.source, ${effectiveService} AS service, r.code AS reason, COUNT(*) AS cases

@@ -61,7 +61,16 @@ Website im Browser über `http://127.0.0.1:8787/` öffnen. Eine vom Startskript 
 | HOST, PORT | Standardmäßig `127.0.0.1` und `8787`. Hinter dem HTTPS-Proxy auf Loopback betreiben. |
 | CLOSED_RETENTION_DAYS | Technischer Vorschlag von 90 Tagen für geklärte Vorgänge im Anfragewerkzeug und für Seitenaufrufzähler. Löschfrist mit tatsächlichem Zweck abstimmen. Offene Arbeit, Forderungen oder ungeklärte Erstattungen betreut schließen. |
 | OPS_NOTIFY_URL, OPS_NOTIFY_TOKEN | Gemeinsam und nur für einen freigegebenen betrieblichen Empfänger setzen. Token im Secret Store des Dienstes hinterlegen. |
+| OPS_MAIL_FROM, OPS_MAIL_TO, OPS_MAIL_API_KEY | Optionaler E-Mail-Versand auf dem Node-Dienst. Eine bei Resend verifizierte Absenderadresse, ein freigegebenes Teampostfach und ein auf Versand beschränkter API-Schlüssel. Beide Adressen einzeln und ohne Anzeigenamen angeben. |
 | TRUST_LOCAL_PROXY, MAX_SUBMITS_PER_MINUTE | Nur wenn der lokale Reverse-Proxy ein eingehendes `X-Real-IP` zuverlässig mit der Clientadresse überschreibt, `TRUST_LOCAL_PROXY=1` setzen. Standardlimit 30 Formularversuche pro Peer und Minute. |
+
+### E-Mail für neue Website-Anfragen
+
+Jede neue Anfrage erscheint im Auftragseingang. Für eine zusätzliche Nachricht an das Teampostfach alle drei `OPS_MAIL_*`-Werte auf dem dauerhaften Node-Dienst setzen und den Dienst neu starten. Vor der Aktivierung den tatsächlichen Maildienst und die Aufbewahrung im Teampostfach in den Datenschutzangaben des Betriebs hinterlegen. Der Versand enthält Kundenangaben. Die getrennte HTTPS-Benachrichtigung mit `OPS_NOTIFY_URL` übermittelt weiterhin nur Ereignis, Vorgangsnummer und Leistung.
+
+Für den Abnahmetest je eine als Test gekennzeichnete Angebotsanfrage und Rückrufbitte verwenden. Im Teampostfach die Vorgangsnummer mit dem Auftragseingang abgleichen und das Kontaktziel der Schaltfläche prüfen. HTML- und Textansicht gehören zu derselben Nachricht. Die Zugangsdaten liegen ausschließlich im Secret Store des Node-Dienstes. [Resend-Versandschnittstelle](https://resend.com/docs/api-reference/emails/send-email)
+
+`node web/ops.mjs mail-queue` zeigt ausstehende Zustellungen. Bei `queued` plant der Dienst den nächsten Versuch. Bei `check_provider` oder `check_mailbox` die Vorgangsnummer beim Versanddienst beziehungsweise im Postfach prüfen und die Anfrage im Auftragseingang bearbeiten. Nach der Klärung quittiert `node web/ops.mjs mail-reviewed REF` die Benachrichtigung. Der Kundenauftrag bleibt im Auftragseingang.
 
 ### Vercel mit dem Auftragseingang verbinden
 

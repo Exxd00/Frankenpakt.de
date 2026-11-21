@@ -5,7 +5,15 @@ import { mkdtemp,rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { startServer } from '../server.mjs';
+import { liveHtml } from '../lib/render-live.mjs';
 import { priceGuideRoute } from '../public/assets/price-guide.js';
+
+test('privacy page describes staff email only when that delivery channel is enabled',()=>{
+  const render = staffMailEnabled => liveHtml('<div id="privacy-extra"></div>',
+    {staffMailEnabled,retentionDays:90}, 'https://example.invalid/datenschutz/');
+  assert.match(render(true), /Versanddienst Resend/);
+  assert.doesNotMatch(render(false), /Versanddienst Resend/);
+});
 
 test('pricing links open one appropriate view, including existing links from ads and shared package estimates',()=>{
   const cases = [

@@ -4,10 +4,11 @@ import { randomUUID } from 'node:crypto';
 import { openStore, validate } from './lib/leads.mjs';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import {reviewAdSpend} from './lib/ad-review.mjs';
+import {staffMailSettings} from './lib/mail-delivery.mjs';
 
 const [action,ref,status,gross,cost]=process.argv.slice(2);
-if(!['list','callbacks','record','show','contact','quote','book','loss','stage','report','ad-review','erase','prune','backup','link','unlink','payment','refund','paid-orders'].includes(action)){
-  console.log('node ops.mjs list | callbacks | record < ANFRAGE.json | show REF | contact REF phone_connected|callback_completed|whatsapp_received | quote REF VERSION BRUTTO_EUR [PLANKOSTEN_NETTO_EUR] | book REF < BUCHUNG.json | loss REF GRUND | stage REF qualified|quoted|lost | stage REF completed BRUTTO_EUR KOSTEN_NETTO_EUR | payment|refund REF BUCHUNGSSCHLÜSSEL EUR | link FOLGE HAUPTAUFTRAG PRÜFVERMERK | unlink FOLGE | paid-orders | report [VON BIS] | ad-review VON BIS ANZEIGENVARIANTE BESTÄTIGTE_KOSTEN_EUR | erase REF | prune | backup ZIELDATEI');
+if(!['list','callbacks','mail-queue','mail-reviewed','record','show','contact','quote','book','loss','stage','report','ad-review','erase','prune','backup','link','unlink','payment','refund','paid-orders'].includes(action)){
+  console.log('node ops.mjs list | callbacks | mail-queue | mail-reviewed REF | record < ANFRAGE.json | show REF | contact REF phone_connected|callback_completed|whatsapp_received | quote REF VERSION BRUTTO_EUR [PLANKOSTEN_NETTO_EUR] | book REF < BUCHUNG.json | loss REF GRUND | stage REF qualified|quoted|lost | stage REF completed BRUTTO_EUR KOSTEN_NETTO_EUR | payment|refund REF BUCHUNGSSCHLÜSSEL EUR | link FOLGE HAUPTAUFTRAG PRÜFVERMERK | unlink FOLGE | paid-orders | report [VON BIS] | ad-review VON BIS ANZEIGENVARIANTE BESTÄTIGTE_KOSTEN_EUR | erase REF | prune | backup ZIELDATEI');
   process.exitCode=1;
 }else if(!process.env.LEAD_DATA_DIR||!path.isAbsolute(process.env.LEAD_DATA_DIR)){
   console.error('Set LEAD_DATA_DIR to the absolute operator data directory.');process.exitCode=1;
@@ -18,6 +19,8 @@ if(!['list','callbacks','record','show','contact','quote','book','loss','stage',
     let output;
     if(action==='list')output=db.list();
     if(action==='callbacks')output=db.callbacks();
+    if(action==='mail-queue')output=db.mail.list(staffMailSettings(process.env)?.route);
+    if(action==='mail-reviewed')output={removedFromMailQueue:Boolean(db.mail.discard(ref))};
     if(action==='show')output=db.get(ref);
     if(action==='quote')output=db.quote(ref,status,gross,cost);
     if(action==='loss')output=db.loss(ref,status);

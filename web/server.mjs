@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { openStore, validate, validateContactClick, InputError, mobileNumber } from './lib/leads.mjs';
 import { deliverDue, notificationSettings } from './lib/notify.mjs';
+import { deliverStaffMail, staffMailSettings } from './lib/mail-delivery.mjs';
 import { liveHtml } from './lib/render-live.mjs';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import { saveDailyReport } from './lib/snapshot.mjs';
@@ -33,7 +34,7 @@ export function configuration(env=process.env){
   }
   return {live,origin,dataDir:env.LEAD_DATA_DIR||'',retention:Number(env.CLOSED_RETENTION_DAYS||90),public:{
     mode:live?'live':'preview',leadIntake:live,phone:live?mobileNumber(env.CONTACT_PHONE):'',phoneDisplay:live?env.CONTACT_PHONE:'',
-    whatsapp,contactMetrics:live&&env.CONTACT_METRICS==='1',
+    whatsapp,contactMetrics:live&&env.CONTACT_METRICS==='1',staffMailEnabled:live&&Boolean(staffMailSettings(env)),
     email:live?env.CONTACT_EMAIL:'',operatorName:live?env.OPERATOR_NAME:'',legalAddress:live?env.LEGAL_ADDRESS:'',
     privacyContact:live?(env.PRIVACY_CONTACT||env.CONTACT_EMAIL):'',legalExtra:live?(env.LEGAL_EXTRA||''):'',
     privacyExtra:live?(env.PRIVACY_EXTRA||''):'',retentionDays:Number(env.CLOSED_RETENTION_DAYS||90)
@@ -45,11 +46,12 @@ async function body(req,maxBytes){
   try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
 const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/entsorgung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
-export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1'}={}){
+export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1',sendStaffMail=fetch}={}){
   const config=configuration(env);
   if(!Number.isInteger(config.retention)||config.retention<1)throw new Error('CLOSED_RETENTION_DAYS must be a positive integer.');
   const publicPath=path.resolve(publicDir);
   const notify=config.live?notificationSettings(env):null;
+  const mail=config.live?staffMailSettings(env):null;
   const dataPath=path.resolve(config.dataDir||'.');
   if(config.live&&(dataPath===publicPath||dataPath.startsWith(publicPath+path.sep)))throw new Error('Data directory must be outside public/.');
   const db=config.live?openStore(path.join(dataPath,'leads.sqlite')):null;
@@ -71,9 +73,12 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
   const controller=new AbortController();
   let pending=null;
   function notifyOps(){
-    if(notify&&!pending)pending=deliverDue(db,notify,{signal:controller.signal})
-      .catch(()=>console.error('Notification queue unavailable. Check operator storage.'))
-      .finally(()=>{pending=null;});
+    if((notify||mail)&&!pending)pending=Promise.allSettled([
+      deliverDue(db,notify,{signal:controller.signal}),
+      deliverStaffMail(db,mail,{send:sendStaffMail,signal:controller.signal})
+    ]).then(results=>{
+      if(results.some(result=>result.status==='rejected'))console.error('Notification queue unavailable. Check operator storage.');
+    }).finally(()=>{pending=null;});
   }
   const noticeTimer=setInterval(notifyOps,30000);noticeTimer.unref();notifyOps();
   const server=http.createServer(async(req,res)=>{
@@ -106,7 +111,7 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
         }
         const lead=validate(await body(req,maxLeadBodyBytes));
         if(!config.live){json(res,200,{ok:true,mode:'preview',reference:'VORSCHAU'});return;}
-        const result=db.submit(lead,Date.now(),Boolean(notify),'web');json(res,result.created?201:200,{ok:true,mode:'live',reference:result.reference});
+        const result=db.submit(lead,Date.now(),Boolean(notify),'web',mail?.route);json(res,result.created?201:200,{ok:true,mode:'live',reference:result.reference});
         if(result.created)notifyOps();
         return;
       }
