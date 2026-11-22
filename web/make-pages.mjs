@@ -5,6 +5,8 @@ import {inquiry,legal,thankYou} from './form-pages.mjs';
 import {clearanceCalculator} from './clearance-calculator.mjs';
 import {scenarioPrices} from './scenario-prices.mjs';
 import {cloudPage} from './lib/cloud-pages.mjs';
+import {taskPages} from './task-pages.mjs';
+import {breadcrumbItems,guideServices,publicOrigin,publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 await mkdir(path.join(dir,'assets'), {recursive:true});
 await writeFile(path.join(dir,'assets/richtpreise.js'), 'export const scenarioPrices = '+JSON.stringify(scenarioPrices,null,2)+';\n', 'utf8');
@@ -60,7 +62,8 @@ function contactDialog(){
 }
 function header(pathname){
   const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/preise/','Preise']];
-  const request=({'/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung'})[pathname]||'/anfrage/';
+  const guide=taskPages.find(page=>page.path===pathname);
+  const request=guide?taskRequest(guide):({'/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung'})[pathname]||'/anfrage/';
   return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="188" height="54"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>Anfrage stellen</a></div></header>';
 }
 function footer(pathname){
@@ -69,8 +72,30 @@ function footer(pathname){
 function shell(pathname,title,desc,body){
   const scopeStyle = ['/preise/', '/anfrage/'].includes(pathname) ? '<link rel="stylesheet" href="/assets/job-scope.css">' : '';
   const priceAssets=scopeStyle + (pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/clearance-calculator.css"><link rel="stylesheet" href="/assets/price-comparison.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '');
-  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/signet.svg" type="image/svg+xml"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css">'+(['/anfrage/','/danke/'].includes(pathname)?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css">'+(['/anfrage/','/danke/'].includes(pathname)?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
 function crumb(text){return '<nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>'+text+'</span></nav>';}
+function text(value){return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
+function topicList(title,pages){
+  if(!pages.length)return '';
+  return '<section class="wrap topics"><h2>'+text(title)+'</h2><ul>'+pages.map(page=>'<li><a href="'+page.path+'">'+text(page.label)+'</a></li>').join('')+'</ul></section>';
+}
+function taskRequest(page){
+  const serviceParam=['entruempelung','entsorgung'].includes(page.service)?'leistung':'service';
+  return '/anfrage/?'+serviceParam+'='+page.service+'&amp;thema='+encodeURIComponent(page.path.split('/').filter(Boolean).at(-1));
+}
+function taskPage(page){
+  const crumbs=breadcrumbItems(page.path).map(([label,url],i,items)=>i===items.length-1?'<span aria-current="page">'+text(label)+'</span>':'<a href="'+url+'">'+text(label)+'</a>');
+  const request=taskRequest(page);
+  const priceUrl=['entruempelung','entsorgung','umzug'].includes(page.service)?'/preise/?vorhaben='+page.service+'#richtpreis':'/preise/?service='+page.service+'#preisfinder';
+  const intro='<section class="subhead task-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero"><nav class="crumb" aria-label="Brotkrumennavigation">'+crumbs.join('<span aria-hidden="true">/</span>')+'</nav>'+
+    '<h1>'+text(page.heading)+'</h1><p class="lead">'+text(page.intro)+'</p><div class="actions"><a class="button" data-guide-choice="'+page.service+'" href="'+request+'">'+text(page.inquiryLabel||'Vorhaben anfragen')+'</a>'+
+    btn('Richtpreis ansehen',priceUrl,true)+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></section>';
+  const details='<div class="wrap task-sections">'+page.sections.map(([heading,paragraph])=>'<section><h2>'+text(heading)+'</h2><p>'+text(paragraph)+'</p></section>').join('')+'</div>';
+  const answers='<section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2>'+faq(page.questions.map(([q,a])=>[text(q),text(a)]))+'</div></section>';
+  const related=page.related.map(url=>taskPages.find(item=>item.path===url));
+  if(related.some(item=>!item))throw new Error('Unbekannte Themenseite bei '+page.path);
+  return intro+details+answers+topicList('Verwandte Vorhaben',related);
+}
 function endCta(service='umzug'){return '<section class="endcta"><div class="wrap end-inner"><div><h2>Was steht bei Ihnen an?</h2><p>Beschreiben Sie kurz, was mitkommen soll und wie die Räume erreichbar sind.</p></div><div class="actions">'+btn('Anfrage vorbereiten','/anfrage/?service='+service)+contactChoices(service)+'</div></div></section>';}
 function serviceCards(){
   const cards=services.map(s=>
@@ -90,11 +115,18 @@ function steps(){
     '<li><b>Festlegen, was bleiben soll</b><p>Welche Möbel ziehen mit, welche geben Sie weiter und was soll aus den Räumen? In der <a href="/anfrage/?leistung=entruempelung">Anfrage</a> können Sie die Stücke auflisten oder Fotos beifügen.</p></li>'+
     '<li><b>Den Transport abstimmen</b><p>Für Möbel, die weitergenutzt werden, können Sie bei FrankenPackt einen <a href="/anfrage/?service=transport">Transport anfragen</a>. Nennen Sie die beiden Adressen, das Stockwerk und den Wunschtermin.</p></li></ol></details></div></section>';
 }
+function responsivePhoto(name,alt,hero=false){
+  const width=hero?1200:1280;
+  const sizes=hero?'(max-width: 539px) 37vw, (max-width: 780px) 44vw, (max-width: 1020px) calc(50vw - 32px), (max-width: 1470px) 45vw, 662px':'(max-width: 780px) clamp(60px, 20vw, 120px), (max-width: 1470px) 43vw, 598px';
+  const base='/assets/'+name;
+  return '<img src="'+base+'.webp" srcset="'+base+'-360.webp 360w, '+base+'-720.webp 720w, '+base+'.webp '+width+'w" sizes="'+sizes+'" width="'+width+'" height="'+(hero?800:853)+'" fetchpriority="high" alt="'+text(alt)+'">';
+}
 const home='<section class="hero"><div class="wrap hero-grid"><div class="hero-copy"><div class="hero-heading"><div class="location">'+ic('pin',17)+
   ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Was soll bleiben, was kann raus? Wir sortieren Ihren Hausrat und tragen die vereinbarten Stücke hinaus. Möbel, die Sie behalten oder verschenken möchten, bringen wir auf Wunsch an die neue Adresse.</p>'+
   '<div class="actions">'+btn('Richtpreis ansehen','/preise/#richtpreis')+btn('Entsorgung anfragen','/anfrage/?leistung=entsorgung',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
-  '<div class="hero-picture"><img src="/assets/entruempelung-franken.webp" width="1200" height="800" fetchpriority="high" alt="Zwei Frauen sortieren eine Schale und weiteren Hausrat"></div></div></section>'+
-  serviceCards()+steps();
+  '<div class="hero-picture">'+responsivePhoto('entruempelung-franken','Zwei Frauen sortieren eine Schale und weiteren Hausrat',true)+'</div></div></section>'+
+  serviceCards()+topicList('Häufige Vorhaben',taskPages.filter(page=>['/kueche-abbauen/','/sofa-entsorgen/','/keller-entruempeln/','/wohnungsaufloesung/'].includes(page.path)))+steps()+
+  '<div class="wrap"><p data-business-address hidden></p></div>';
 const serviceContent={
  '/umzug/':{t:'Privatumzug',desc:'Privatumzug mit zwei Personen und Fahrzeug ab Nürnberg. Zeit, Zugang und Leistung vor dem Termin abstimmen.',h:'Ihre neue Wohnung.<br><em>Ihr Umzug.</em>',p:'Wir tragen und transportieren gepackte Kartons und vereinbarte Möbel. Sie wählen ein Team auf Zeit oder lassen einen kompakten Umzug kalkulieren.',s:'umzug',img:'umzug-franken',alt:'Kartons und Umzugsgut vor einem Hauseingang',which:'drei',title:'Was wir vorab klären',list:[['Umzugsgut','Welche großen Möbelstücke und wie viele Kartons wechseln die Adresse? Was bleibt zurück?'],['Zugang an beiden Orten','Stockwerk, Aufzug, enger Hausflur und die Entfernung zum Fahrzeug bestimmen den Aufwand.'],['Fahrt und Tragen','Unser Team trägt und verlädt Ihr Umzugsgut an beiden Adressen. Hin- und Rückfahrt zählen zur Gesamtroute ab 90453.']],faqs:[['Was ist im 3-Stunden-Paket enthalten?','Zwei Personen und Fahrzeug für drei Stunden Arbeit vor Ort. Hin- und Rückfahrt sind bis insgesamt 20 km und 30 Minuten ab und bis 90453 enthalten.'],['Können Termine gleich online gebucht werden?','Die Anfrage ist unverbindlich. Ein Termin steht erst nach Abstimmung und schriftlicher Vereinbarung fest.']]},
  '/seniorenumzug/':{t:'Seniorenumzug',desc:'Seniorenumzüge in Nürnberg gemeinsam planen. Wünsche, Ansprechperson, Zugang und Ablauf persönlich abstimmen.',h:'Umziehen<br><em>in Ihrem Tempo.</em>',p:'Ein Wohnungswechsel lässt sich Schritt für Schritt planen. Wir gehen mit Ihnen oder einer Vertrauensperson durch, welche Möbel mitkommen und welche Hilfe Sie brauchen.',s:'seniorenumzug',img:'seniorenumzug',alt:'Anschauliche Szene zur Umzugsplanung für ältere Menschen',which:'drei',title:'Ein Plan, der zu Ihnen passt',list:[['Vertraute Personen einbeziehen','Auf Ihren Wunsch klären wir die Planung gemeinsam mit einem Angehörigen. Sie bestimmen, wer Ansprechperson ist.'],['Raum für Raum besprechen','Welche Lieblingsstücke sollen mit? Wo stehen sie im neuen Zuhause? Ein kurzer Zimmerplan hilft beim Einräumen.'],['Einen erreichbaren Termin finden','Nennen Sie Ihren Wunschtermin oder wählen Sie einen Rückruf. Pflege, Betreuung und Personentransport gehören nicht zum Umzug.']],faqs:[['Kann meine Tochter oder mein Sohn die Anfrage übernehmen?','Ja. Eine Vertrauensperson kann eigene Kontaktdaten angeben und in Ihrem Auftrag um Rücksprache bitten.'],['Brauche ich Fotos oder eine E-Mail-Adresse?','Für eine erste Anfrage reichen eine kurze Beschreibung und eine erreichbare Telefonnummer oder E-Mail-Adresse. Fotos sind im Formular nicht nötig.']]},
@@ -111,8 +143,7 @@ function detail(d) {
   return '<div class="subhead service-heading" data-interest-service="'+d.s+'" data-interest-package="'+(fullDay?.id||'')+'"><div class="wrap">' + crumb(d.t) +
     '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p>' + leadOffer + '<div class="actions">' +
     btn(fullDay ? '7-Stunden-Team anfragen' : 'Anfrage vorbereiten', request) +
-    btn(item ? 'Preis prüfen' : 'Ablauf ansehen',priceLink,true) + '</div>'+contactChoices(d.s,fullDay?.id)+'</div><div class="detail-img"><img src="/assets/' +
-    d.img + '.webp" width="900" height="650" alt="' + d.alt + '"></div></div></div></div>' +
+    btn(item ? 'Preis prüfen' : 'Ablauf ansehen',priceLink,true) + '</div>'+contactChoices(d.s,fullDay?.id)+'</div><div class="detail-img">'+responsivePhoto(d.img,d.alt)+'</div></div></div></div>' +
     '<section class="wrap section service-facts" id="transportablauf"><div class="section-head"><h2>' + d.title + '</h2></div><div class="info-grid">' +
     d.list.map(([h,p]) => '<article><h3>' + h + '</h3><p>' + p + '</p></article>').join('') +
     '</div><div class="mobile-facts">' + faq(d.list) + '</div>' + (item ? '<div class="price-callout"><div>' + ic('tag',28) + '<div><h3>' + item.name + ' · ' + startingPrice(item.price) +
@@ -127,6 +158,7 @@ function planningPage(page) {
     btn('Richtpreis ermitteln','/preise/?vorhaben='+page.service+'#richtpreis')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+calculatorLink+contactChoices(page.service)+'</div></section>'+
     '<section id="'+page.anchor+'" class="wrap section service-facts"><h2>'+page.section+'</h2><div class="info-grid">'+cards+
     '</div><div class="mobile-facts">'+faq(page.steps)+'</div></section>'+
+    topicList('Ihr Vorhaben im Detail',taskPages.filter(task=>task.service===page.service))+
     '<section class="faq-section" id="kosten"><div class="wrap faq-layout"><h2>'+page.faqTitle+'</h2>'+faq(page.questions)+'</div></section>';
 }
 const clear=planningPage({
@@ -211,7 +243,7 @@ function pricePage() {
 
 const pages=[
  ['/', 'Entrümpelung &amp; Entsorgung in Nürnberg', 'Keller oder Wohnung räumen? Wir helfen beim Sortieren, Tragen und Transportieren. Beschreiben Sie Ihr Vorhaben und erhalten Sie ein persönliches Angebot.',home],
- ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc,detail(d)]),
+ ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc, detail(d)+topicList('Ihr Vorhaben im Detail',taskPages.filter(page=>page.service===d.s))]),
  ['/raeumung/','Entrümpelung in Nürnberg planen','Kellerentrümpelung und Wohnungsauflösung vorbereiten. Hausrat sortieren, Zugang prüfen und den Transport weiter genutzter Möbel in Nürnberg anfragen.',clear],
  ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Ein Sofa, alte Geräte oder ein voller Keller in Nürnberg? Nennen Sie uns Gegenstände, Menge und Zugang. Wir prüfen Ihre Anfrage und den passenden Leistungsumfang.',disposal],
  ['/preise/','Preisrechner für Entrümpelung, Entsorgung und Umzug','Was kostet Ihr Vorhaben in Nürnberg? Berechnen Sie einen unverbindlichen Richtpreis für Entrümpelung, Entsorgung oder Umzug anhand Ihrer Angaben.',pricePage()],
@@ -220,6 +252,12 @@ const pages=[
  ['/impressum/','Impressum','Anbieterangaben zur Website von FrankenPackt.',legal(crumb,false)],
  ['/datenschutz/','Datenschutz','Informationen zum Umgang mit Angaben auf dieser Website.',legal(crumb,true)]
 ];
+pages.push(...taskPages.map(page=>[page.path,text(page.title),text(page.description),taskPage(page)]));
+const generatedRoutes=new Set(pages.map(([url])=>url));
+if(generatedRoutes.size!==pages.length||publicPagePaths.length!==pages.length||publicPagePaths.some(url=>!generatedRoutes.has(url)))throw new Error('Seiten und öffentliche Routen stimmen nicht überein.');
+const guideLabels=Object.fromEntries(taskPages.map(page=>[page.path,page.label]));
+const manifest=Object.entries({publicPagePaths,searchPaths,guideServices,guideLabels}).map(([key,value])=>'export const '+key+' = '+JSON.stringify(value,null,2)+';');
+await writeFile(path.join(dir,'assets','search-routes.js'),manifest.join('\n')+'\n','utf8');
 for(const [url,title,description,body] of pages){
   const html=shell(url,title,description,body);
   const preview=path.join(dir,url), production=path.join(dir,'betrieb',url);
@@ -229,6 +267,7 @@ for(const [url,title,description,body] of pages){
     writeFile(path.join(production,'index.html'),cloudPage(html,url),'utf8')
   ]);
 }
-await writeFile(path.join(dir,'betrieb','robots.txt'),'User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /danke/\nDisallow: /betrieb/\n','utf8');
+await writeFile(path.join(dir,'betrieb','robots.txt'),robots(publicOrigin),'utf8');
+await writeFile(path.join(dir,'betrieb','sitemap.xml'),sitemap(publicOrigin),'utf8');
 await writeFile(path.join(dir,'404.html'),shell('/404/','Seite nicht gefunden','Diese Seite ist nicht verfügbar.','<section class="wrap section"><h1>Seite nicht gefunden</h1><p>Auf der Startseite finden Sie unsere Leistungen für Entrümpelung, Entsorgung und Umzüge.</p>'+btn('Zur Startseite','/')+'</section>'),'utf8');
-await writeFile(path.join(dir,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
+await writeFile(path.join(dir,'robots.txt'),robots(null),'utf8');

@@ -5,7 +5,7 @@ export function inquiry(crumb, ic) {
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
     ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
     <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Anhand Ihrer Angaben zu Inventar, Zugang und Termin erstellen wir Ihr persönliches Angebot.</p>
-    <a class="inquiry-switch" id="inquiry-switch" href="/anfrage/?kontakt=telefon">Nur einen Rückruf anfragen</a>
+    <a class="inquiry-switch" id="inquiry-switch" hidden>Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>
     <div id="form-mode" class="note compact" role="status">Vorschau: Bitte verwenden Sie nur Beispieldaten. Ihre Angaben bleiben in diesem Browser.</div>

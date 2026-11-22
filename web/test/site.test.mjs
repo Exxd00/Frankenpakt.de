@@ -7,6 +7,7 @@ import path from 'node:path';
 import { startServer } from '../server.mjs';
 import { liveHtml } from '../lib/render-live.mjs';
 import { priceGuideRoute } from '../public/assets/price-guide.js';
+import {searchPaths} from '../search-site.mjs';
 
 test('privacy page describes staff email only when that delivery channel is enabled',()=>{
   const render = staffMailEnabled => liveHtml('<div id="privacy-extra"></div>',
@@ -53,7 +54,8 @@ test('generated website serves all routes and assets, live legal copy before Jav
       assert.deepEqual(desktopAmounts, mobileAmounts);
       for(const amount of mobileAmounts) assert.match(amount, /^ab [\d.]+\s€$/);
     }
-    assert.match(html,/<link rel="canonical"/);assert.doesNotMatch(html,/content="noindex,follow"/);
+    assert.match(html,/<link rel="canonical"/);
+    assert.ok(html.includes('<meta name="robots" content="'+(searchPaths.includes(route)?'index,follow':'noindex,follow')+'">'),route);
     for(const m of html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g))assets.add(m[1]);
     if(route==='/impressum/'){assert.match(html,/Probe &amp; Partner &lt;Test&gt;/);assert.match(html,/mailto:probe@example.invalid/);}
     if(route==='/datenschutz/'){assert.match(html,/90 Tage/);assert.match(html,/Hosting in der Testumgebung/);}

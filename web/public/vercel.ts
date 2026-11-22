@@ -1,3 +1,5 @@
+import {publicPagePaths} from './assets/search-routes.js';
+
 // The production origin runs web/server.mjs with the operator's persistent lead store.
 // Keep preview deployments on the static site, including their contact settings.
 const configuredOrigin = process.env.VERCEL_ENV === 'production'
@@ -5,14 +7,14 @@ const configuredOrigin = process.env.VERCEL_ENV === 'production'
   : undefined;
 const cloudEnabled = process.env.VERCEL_ENV === 'production' && process.env.FRANKENPACKT_CLOUD_INTAKE === '1';
 const cloud = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake';
-const pages = 'anfrage|danke|datenschutz|entsorgung|impressum|moebeltaxi|preise|raeumung|seniorenumzug|umzug';
+const pages = publicPagePaths.filter(path=>path!=='/').map(path=>path.slice(1,-1)).join('|');
 const read = ['GET','HEAD'];
 
 function cloudRoutes() {
   return [
     {src:'^/(?:index\\.html)?$', methods:read, dest:'/betrieb/index.html'},
     {src:'^/('+pages+')(?:/index\\.html|/)?$', methods:read, dest:'/betrieb/$1/index.html'},
-    {src:'^/robots\\.txt$', methods:read, dest:'/betrieb/robots.txt'},
+    {src:'^/(robots\\.txt|sitemap\\.xml)$', methods:read, dest:'/betrieb/$1'},
     {src:'^/api/config$', methods:read, dest:cloud+'/config',headers:{'Cache-Control':'no-store'}},
     {src:'^/api/leads$', methods:['POST'], dest:cloud+'/leads',headers:{'Cache-Control':'no-store'}}
   ];
@@ -29,7 +31,7 @@ function intakeRoutes(value: string) {
   return [
     { src: '^/(?:index\\.html)?$', methods: read, dest: origin + '/' },
     { src: '^/(' + pages + ')(?:/index\\.html|/)?$', methods: read, dest: origin + '/$1/' },
-    { src: '^/robots\\.txt$', methods: read, dest: origin + '/robots.txt' },
+    { src: '^/(robots\\.txt|sitemap\\.xml)$', methods: read, dest: origin + '/$1' },
     { src: '^/api/config$', methods: read, dest: origin + '/api/config' },
     { src: '^/api/(leads|contact-events)$', methods: ['POST'], dest: origin + '/api/$1' }
   ];
@@ -37,6 +39,7 @@ function intakeRoutes(value: string) {
 
 export const config = {
   routes: [
+    {src:'^/betrieb(?:/.*)?$',methods:read,status:404,dest:'/404.html',headers:{'X-Robots-Tag':'noindex, nofollow'}},
     {
       src: '^/api/office/([A-Za-z0-9_/-]+)$', methods: ['GET', 'POST'],
       dest: 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-office/$1',

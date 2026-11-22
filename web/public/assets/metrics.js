@@ -1,13 +1,15 @@
+import {guideServices, publicPagePaths} from './search-routes.js';
+
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
 export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
 const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
 const choiceKey = 'frankenpakt.statistik.v1';
 const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
-const pages = new Set(['/','/preise/','/anfrage/','/danke/','/umzug/','/seniorenumzug/','/moebeltaxi/','/entsorgung/','/raeumung/','/datenschutz/','/impressum/']);
+const pages = new Set(publicPagePaths);
 const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
 const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf']);
 const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
-const pageServices = {'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
+const pageServices = {...guideServices,'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
 
 function metricCategories(explicitService,location) {
   const q = new URLSearchParams(location.search);

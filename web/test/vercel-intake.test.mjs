@@ -37,7 +37,7 @@ test('configured production serves the same operator for pages, confirmed submis
   const pages = readdirSync(publicRoot,{withFileTypes:true})
     .filter(entry=>entry.isDirectory() && !['admin','betrieb'].includes(entry.name) && existsSync(new URL(entry.name+'/index.html',publicRoot)))
     .map(entry=>'/'+entry.name+'/');
-  for (const route of ['/', ...pages, '/robots.txt','/api/config']) {
+  for (const route of ['/', ...pages, '/robots.txt','/sitemap.xml','/api/config']) {
     assert.equal(destination(routes, 'GET', route), origin + route);
   }
   assert.equal(destination(routes, 'GET', '/anfrage/index.html'), origin + '/anfrage/');
@@ -61,6 +61,10 @@ test('cloud production serves operator pages and sends submissions only to the p
   assert.ok(read('/anfrage/').includes('Anfrage senden'));
   assert.ok(read('/danke/').includes('noindex,nofollow'));
   assert.ok(read('/datenschutz/').includes('Supabase'));
+  assert.match(read('/robots.txt'),/^Sitemap: https:\/\/frankenpakt\.de\/sitemap\.xml$/m);
+  assert.match(read('/sitemap.xml'),/<loc>https:\/\/frankenpakt\.de\/kueche-abbauen\/<\/loc>/);
+  const blocked=routes.find(route=>new RegExp(route.src).test('/betrieb/kueche-abbauen/'));
+  assert.equal(blocked?.status,404);
   assert.equal(destination(routes,'POST','/api/leads'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake/leads');
   assert.equal(destination(routes,'GET','/api/config'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake/config');
   assert.equal(destination(routes,'GET','/api/leads'),null);

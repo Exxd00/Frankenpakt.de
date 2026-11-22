@@ -8,6 +8,7 @@ import { openStore, validate, validateContactClick, InputError, mobileNumber } f
 import { deliverDue, notificationSettings } from './lib/notify.mjs';
 import { deliverStaffMail, staffMailSettings } from './lib/mail-delivery.mjs';
 import { liveHtml } from './lib/render-live.mjs';
+import {robots,searchPaths,sitemap} from './search-site.mjs';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import { parseFileRequest, maxMultipartBytes, serveAttachment } from './lib/attachments.mjs';
 import {deliverOfficeEvents} from './lib/office-events.mjs';
@@ -53,7 +54,7 @@ async function body(req,maxBytes){
   const bin=await readBytes(req,maxBytes);
   try{return JSON.parse(bin.toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
-const controlledPages=new Set(['/','/umzug/','/umzuege/','/seniorenumzug/','/moebeltaxi/','/entruempelung/','/entsorgung/','/preise/','/anfrage/','/leistungen/','/umzug-nuernberg/','/raeumung/']);
+const controlledPages=new Set([...searchPaths,'/anfrage/','/umzuege/','/entruempelung/','/leistungen/','/umzug-nuernberg/']);
 export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1',sendStaffMail=fetch,sendOfficeEvent=fetch}={}){
   const config=configuration(env);
   const officeFileToken=env.OPS_OFFICE_FILE_TOKEN;
@@ -147,9 +148,14 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
       }
       if(url.pathname.startsWith('/api/')){json(res,404,{ok:false,message:'Unbekannter Endpunkt.'});return;}
       if(!['GET','HEAD'].includes(req.method)){res.setHeader('Allow','GET, HEAD');res.writeHead(405);res.end();return;}
-      if(url.pathname==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8'});res.end(req.method==='HEAD'?'':config.live?'User-agent: *\nDisallow: /api/\n':'User-agent: *\nDisallow: /\n');return;}
+      if(url.pathname==='/robots.txt'){res.writeHead(200,{'Content-Type':'text/plain; charset=utf-8'});res.end(req.method==='HEAD'?'':robots(config.origin));return;}
+      if(url.pathname==='/sitemap.xml'){
+        if(!config.live)throw new InputError('Unbekannter Pfad.',404);
+        res.writeHead(200,{'Content-Type':'application/xml; charset=utf-8'});res.end(req.method==='HEAD'?'':sitemap(config.origin));return;
+      }
       let pathname;try{pathname=decodeURIComponent(url.pathname);}catch{throw new InputError('Ungültiger Pfad.');}
       if(pathname.includes('\\')||pathname.includes('\0')||pathname.split('/').some(x=>x.startsWith('.')))throw new InputError('Unbekannter Pfad.',404);
+      if(/^\/betrieb(?:\/|$)/i.test(pathname))throw new InputError('Unbekannter Pfad.',404);
       let target=path.resolve(publicPath,'.'+pathname);
       if(target!==publicPath&&!target.startsWith(publicPath+path.sep))throw new InputError('Unbekannter Pfad.',404);
       if((await stat(target)).isDirectory())target=path.join(target,'index.html');

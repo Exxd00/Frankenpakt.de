@@ -1,9 +1,20 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {publicMetric,mountMetrics} from '../public/assets/metrics.js';
+import {guideServices} from '../public/assets/search-routes.js';
 
 const url = new URL('https://frankenpakt.de/anfrage/?src=google&person=PRIVATE-TEST&service=umzug#PRIVATE-TEST');
 const uuid = () => '469053a8-77e0-4ec7-b777-ed2482b07ffa';
+test('every published guide records the correct service category and excludes query text',()=>{
+  assert.ok(Object.keys(guideServices).length>0);
+  for(const [path,service] of Object.entries(guideServices)){
+    const loc=new URL(path+'?thema=PRIVATE-TEST',url);
+    const event=publicMetric('service_chosen',null,loc,uuid);
+    assert.equal(event.service,service);
+    assert(!JSON.stringify(event).includes('PRIVATE-TEST'));
+  }
+  assert.equal(publicMetric('service_chosen',null,new URL('/private-job/',url),uuid),null);
+});
 test('only allowlisted website routing, category and event fields can reach the provider',()=>{
   const row=publicMetric('upload_ready','PRIVATE-TEST',url,uuid);
   assert.deepEqual(row,{id:uuid(),event:'upload_ready',service:'umzug',source:'google',count:1,consent:true});

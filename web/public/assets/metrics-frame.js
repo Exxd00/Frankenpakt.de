@@ -1,3 +1,5 @@
+import {publicPagePaths} from './search-routes.js';
+
 (() => {
   'use strict';
   if (window.parent === window) return;
@@ -5,7 +7,7 @@
   const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent','generate_lead']);
   const categories = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf','unbekannt']);
   const channels = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt']);
-  const paths = new Set(['/','/preise/','/anfrage/','/danke/','/umzug/','/seniorenumzug/','/moebeltaxi/','/entsorgung/','/raeumung/','/datenschutz/','/impressum/']);
+  const paths = new Set(publicPagePaths);
   let id = '';
   const tag = function(){(window.dataLayer ||= []).push(arguments);};
   window.addEventListener('message',event => {

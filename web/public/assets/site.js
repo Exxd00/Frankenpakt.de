@@ -353,7 +353,7 @@ function showReceipt() {
 }
 showReceipt();
 
-const liveDocument = document.querySelector('meta[name="robots"]')?.content === 'index,follow';
+const liveDocument = Boolean(document.querySelector('#contact-dialog[data-contact-mode="live"]'));
 let mode = liveDocument ? 'unavailable' : 'preview';
 const canConfigure = location.protocol === 'http:' || location.protocol === 'https:';
 const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'application/json'}, cache: 'no-store'})
@@ -385,6 +385,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
   const submit = document.querySelector('#send-lead');
   const details = form.elements.details;
   const scope = document.querySelector('#service-scope');
+  let guide = draftTools.inquiryTopic(params, service.value);
+  const guideNote = () => guide ? 'Anfrage zu „' + guide.label + '“.' : '';
   draftTools.recoverHandoff(service.value);
   const editor = callback ? null : draftTools.inquiryScope(document.querySelector('#inquiry-job-scope'),service.value,() => new URLSearchParams(location.search));
   const savedForCallback = callback ? draftTools.completeDraft(service.value) : null;
@@ -392,8 +394,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
   document.querySelector('#callback-draft-choice').hidden = !savedForCallback && !callbackFacts;
   function showServiceFields() {
     const topic = Object.hasOwn(clearance,service.value) ? clearance[service.value] : null;
-    scope.hidden = !topic;
-    scope.textContent = topic?.scope || '';
+    scope.textContent = [guideNote(), topic?.scope].filter(Boolean).join(' ');
+    scope.hidden = !scope.textContent;
   }
   showServiceFields();
   const estimate = contexts.find(context => context.params.has('hilfe'));
@@ -418,7 +420,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
     const addition = ['drei', 'sieben'].includes(pack) && [1, 2, 3, 4].includes(units) ? ' mit ' + units * 30 + ' Minuten gewünschter Verlängerung' : '';
     details.value = 'Interesse am Paket ' + packageLabels[pack] + addition + '.';
   }
-  const context = callback ? [serviceOption?.label, details.value].filter(Boolean).join(' · ') : '';
+  const context = callback ? [guide?.label || serviceOption?.label, details.value].filter(Boolean).join(' · ') : '';
   const switchLink = document.querySelector('#inquiry-switch');
   const switchTarget = new URL('/anfrage/', location.href);
   if (callback) {
@@ -450,6 +452,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
   const presetDetails = details.value;
   function writeContext(url) {
     clearEstimateContext(url);
+    url.searchParams.delete('thema');
+    if (guide && url.pathname === '/anfrage/') url.searchParams.set('thema',guide.slug);
     for (const context of contexts) {
       for (const [key, value] of context.params) url.searchParams.set(key, value);
     }
@@ -465,10 +469,12 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
     writeContext(switchTarget);
     switchLink.setAttribute('href',switchTarget.pathname + switchTarget.search);
     updateLink(switchLink);
+    switchLink.hidden = false;
     updateProjectLinks(interest,currentPack,params.get('zusatz'),writeContext);
   }
   updateFormLinks(serviceOption?.value);
   service.addEventListener('change', () => {
+    if (guide && guide.service !== service.value) guide = null;
     showServiceFields();
     if (contexts.length && service.value !== contexts[0].service) {
       if (estimate) details.value = details.value.replace(estimate.summary, '').trim();
@@ -575,6 +581,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
         body.details = [serviceOption?.label,details.value].filter(Boolean).join(' · ');
         delete body.callbackTime;
       }
+      if (guide) body.details = [guideNote(),body.details].filter(Boolean).join(' ');
       body.source = source;
       if (adVariant) body.adVariant = adVariant;
       const fingerprint = JSON.stringify([body,files.map(f=>f.id)]);
