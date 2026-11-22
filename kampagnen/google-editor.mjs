@@ -53,7 +53,8 @@ const titles = Array.from({length: 8}, (_, i) => 'Headline ' + (i + 1));
 const descriptions = Array.from({length: 3}, (_, i) => 'Description ' + (i + 1));
 const ads = [['Campaign','Ad group','Ad type','Status',...titles,...descriptions,'Path 1','Path 2',landingColumn]];
 const keywords = [['Campaign','Ad group','Keyword','Match type','Status']];
-const groups = [['Campaign','Ad group','Ad group status']];
+const groups = [['Campaign','Ad group','Ad group status','Final URL suffix']];
+const searchUrlSuffix = 'utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}';
 const negatives = [['Campaign','Keyword','Type']];
 const links = [['Campaign','Ad group','Link text',landingColumn]];
 const release = [['Startstufe','Kampagne','Anzeigengruppe','Keyword','Zielseite']];
@@ -79,7 +80,7 @@ for (const group of plan.groups) {
   lengths(group.descriptions, 90);
   lengths([group.path,'nuernberg'], 15);
   unique(group.keywords);
-  groups.push([campaign,group.name,'Paused']);
+  groups.push([campaign,group.name,'Paused',searchUrlSuffix]);
   const landing = dest(group.landing,group.adVariant);
   ads.push([campaign,group.name,'Responsive search ad','Paused',...group.headlines,...group.descriptions,group.path,'nuernberg',landing]);
   for (const keyword of group.keywords) {

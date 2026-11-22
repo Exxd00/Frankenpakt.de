@@ -84,7 +84,7 @@ export function openStore(filename){
       if(process.platform!=='win32')chmodSync(target,0o600);
     },
     submit(lead,ms=Date.now(),notify=false,entry='manual',mailRoute=null,files=[],recordOfficeEvents=false){
-      const {requestId,source,adVariant,contactMethod,contact,service,...fields}=lead;
+      const {requestId,source,adVariant,attribution,contactMethod,contact,service,...fields}=lead;
       const person={...fields,contactMethod,contact};
       const fileKey=files.length ? [files.map(f=>[f.name,f.mime,f.digest])] : [];
       const fingerprint=sign(JSON.stringify([source,service,person,...fileKey]));
@@ -107,7 +107,7 @@ export function openStore(filename){
           addCalculatedScope(person,service);
           db.prepare("INSERT INTO leads(ref,created,updated,status,service,source,person,identity,merge_key) VALUES(?,?,?,'new',?,?,?,?,?)").run(ref,iso(ms),iso(ms),service,source,JSON.stringify(person),identity,merge);
           attachments.save(ref,files);
-          if(entry==='web' && recordOfficeEvents)officeEvents.add(ref,service,person.requestedService,source,ms);
+          if(entry==='web' && recordOfficeEvents)officeEvents.add(ref,service,person.requestedService,source,ms,attribution);
           if(source==='google' && isGoogleAdVariant(adVariant))db.prepare('INSERT INTO ad_attribution(ref,variant) VALUES(?,?)').run(ref,adVariant);
           db.prepare("INSERT INTO events VALUES(?,'new',?)").run(ref,iso(ms));found={ref};
           if(notify)db.prepare('INSERT INTO notices(ref,due) VALUES(?,?)').run(ref,ms);

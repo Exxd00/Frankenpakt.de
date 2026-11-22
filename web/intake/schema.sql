@@ -47,11 +47,11 @@ begin
    insert into fp_intake.files values(r,i,e->>'name',e->>'mime',data);
  end loop;
  if not p_test then
-   insert into fp_metrics.events(event_id,event_name,service,source)
-     values(gen_random_uuid(),'inquiry_received',coalesce(p_lead->>'requestedService',p_lead->>'service'),p_lead->>'source');
+   insert into fp_metrics.events(event_id,event_name,service,source,attribution)
+     values(gen_random_uuid(),'inquiry_received',coalesce(p_lead->>'requestedService',p_lead->>'service'),p_lead->>'source',p_lead->'attribution');
    if p_lead->>'service'='rueckruf' then
-     insert into fp_metrics.events(event_id,event_name,service,source)
-       values(gen_random_uuid(),'callback_requested',coalesce(p_lead->>'requestedService','rueckruf'),p_lead->>'source');
+     insert into fp_metrics.events(event_id,event_name,service,source,attribution)
+       values(gen_random_uuid(),'callback_requested',coalesce(p_lead->>'requestedService','rueckruf'),p_lead->>'source',p_lead->'attribution');
    end if;
  end if;
  return jsonb_build_object('reference',r,'created',true);

@@ -97,7 +97,8 @@ export function createCloudIntake(env,fetcher=fetch){
       const lead=validate(fields);
       if(lead.service!=='rueckruf'&&!lead.jobScope)throw new InputError('Bitte die Auftragsdetails vervollständigen.');
       if(test&&(lead.name!=='FrankenPackt Systemtest'||lead.contact!=='test@example.invalid'))throw new InputError('Nur freigegebene Testdaten.');
-      const fingerprint=digest(JSON.stringify([lead,files.map(f=>[f.name,f.mime,f.digest])]));
+      const {attribution,...submission}=lead;
+      const fingerprint=digest(JSON.stringify([submission,files.map(f=>[f.name,f.mime,f.digest])]));
       addCalculatedScope(lead,lead.service);
       const result=await rpc('submit',{p_id:lead.requestId,p_fingerprint:fingerprint,p_lead:lead,
         p_files:files.map(f=>({name:f.name,mime:f.mime,content:f.content.toString('base64')})),p_test:test});

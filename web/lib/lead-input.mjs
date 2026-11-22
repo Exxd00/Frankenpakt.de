@@ -1,4 +1,5 @@
 import {InputError,isGoogleAdVariant} from './inputs.mjs';
+import {cleanAttribution} from '../public/assets/campaign-attribution.js';
 import {validateJobScope,summarizeJobTiming} from '../public/assets/job-scope-model.js';
 import {factsFromEditedScope} from '../public/assets/estimate-scope.js';
 import {scopeConditionNotes,normalizeJobContext} from '../public/assets/job-scope-conditions.js';
@@ -53,6 +54,8 @@ export function validate(body){
   const timeframe=jobScope && service!=='rueckruf' ? summarizeJobTiming(jobScope) : string(body.timeframe,120,'Zeitraum');
   const source=sources.has(body.source)?body.source:'unbekannt';
   const lead={requestId:requestId.toLowerCase(),service,name,contactMethod,contact,zipFrom,zipTo,details,timeframe,source};
+  const attribution=body.statisticsConsent===true && cleanAttribution(body.attribution,source);
+  if(attribution)lead.attribution=attribution;
   if(jobScope){
     lead.jobScope=jobScope;
     const ctx=normalizeJobContext(body.jobContext,jobScope.service);

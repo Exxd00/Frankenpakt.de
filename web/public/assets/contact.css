@@ -1,17 +1,6 @@
-@property --edge-angle {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 26deg;
-}
-@keyframes light-around-edge {
-  from { --edge-angle: 26deg; }
-  to { --edge-angle: 386deg; }
-}
 .button, .contact-choice {
   position: relative;
   isolation: isolate;
-  -webkit-backdrop-filter: blur(9px);
-  backdrop-filter: blur(9px);
 }
 .button:not(.secondary) {
   background: linear-gradient(155deg, #ff846a7a 0%, transparent 52%), rgb(232 65 44 / 93%);
@@ -38,17 +27,32 @@
     border-radius: inherit;
     padding: 1.7px;
     pointer-events: none;
-    background: conic-gradient(from var(--edge-angle), transparent 4%, transparent 56%, var(--rim) 71%, var(--shine) 79%, var(--rim) 85%, transparent 95%);
+    background: conic-gradient(from 26deg, transparent 4%, transparent 56%, var(--rim) 71%, var(--shine) 79%, var(--rim) 85%, transparent 95%);
     mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     mask-composite: exclude;
   }
-  @media (prefers-reduced-motion: no-preference) {
-    .hero :is(.button, .contact-choice)::before, .contact-dialog[open] .button::before {
-      animation: light-around-edge 3.8s ease-in-out 1;
+}
+/* The moving reflection is a single small element rather than a repaint of the full button. */
+@keyframes light-around-edge {
+  from { offset-distance:0%; opacity:0; }
+  8%,92% { opacity:1; }
+  to { offset-distance:100%; opacity:0; }
+}
+@supports (offset-path:inset(0 round .55rem)) {
+  @media (prefers-reduced-motion:no-preference) {
+    :is(.button,.contact-choice)::after {
+      position:absolute; left:0; top:0; width:9px; height:2px; border-radius:100%;
+      background:var(--shine); opacity:0; pointer-events:none; offset-path:inset(0 round .55rem);
     }
-    :is(.button, .contact-choice):focus-visible::before { animation: light-around-edge 4s linear infinite; }
-    @media (hover: hover) {
-      :is(.button, .contact-choice):hover::before { animation: light-around-edge 4s linear infinite; }
+    :is(.button,.contact-choice):focus-visible::after,
+    .hero .button:not(.secondary)::after,
+    .contact-dialog[open] .button:not(.secondary)::after {
+      content:""; animation:light-around-edge 3.8s ease-in-out 1;
+    }
+    @media (hover:hover) {
+      :is(.button,.contact-choice):hover::after {
+        content:""; animation:light-around-edge 3.8s linear infinite;
+      }
     }
   }
 }

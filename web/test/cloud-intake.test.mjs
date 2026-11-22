@@ -5,6 +5,16 @@ import {createCloudIntake} from '../intake/intake.mjs';
 import {exampleJobScope} from '../test-support/job-scope.mjs';
 
 const origin='https://frankenpakt.vercel.app';
+test('cloud intake keeps consented campaign data on a lead without breaking retry identity',async()=>{
+  const {api,submitted}=endpoint();
+  const callback={service:'rueckruf',requestedService:'entsorgung',source:'google',requestId:randomUUID(),contactMethod:'phone',name:'Test',phone:'09110000001'};
+  const attribution={landing:'/sofa-entsorgen/',medium:'cpc',campaign:'1234567891234567890',keyword:'sofa entsorgen nürnberg'};
+  assert.equal((await api(request({...callback,attribution}))).status,201);
+  assert.equal(submitted[0].p_lead.attribution,undefined);
+  assert.equal((await api(request({...callback,attribution:{...attribution,q:'private'},statisticsConsent:true}))).status,201);
+  assert.deepEqual(submitted[1].p_lead.attribution,attribution);
+  assert.equal(submitted[0].p_fingerprint,submitted[1].p_fingerprint);
+});
 function request(data,path='leads') {
   return new Request('https://edge.invalid/frankenpakt-intake/'+path,{
     method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(data)

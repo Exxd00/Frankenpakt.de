@@ -111,6 +111,12 @@ function applyType() {
   document.querySelectorAll('a[href]').forEach(updateLink);
 }
 applyType();
+const serviceJump = document.querySelector('a[href="#leistungen"]');
+serviceJump?.addEventListener('click', event => {
+  if (event.detail === 0) {
+    requestAnimationFrame(() => document.querySelector('#leistungen .service-card')?.focus({preventScroll:true}));
+  }
+});
 const offer = document.querySelector('[data-interest-service]');
 if (offer) updateProjectLinks(offer.dataset.interestService, offer.dataset.interestPackage);
 const steps = document.querySelector('.process-steps');
@@ -361,7 +367,8 @@ showReceipt();
 
 const liveDocument = Boolean(document.querySelector('#contact-dialog[data-contact-mode="live"]'));
 let mode = liveDocument ? 'unavailable' : 'preview';
-const canConfigure = location.protocol === 'http:' || location.protocol === 'https:';
+const needsConfiguration = form || document.querySelector('[data-phone-link]');
+const canConfigure = needsConfiguration && ['http:','https:'].includes(location.protocol);
 const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'application/json'}, cache: 'no-store'})
   .then(r => r.ok ? r.json() : null).then(c => {
     if (c?.mode !== 'live' || c.leadIntake !== true) return;
@@ -589,8 +596,12 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
       }
       if (guide) body.details = [guideNote(),body.details].filter(Boolean).join(' ');
       body.source = source;
+      document.dispatchEvent(new CustomEvent('fp-inquiry-attribution',{detail:{accept(visit){
+        body.source=visit.source;body.attribution=visit.attribution;body.statisticsConsent=true;
+      }}}));
       if (adVariant) body.adVariant = adVariant;
-      const fingerprint = JSON.stringify([body,files.map(f=>f.id)]);
+      const {attribution: optionalMeasurement,statisticsConsent,...submission}=body;
+      const fingerprint = JSON.stringify([submission,files.map(f=>f.id)]);
       if (lastPayload !== fingerprint || !lastId) {
         lastPayload = fingerprint;
         lastId = crypto.randomUUID();

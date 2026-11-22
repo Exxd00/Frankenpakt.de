@@ -15,7 +15,7 @@ const officeLinks=[
   ['Kalkulation in Google Sheets','https://docs.google.com/spreadsheets/d/12qMiRi0VYbVoMkMaU13TFIUiffT72S0OxuRgUPd7A9I/edit'],
   ['Betriebsstand und Zuständigkeiten',projectSheet+'#gid=85317568'],
   ['Suchmonitoring und Prüfergebnisse',projectSheet+'#gid=367128204'],
-  ['Ereignisprotokoll',projectSheet],
+  ['Ereignisprotokoll und Anzeigen-Keywords',projectSheet+'#gid=888767604'],
   ['Google Analytics','https://analytics.google.com/analytics/web/#/a404789720p565381204/reports/intelligenthome']
 ];
 const searchLinks=[
@@ -28,7 +28,8 @@ const guidance=[
   ['Offenen Punkt eingrenzen','Wenn ein fehlender Wert den Einsatz oder den Preis verändert, zunächst Inventar, Fotos und vorhandene Angaben prüfen. Bleibt eine Entscheidung offen, alle dafür nötigen Fragen in einer Rückmeldung bündeln.'],
   ['Fachleistung abgrenzen','Bei angeschlossener Küchentechnik, besonderen Stoffen oder einem Stück außerhalb der Fahrzeug- oder Tragemöglichkeiten den betroffenen Teil vor der Zusage fachlich klären. Nur die tatsächlich ausführbaren Arbeiten anbieten. Die zulässige Restladung des eingesetzten Fahrzeugs und die Maße des Einzelstücks prüfen.'],
   ['Suchergebnisse einordnen','Die Sitemap enthält die öffentlichen Suchseiten. Den Abruf und die Indexierung einer bestimmten Seite in der URL-Prüfung der Search Console ansehen. Messzeitpunkt und Ergebnis im Suchmonitoring dokumentieren. Den Eingang einer Kundenanfrage im Angebotsbüro prüfen.'],
-  ['Ratgeberbilder pflegen','Die zwölf Ratgeber zeigen eigens erstellte und als KI-Beispielbilder gekennzeichnete Motive. Für ein eigenes Einsatzfoto zuerst die Freigabe zur Veröffentlichung prüfen. Beide WebP-Größen, Bildbeschreibung und Kennzeichnung an die Aufnahme anpassen und die Seite auf dem Smartphone kontrollieren.']
+  ['Ratgeberbilder pflegen','Beim Austausch eines Bildes beide WebP-Größen und die Bildbeschreibung aktualisieren. Für Einsatzfotos die Freigabe zur Veröffentlichung prüfen. Den Ausschnitt auf dem Smartphone und am Desktop kontrollieren.'],
+  ['Anzeigen-Keywords auswerten','Im Ereignisprotokoll nach Kampagne, Einstiegsseite und Keyword (Anzeige) filtern. Eine befüllte Keyword-Spalte bezeichnet das übermittelte Anzeigen-Keyword. Suchanfragen aus der organischen Google-Suche auf Seitenebene in der Search Console auswerten.']
 ];
 
 export function officeHandbook(role){

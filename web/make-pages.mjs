@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {inquiry,legal,thankYou} from './form-pages.mjs';
@@ -9,6 +9,16 @@ import {taskPages} from './task-pages.mjs';
 import {breadcrumbItems,guideServices,publicOrigin,publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 await mkdir(path.join(dir,'assets'), {recursive:true});
+// Keep source styles independent while serving one shared layout request per page.
+const styleGroups={
+  'layout.css':['site.css','mobile.css','mobile-inner.css','contact.css'],
+  'estimator.css':['job-scope.css','clearance-calculator.css','price-comparison.css'],
+  'request.css':['inquiry.css','job-scope.css']
+};
+for(const [bundle,files] of Object.entries(styleGroups)){
+  const parts=await Promise.all(files.map(file=>readFile(path.join(dir,'assets',file),'utf8')));
+  await writeFile(path.join(dir,'assets',bundle),parts.join('\n'),'utf8');
+}
 await writeFile(path.join(dir,'assets/richtpreise.js'), 'export const scenarioPrices = '+JSON.stringify(scenarioPrices,null,2)+';\n', 'utf8');
 const {priceComparison}=await import('./price-comparison.mjs');
 const brand='FrankenPackt';
@@ -73,9 +83,8 @@ function footer(pathname){
   const includeContacts=['/anfrage/','/danke/','/datenschutz/','/impressum/','/404/'].includes(pathname);
   return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Nutzungsstatistik mit Google Analytics und unserem Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
 function shell(pathname,title,desc,body){
-  const scopeStyle = ['/preise/', '/anfrage/'].includes(pathname) ? '<link rel="stylesheet" href="/assets/job-scope.css">' : '';
-  const priceAssets=scopeStyle + (pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/clearance-calculator.css"><link rel="stylesheet" href="/assets/price-comparison.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '');
-  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/site.css"><link rel="stylesheet" href="/assets/mobile.css"><link rel="stylesheet" href="/assets/mobile-inner.css"><link rel="stylesheet" href="/assets/contact.css">'+(['/anfrage/','/danke/'].includes(pathname)?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
+  const priceAssets=pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/estimator.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '';
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin-when-cross-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/layout.css">'+(pathname==='/anfrage/'?'<link rel="stylesheet" href="/assets/request.css">':pathname==='/danke/'?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
 function crumb(text){return '<nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>'+text+'</span></nav>';}
 function text(value){return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
 function topicList(title,pages){
@@ -94,7 +103,7 @@ function taskPage(page){
     ?btn('Richtpreis einschätzen','/preise/?vorhaben='+page.service+'&amp;thema='+encodeURIComponent(page.path.split('/')[1])+'#richtpreis',true)
     :btn('Angaben für das Angebot','#angaben',true);
   const imageBase='/assets/ratgeber/'+page.path.split('/')[1];
-  const picture='<figure class="task-photo"><img src="'+imageBase+'-960.webp" srcset="'+imageBase+'-480.webp 480w, '+imageBase+'-960.webp 960w" sizes="(max-width: 780px) calc(100vw - 2rem), (max-width: 1240px) 40vw, 480px" width="960" height="640" fetchpriority="high" alt="'+text(page.photoAlt)+'"><figcaption>KI-Beispielbild</figcaption></figure>';
+  const picture='<figure class="task-photo"><img src="'+imageBase+'-960.webp" srcset="'+imageBase+'-480.webp 480w, '+imageBase+'-960.webp 960w" sizes="(max-width: 780px) calc(100vw - 2rem), (max-width: 1240px) 40vw, 480px" width="960" height="640" fetchpriority="high" alt="'+text(page.photoAlt)+'"></figure>';
   const intro='<section class="subhead task-heading" data-interest-service="'+page.service+'"><div class="wrap task-hero"><nav class="crumb" aria-label="Brotkrumennavigation">'+crumbs.join('<span aria-hidden="true">/</span>')+'</nav>'+
     '<h1>'+text(page.heading)+'</h1>'+picture+'<p class="lead">'+text(page.intro)+'</p><div class="task-choices"><div class="actions"><a class="button" data-guide-choice="'+page.service+'" href="'+request+'">'+text(page.inquiryLabel||'Vorhaben anfragen')+'</a>'+
     secondary+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></div></section>';
@@ -113,7 +122,7 @@ function serviceCards(){
     '<h3>'+s.title+'</h3><p>'+s.short+'</p><span class="card-link">'+s.label+'</span>'+
     '<span class="mobile-caption">'+s.caption+'</span></a>'
   ).join('');
-  return '<section class="wrap section" id="leistungen" tabindex="-1"><div class="section-head"><h2>Was soll mit den Sachen passieren?</h2></div>'+
+  return '<section class="wrap section" id="leistungen" aria-labelledby="leistungen-titel"><div class="section-head"><h2 id="leistungen-titel">Was soll mit den Sachen passieren?</h2></div>'+
     '<div class="service-grid">'+cards+'</div><div class="service-alternatives"><p>Ein Teil geht zur Familie, der Rest soll raus? <a href="/wohnungsaufloesung/">Wohnungsauflösung planen</a></p>'+
     '<p>Sie organisieren einen Umzug für Angehörige? <a href="/seniorenumzug/">Seniorenumzug planen</a></p></div></section>';
 }

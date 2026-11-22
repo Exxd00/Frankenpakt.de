@@ -37,12 +37,14 @@
 
 ## تجهيز الملفات
 
+يتضمن ملف مجموعات Google Ads Editor اللاحقة `utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}`. يعوّض Google Ads الوسمين برقم الحملة والكلمة الإعلانية المطابِقة عند توفرها. يسجّل تبويب **Ereignisse** هذه القيم مع صفحة الدخول عند توافر موافقة الإحصاءات. تبقى خانة الكلمة فارغة عندما لا تصل كلمة من الإعلان. ويمكن تحليل استعلامات البحث العضوي إجمالًا في Search Console. [دليل Google Ads للكلمات الإعلانية](https://support.google.com/google-ads/answer/6305348?hl=de)
+
 يحوي `anzeigen.json` أربع مجموعات في حملتين. لكل مجموعة ثمانية عناوين وثلاثة أوصاف وأربعة روابط إضافية. يفحص المولّد الطول والتكرار ووجهات الروابط وتعارض الاستبعادات. داخل مجلد الحملات:
 
 ```text
 node google-editor.mjs check
 node google-editor.mjs draft
-node google-editor.mjs build https://frankenpakt.vercel.app
+node google-editor.mjs build https://frankenpakt.de
 ```
 
 الأمر الأخير يتحقق من صفحات النشر والأقسام المقصودة ويُنشئ ملفات محلية. تتم مراجعة الأعمدة في Google Ads Editor وتحديد الهدف والميزانية وإعدادات الحساب قبل أي نشر مستقل. [أعمدة Ads Editor](https://support.google.com/google-ads/editor/answer/57747?hl=de)

@@ -1,9 +1,9 @@
 import {guideServices, publicPagePaths} from './search-routes.js';
+import {campaignVisit,forgetVisit,statisticsChoice as choiceKey} from './campaign-attribution.js';
 
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
 export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
 const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
-const choiceKey = 'frankenpakt.statistik.v1';
 const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
 const pages = new Set(publicPagePaths);
 const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
@@ -18,9 +18,11 @@ function metricCategories(explicitService,location) {
   return {service:category,source:sources.has(src) ? src : 'unbekannt'};
 }
 
-export function publicMetric(name, explicitService, location, uuid) {
+export function publicMetric(name, explicitService, location, uuid, visit) {
   if (!events.has(name) || !sites.has(location.hostname) || !pages.has(location.pathname)) return null;
-  return {id:uuid(),event:name,...metricCategories(explicitService,location),count:1,consent:true};
+  const categories=metricCategories(explicitService,location);
+  if(visit)Object.assign(categories,{source:visit.source,attribution:visit.attribution});
+  return {id:uuid(),event:name,...categories,count:1,consent:true};
 }
 
 function analyticsFrame(id) {
@@ -61,6 +63,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   const read = () => {try{return (storage || win.localStorage).getItem(choiceKey) === 'yes';}catch{return false;}};
   let frame = null;
   let enabled = false;
+  let visit = null;
   function clearCookies() {
     // These session cookies are confined to the empty tag document's path.
     const suffix=GA_MEASUREMENT_ID.slice(2);
@@ -71,15 +74,15 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   function set(value) {
     if (value !== enabled) {
       enabled = value;
-      if (enabled) frame = frameFactory();
-      else {frame?.close();frame=null;clearCookies();}
+      if (enabled) {visit=campaignVisit(location,win,doc.referrer);frame=frameFactory();}
+      else {visit=null;forgetVisit(win);frame?.close();frame=null;clearCookies();}
     }
     toggle.setAttribute('aria-pressed',String(enabled));
     toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
   }
   function record(name, service, parameters) {
     if (!enabled) return;
-    const metric = publicMetric(name,service,location,uuid);
+    const metric = publicMetric(name,service,location,uuid,visit);
     if (!metric) return;
     send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
       headers:{'Content-Type':'application/json'},body:JSON.stringify(metric)}).catch(()=>{});
@@ -87,13 +90,16 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   }
   toggle.hidden=false;
   set(read());
+  doc.addEventListener('fp-inquiry-attribution',event=>{
+    if(enabled && read() && visit && typeof event.detail?.accept==='function')event.detail.accept(visit);
+  });
   // A real submission owns a single history entry. Refreshes and shared thank-you links do not create leads.
   const entry=win.history?.state;
   if(location.pathname==='/danke/' && entry?.frankenpacktMeasureLead===true) {
     win.history.replaceState({...entry,frankenpacktMeasureLead:false},'');
     const receipt=entry.frankenpacktReceipt;
     if(enabled && receipt?.mode==='live' && /^AN-[A-F0-9]{16}$/.test(receipt.reference)) {
-      frame?.send({event:'generate_lead',...metricCategories(receipt.service,location)},location.pathname,
+      frame?.send({event:'generate_lead',...metricCategories(receipt.service,location),source:visit.source},location.pathname,
         {leadType:receipt.callback===true?'callback':'quote'});
     }
   }

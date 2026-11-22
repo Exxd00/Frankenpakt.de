@@ -1,3 +1,5 @@
+import {cleanAttribution} from '../../../web/public/assets/campaign-attribution.js';
+
 const origins = new Set(['https://frankenpakt.vercel.app','https://frankenpakt.de','https://www.frankenpakt.de']);
 const clientEvents = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
 const internalEvents = new Set(['inquiry_received','callback_requested','integration_test']);
@@ -40,13 +42,13 @@ Deno.serve(async req=>{
     if(req.method!=='POST')return result(405);
     if(!req.headers.get('Content-Type')?.startsWith('application/json'))return result(415);
     const e=await payload(req);
-    if(!e||Array.isArray(e)||typeof e!=='object'||Object.keys(e).some(k=>!['id','event','service','source','count','consent'].includes(k))||
+    if(!e||Array.isArray(e)||typeof e!=='object'||Object.keys(e).some(k=>!['id','event','service','source','count','consent','attribution'].includes(k))||
       !uuid.test(e.id)||typeof e.id!=='string'||!services.has(e.service)||!sources.has(e.source)||e.count!==1)return result(400);
     const internal=internalEvents.has(e.event);const bearer=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
     if(internal){if(!/^[a-f0-9]{64}$/.test(bearer))return result(403);}
     else if(!clientEvents.has(e.event)||!origins.has(origin)||e.consent!==true)return result(403);
     const peer=(req.headers.get('x-forwarded-for')||'shared').split(',')[0].slice(0,64);
-    const status=await rpc('fp_record_event',{eid:e.id,kind:e.event,category:e.service,channel:e.source,
+    const status=await rpc('fp_record_attributed_event',{eid:e.id,kind:e.event,category:e.service,channel:e.source,attribution:cleanAttribution(e.attribution,e.source),
       rate_bucket:internal?null:await hash(key+'|'+new Date().toISOString().slice(0,10)+'|'+peer),access_digest:internal?await hash(bearer):null});
     return result(status==='ok'?204:status==='limited'?429:403);
   }catch{return result(503);}

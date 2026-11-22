@@ -2,9 +2,35 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {publicMetric,mountMetrics} from '../public/assets/metrics.js';
 import {guideServices} from '../public/assets/search-routes.js';
+import {adKeywords,campaignVisit,cleanAttribution} from '../public/assets/campaign-attribution.js';
+import {readFileSync} from 'node:fs';
 
 const url = new URL('https://frankenpakt.de/anfrage/?src=google&person=PRIVATE-TEST&service=umzug#PRIVATE-TEST');
 const uuid = () => '469053a8-77e0-4ec7-b777-ed2482b07ffa';
+test('only bought keywords enter the sheet and a fresh arrival in a reused tab starts a new visit',()=>{
+  const plan=JSON.parse(readFileSync(new URL('../../kampagnen/anzeigen.json',import.meta.url),'utf8'));
+  assert.deepEqual([...adKeywords].sort(),[...new Set(plan.groups.flatMap(g=>g.keywords))].sort());
+  const data=new Map();
+  const win={sessionStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)},performance:{getEntriesByType:()=>[{type:'navigate'}]}};
+  const paid=new URL('/sofa-entsorgen/?src=google&utm_medium=cpc&utm_campaign=1234567891234567890&utm_term=Sofa+entsorgen+N%C3%BCrnberg&gclid=private123',url);
+  const ad=campaignVisit(paid,win,'https://www.google.de/search?q=private');
+  assert.deepEqual(ad,{source:'google',attribution:{landing:'/sofa-entsorgen/',medium:'cpc',campaign:'1234567891234567890',keyword:'sofa entsorgen nürnberg'}});
+  assert.deepEqual(campaignVisit(new URL('/anfrage/?src=google',url),win,paid.href),ad);
+  win.performance.getEntriesByType=()=>[{type:'reload'}];
+  assert.deepEqual(campaignVisit(new URL('/danke/',url),win,''),ad);
+  win.performance.getEntriesByType=()=>[{type:'navigate'}];
+  assert.deepEqual(campaignVisit(new URL('/umzug/',url),win,'https://www.google.de/search?q=private'),{source:'google',attribution:{landing:'/umzug/',medium:'organic'}});
+  campaignVisit(paid,win);
+  assert.deepEqual(campaignVisit(new URL('/',url),win,'https://example.org/sensitive?q=private'),{source:'sonstige',attribution:{landing:'/',medium:'referral'}});
+  campaignVisit(paid,win);
+  assert.deepEqual(campaignVisit(new URL('/',url),win,''),{source:'direkt',attribution:{landing:'/'}});
+  assert(!JSON.stringify([...data]).includes('private'));
+  for(const term of ['info@example.invalid','=IMPORTDATA(1)','{keyword}','meine persönliche Suchanfrage']){
+    assert.deepEqual(cleanAttribution({landing:'/',medium:'cpc',keyword:term,campaign:'=1'},'google'),{landing:'/',medium:'cpc'});
+  }
+  assert.deepEqual(cleanAttribution({...ad.attribution,medium:'organic'},'google'),{landing:'/sofa-entsorgen/',medium:'organic'});
+  assert.equal(cleanAttribution({landing:'/admin/?token=private'},'google'),null);
+});
 test('every published guide records the correct service category and excludes query text',()=>{
   assert.ok(Object.keys(guideServices).length>0);
   for(const [path,service] of Object.entries(guideServices)){
@@ -42,7 +68,7 @@ test('no outgoing requests before opt-in or after revocation, including persiste
   toggle.dispatchEvent(new Event('click'));assert.equal(frames.length,1);
   file();
   assert.equal(requests.length,1);const {init}=requests[0];const data=JSON.parse(init.body);
-  assert.deepEqual(data,{id:uuid(),event:'upload_ready',service:'entsorgung',source:'google',count:1,consent:true});
+  assert.deepEqual(data,{id:uuid(),event:'upload_ready',service:'entsorgung',source:'google',attribution:{landing:'/anfrage/'},count:1,consent:true});
   assert.equal(init.credentials,'omit');assert.equal(init.referrerPolicy,'no-referrer');
   assert.deepEqual(sent,[[data,'/anfrage/']]);assert.equal(JSON.stringify(requests).includes('PRIVATE-TEST'),false);
   toggle.dispatchEvent(new Event('click'));file();assert.equal(frames[0].closed,true);assert.equal(requests.length,1);
