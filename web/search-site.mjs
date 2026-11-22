@@ -50,7 +50,9 @@ export function searchHead(html,settings,canonical) {
   const title=html.match(/<title>([^<]*)<\/title>/)?.[1];
   const description=html.match(/<meta name="description" content="([^"]*)">/)?.[1];
   if(!title||!description)return canonicalTag;
-  const photo=html.match(/<img src="(\/assets\/(?:[^"/]+)\.webp)"/)?.[1];
+  const imageTag=html.match(/<img\b[^>]*\bsrc="\/assets\/[^"]+\.webp"[^>]*>/)?.[0];
+  const photo=imageTag?.match(/\bsrc="([^"]+)"/)?.[1];
+  const photoAlt=imageTag?.match(/\balt="([^"]+)"/)?.[1];
   const tags=[canonicalTag,
     '<meta property="og:type" content="website">',
     '<meta property="og:locale" content="de_DE">',
@@ -60,11 +62,13 @@ export function searchHead(html,settings,canonical) {
     '<meta property="og:url" content="'+escapeAttribute(canonical)+'">'
   ];
   if(photo)tags.push('<meta property="og:image" content="'+escapeAttribute(origin+photo)+'">');
+  if(photoAlt)tags.push('<meta property="og:image:alt" content="'+photoAlt+'">');
   const businessId=origin+'/#betrieb', siteId=origin+'/#website';
   const graph=[];
   const unescape=value=>value.replaceAll('&quot;','"').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&');
   const webPage={'@type':'WebPage','@id':canonical+'#webpage',url:canonical,name:unescape(title),description:unescape(description),inLanguage:'de-DE',
     isPartOf:{'@id':siteId},publisher:{'@id':businessId}};
+  if(photo)webPage.primaryImageOfPage={'@type':'ImageObject',contentUrl:origin+photo};
   if(pathname==='/'){
     const business={'@type':'LocalBusiness','@id':businessId,name:'FrankenPackt',url:canonical,
       legalName:settings.operatorName,telephone:settings.phone,email:settings.email,

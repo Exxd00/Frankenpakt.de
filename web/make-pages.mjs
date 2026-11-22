@@ -93,9 +93,11 @@ function taskPage(page){
   const secondary=hasPriceGuide
     ?btn('Richtpreis einschätzen','/preise/?vorhaben='+page.service+'&amp;thema='+encodeURIComponent(page.path.split('/')[1])+'#richtpreis',true)
     :btn('Angaben für das Angebot','#angaben',true);
-  const intro='<section class="subhead task-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero"><nav class="crumb" aria-label="Brotkrumennavigation">'+crumbs.join('<span aria-hidden="true">/</span>')+'</nav>'+
-    '<h1>'+text(page.heading)+'</h1><p class="lead">'+text(page.intro)+'</p><div class="actions"><a class="button" data-guide-choice="'+page.service+'" href="'+request+'">'+text(page.inquiryLabel||'Vorhaben anfragen')+'</a>'+
-    secondary+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></section>';
+  const imageBase='/assets/ratgeber/'+page.path.split('/')[1];
+  const picture='<figure class="task-photo"><img src="'+imageBase+'-960.webp" srcset="'+imageBase+'-480.webp 480w, '+imageBase+'-960.webp 960w" sizes="(max-width: 780px) calc(100vw - 2rem), (max-width: 1240px) 40vw, 480px" width="960" height="640" fetchpriority="high" alt="'+text(page.photoAlt)+'"><figcaption>KI-Beispielbild</figcaption></figure>';
+  const intro='<section class="subhead task-heading" data-interest-service="'+page.service+'"><div class="wrap task-hero"><nav class="crumb" aria-label="Brotkrumennavigation">'+crumbs.join('<span aria-hidden="true">/</span>')+'</nav>'+
+    '<h1>'+text(page.heading)+'</h1>'+picture+'<p class="lead">'+text(page.intro)+'</p><div class="task-choices"><div class="actions"><a class="button" data-guide-choice="'+page.service+'" href="'+request+'">'+text(page.inquiryLabel||'Vorhaben anfragen')+'</a>'+
+    secondary+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></div></section>';
   const details='<div id="angaben" class="wrap task-sections">'+page.sections.map(([heading,paragraph])=>'<section><h2>'+text(heading)+'</h2><p>'+text(paragraph)+'</p></section>').join('')+'</div>';
   const answers='<section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2><div>'+faq(page.questions.map(([q,a])=>[text(q),text(a)]))+
     '<p class="guide-offer">Wir prüfen Ihre Angaben und nennen Ihnen Umfang und Preis im persönlichen Angebot. '+

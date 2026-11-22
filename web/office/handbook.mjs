@@ -5,6 +5,7 @@ const publicLinks=[
   ['Leistungen und Einsatzgebiet','/'],
   ['Preisorientierung für Kunden','/preise/'],
   ['Anfrage mit Auftragsdetails','/anfrage/'],
+  ['Beispiel für einen Ratgeber · Küchenabbau','/kueche-abbauen/'],
   ['Anbieter und Kontakt','/impressum/'],
   ['Datenschutz','/datenschutz/'],
   ['XML-Sitemap','/sitemap.xml'],
@@ -26,7 +27,8 @@ const guidance=[
   ['Angebot vorbereiten','Wenn der Umfang klar und durchführbar ist, im Vorgang „Angebot vorbereiten“ wählen. Im Kalkulator Leistungen und Mengen, Fremdleistungen und Bruttosumme prüfen. Der öffentliche Ab-Preis dient der Orientierung. Erst das persönliche Angebot beschreibt den angebotenen Umfang und Preis.'],
   ['Offenen Punkt eingrenzen','Wenn ein fehlender Wert den Einsatz oder den Preis verändert, zunächst Inventar, Fotos und vorhandene Angaben prüfen. Bleibt eine Entscheidung offen, alle dafür nötigen Fragen in einer Rückmeldung bündeln.'],
   ['Fachleistung abgrenzen','Bei angeschlossener Küchentechnik, besonderen Stoffen oder einem Stück außerhalb der Fahrzeug- oder Tragemöglichkeiten den betroffenen Teil vor der Zusage fachlich klären. Nur die tatsächlich ausführbaren Arbeiten anbieten. Die zulässige Restladung des eingesetzten Fahrzeugs und die Maße des Einzelstücks prüfen.'],
-  ['Suchergebnisse einordnen','Die Sitemap enthält die öffentlichen Suchseiten. Den Abruf und die Indexierung einer bestimmten Seite in der URL-Prüfung der Search Console ansehen. Messzeitpunkt und Ergebnis im Suchmonitoring dokumentieren. Den Eingang einer Kundenanfrage im Angebotsbüro prüfen.']
+  ['Suchergebnisse einordnen','Die Sitemap enthält die öffentlichen Suchseiten. Den Abruf und die Indexierung einer bestimmten Seite in der URL-Prüfung der Search Console ansehen. Messzeitpunkt und Ergebnis im Suchmonitoring dokumentieren. Den Eingang einer Kundenanfrage im Angebotsbüro prüfen.'],
+  ['Ratgeberbilder pflegen','Die zwölf Ratgeber zeigen eigens erstellte und als KI-Beispielbilder gekennzeichnete Motive. Für ein eigenes Einsatzfoto zuerst die Freigabe zur Veröffentlichung prüfen. Beide WebP-Größen, Bildbeschreibung und Kennzeichnung an die Aufnahme anpassen und die Seite auf dem Smartphone kontrollieren.']
 ];
 
 export function officeHandbook(role){

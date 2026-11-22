@@ -11,6 +11,32 @@ const read=path=>readFileSync(new URL(path,dir),'utf8');
 const markup=path=>read('betrieb'+path+'index.html');
 const graph=html=>JSON.parse(html.match(/<script type="application\/ld\+json">([^<]+)<\/script>/)[1])['@graph'];
 
+test('each guide serves its own responsive illustration and a substantive answer in German',()=>{
+  const sources=new Set();
+  for(const guide of taskPages){
+    const copy=[guide.intro,...guide.sections.map(([,paragraph])=>paragraph),...guide.questions.map(([,answer])=>answer)].join(' ');
+    const words=copy.match(/[\p{L}\p{N}]+(?:[-’'][\p{L}\p{N}]+)*/gu)||[];
+    assert.ok(words.length>=300,guide.path+' body words: '+words.length);
+    assert.ok(guide.photoAlt?.length>20,guide.path+' descriptive alt');
+    const html=markup(guide.path);
+    const image=html.match(/<figure class="task-photo"><img[^>]+>/)?.[0]||'';
+    assert.ok(image.includes('width="960" height="640"'),guide.path);
+    const base='/assets/ratgeber/'+guide.path.slice(1,-1);
+    for(const width of [480,960]){
+      const url=base+'-'+width+'.webp';
+      assert.ok(image.includes(url+' '+width+'w'),guide.path+' srcset');
+      const bytes=readFileSync(new URL('.'+url,dir));
+      assert.equal(bytes.toString('ascii',0,4),'RIFF');
+      assert.equal(bytes.toString('ascii',8,12),'WEBP');
+    }
+    const full=publicOrigin+base+'-960.webp';
+    assert.ok(html.includes('<meta property="og:image" content="'+full+'">'));
+    assert.equal(graph(html).find(n=>n['@type']==='WebPage').primaryImageOfPage.contentUrl,full);
+    sources.add(full);
+  }
+  assert.equal(sources.size,taskPages.length);
+});
+
 test('sitemap includes only canonical, reachable public service and task pages',()=>{
   assert.deepEqual(routed,publicPagePaths);
   const urls=[...read('betrieb/sitemap.xml').matchAll(/<loc>([^<]+)<\/loc>/g)].map(m=>m[1]);
