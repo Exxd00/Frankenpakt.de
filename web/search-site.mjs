@@ -34,7 +34,8 @@ export function sitemap(origin) {
 
 export function robots(origin) {
   if(!origin)return 'User-agent: *\nDisallow: /\n';
-  return 'User-agent: *\nDisallow: /admin\nDisallow: /api/\n\nSitemap: '+new URL('/sitemap.xml',origin).href+'\n';
+  // Google must be able to read the login page's noindex tag. Keep case links with query strings out of crawling.
+  return 'User-agent: *\nDisallow: /api/\nDisallow: /admin\nAllow: /admin$\nAllow: /admin/$\nAllow: /admin/index.html$\n\nSitemap: '+new URL('/sitemap.xml',origin).href+'\n';
 }
 
 function escapeAttribute(value) {

@@ -228,7 +228,6 @@ export function calculatorScopes(getSelection,onActivate) {
     const host = slot.querySelector('[data-scope-mount]');
     const next = textElement('a','Mit diesen Angaben zur Anfrage','button secondary');
     next.dataset.scopeContinue = kind;
-    slot.append(next);
     let editor, currentService;
     function refresh(reopen = false, activate = false) {
       if (!slot.open && !activate) return;
@@ -236,6 +235,7 @@ export function calculatorScopes(getSelection,onActivate) {
       onActivate(url,service);
       if (!slot.open) return;
       next.href = url.pathname+url.search;
+      if (!next.isConnected) slot.append(next);
       if (!canCache) {
         host.textContent = (preview ? 'Vorschau: Bitte nur Beispieldaten verwenden. ' : '')+'Ihr Browser erlaubt hier keine Zwischenspeicherung. Geben Sie die Auftragsdetails direkt in der vollständigen Anfrage ein.';
         next.textContent = 'Auftragsdetails in der Anfrage eingeben';

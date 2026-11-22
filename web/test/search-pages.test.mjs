@@ -37,6 +37,10 @@ test('sitemap includes only canonical, reachable public service and task pages',
   assert.equal(business.telephone,operator.phone);
   assert.equal(business.email,operator.email);
   assert.equal(business.address.addressLocality,'Nürnberg');
+  const logo=read(new URL(business.logo).pathname.slice(1));
+  for(const attribute of ['width','height']) {
+    assert.ok(Number(logo.match(new RegExp(attribute+'="(\\d+)"'))?.[1]) >= 112,'minimum logo '+attribute);
+  }
   assert.ok(markup('/').includes(business.address.streetAddress));
   assert.deepEqual(graph(markup('/')).filter(n=>n['@type']==='WebSite').map(n=>n.url),[publicOrigin+'/']);
   for(const page of taskPages){
@@ -53,4 +57,7 @@ test('sitemap includes only canonical, reachable public service and task pages',
   }
   assert.match(read('robots.txt'),/Disallow: \/\n/);
   assert.match(read('betrieb/robots.txt'),/Sitemap: https:\/\/frankenpakt.de\/sitemap.xml/);
+  const rules=read('betrieb/robots.txt').split(/\r?\n/);
+  for (const rule of ['Allow: /admin$','Allow: /admin/$','Allow: /admin/index.html$','Disallow: /api/','Disallow: /admin']) assert.ok(rules.includes(rule),rule);
+  assert.match(read('admin/index.html'),/<meta name="robots" content="noindex,nofollow">/);
 });

@@ -56,7 +56,7 @@ function contactDialog(){
     '<button type="button" class="dialog-close" aria-label="Schließen">'+ic('close',22)+'</button>'+
     '<h2 id="handoff-title" tabindex="-1"></h2><p id="handoff-explanation"></p><p class="handoff-number" hidden></p>'+
     '<p class="handoff-preview" hidden></p><label class="handoff-consent" hidden><input type="checkbox"> Diesen Klick für die interne Statistik mitzählen (freiwillig).</label>'+
-    '<div class="dialog-actions"><a class="button" data-handoff-confirm rel="noreferrer"></a>'+
+    '<div class="dialog-actions">'+
     '<a class="button secondary" data-handoff-callback href="/anfrage/?kontakt=telefon">Rückruf anfragen</a></div>'+
     '<p class="handoff-demo-result" role="status" hidden></p></dialog>';
 }
@@ -64,11 +64,11 @@ function header(pathname){
   const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/preise/','Preise']];
   const guide=taskPages.find(page=>page.path===pathname);
   const request=guide?taskRequest(guide):({'/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung'})[pathname]||'/anfrage/';
-  return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="188" height="54"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>Anfrage stellen</a></div></header>';
+  return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>Anfrage stellen</a></div></header>';
 }
 function footer(pathname){
   const includeContacts=['/anfrage/','/danke/','/datenschutz/','/impressum/','/404/'].includes(pathname);
-  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="49" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Nutzungsstatistik mit Google Analytics und unserem Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
+  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Nutzungsstatistik mit Google Analytics und unserem Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
 function shell(pathname,title,desc,body){
   const scopeStyle = ['/preise/', '/anfrage/'].includes(pathname) ? '<link rel="stylesheet" href="/assets/job-scope.css">' : '';
   const priceAssets=scopeStyle + (pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/clearance-calculator.css"><link rel="stylesheet" href="/assets/price-comparison.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '');
@@ -256,7 +256,7 @@ pages.push(...taskPages.map(page=>[page.path,text(page.title),text(page.descript
 const generatedRoutes=new Set(pages.map(([url])=>url));
 if(generatedRoutes.size!==pages.length||publicPagePaths.length!==pages.length||publicPagePaths.some(url=>!generatedRoutes.has(url)))throw new Error('Seiten und öffentliche Routen stimmen nicht überein.');
 const guideLabels=Object.fromEntries(taskPages.map(page=>[page.path,page.label]));
-const manifest=Object.entries({publicPagePaths,searchPaths,guideServices,guideLabels}).map(([key,value])=>'export const '+key+' = '+JSON.stringify(value,null,2)+';');
+const manifest=Object.entries({publicOrigin,publicPagePaths,searchPaths,guideServices,guideLabels}).map(([key,value])=>'export const '+key+' = '+JSON.stringify(value,null,2)+';');
 await writeFile(path.join(dir,'assets','search-routes.js'),manifest.join('\n')+'\n','utf8');
 for(const [url,title,description,body] of pages){
   const html=shell(url,title,description,body);

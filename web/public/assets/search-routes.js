@@ -1,3 +1,4 @@
+export const publicOrigin = "https://frankenpakt.de";
 export const publicPagePaths = [
   "/",
   "/raeumung/",

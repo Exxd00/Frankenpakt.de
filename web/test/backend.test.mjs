@@ -182,6 +182,12 @@ test('live and preview HTTP, canonical URL, restricted contact data, backup and 
   const live=await start(env),data=sample();let reference;
   try{
     const config=await (await fetch(live.base+'/api/config')).json();assert.equal(config.leadIntake,true);
+    for (const [requestPath,page] of [['/index.html','/'],['/anfrage','/anfrage/'],['/sofa-entsorgen/index.html','/sofa-entsorgen/']]) {
+      const query='?leistung=entsorgung&thema=sofa-entsorgen';
+      const redirect=await fetch(live.base+requestPath+query,{method:'HEAD',redirect:'manual'});
+      assert.equal(redirect.status,308);
+      assert.equal(redirect.headers.get('location'),env.PUBLIC_ORIGIN+page+query);
+    }
     const landing=await fetch(live.base+'/?src=google&gclid=do-not-keep');assert.equal(landing.status,200);
     assert.match(await landing.text(),/canonical/);
     assert.equal((await live.post(data,{origin:'https://cross-site.invalid'})).status,403);

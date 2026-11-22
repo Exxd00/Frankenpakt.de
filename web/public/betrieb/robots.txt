@@ -1,5 +1,8 @@
 User-agent: *
-Disallow: /admin
 Disallow: /api/
+Disallow: /admin
+Allow: /admin$
+Allow: /admin/$
+Allow: /admin/index.html$
 
 Sitemap: https://frankenpakt.de/sitemap.xml

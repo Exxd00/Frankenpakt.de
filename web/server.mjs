@@ -8,7 +8,7 @@ import { openStore, validate, validateContactClick, InputError, mobileNumber } f
 import { deliverDue, notificationSettings } from './lib/notify.mjs';
 import { deliverStaffMail, staffMailSettings } from './lib/mail-delivery.mjs';
 import { liveHtml } from './lib/render-live.mjs';
-import {robots,searchPaths,sitemap} from './search-site.mjs';
+import {publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import { parseFileRequest, maxMultipartBytes, serveAttachment } from './lib/attachments.mjs';
 import {deliverOfficeEvents} from './lib/office-events.mjs';
@@ -156,6 +156,11 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
       let pathname;try{pathname=decodeURIComponent(url.pathname);}catch{throw new InputError('Ungültiger Pfad.');}
       if(pathname.includes('\\')||pathname.includes('\0')||pathname.split('/').some(x=>x.startsWith('.')))throw new InputError('Unbekannter Pfad.',404);
       if(/^\/betrieb(?:\/|$)/i.test(pathname))throw new InputError('Unbekannter Pfad.',404);
+      const page = pathname.replace(/\/index\.html$/, '/').replace(/([^/])$/, '$1/');
+      if(config.live && page !== url.pathname && publicPagePaths.includes(page)){
+        res.writeHead(308, {Location:new URL(page + url.search, config.origin).href});
+        res.end();return;
+      }
       let target=path.resolve(publicPath,'.'+pathname);
       if(target!==publicPath&&!target.startsWith(publicPath+path.sep))throw new InputError('Unbekannter Pfad.',404);
       if((await stat(target)).isDirectory())target=path.join(target,'index.html');
@@ -171,7 +176,6 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
       if(receiptPage){res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('Referrer-Policy','no-referrer');}
       res.writeHead(200,{'Content-Type':types[path.extname(target)],'Content-Length':bin.length,'Cache-Control':receiptPage?'no-store':'no-cache'});
       res.end(req.method==='HEAD'?undefined:bin);
-      const page=pathname.replace(/\/index\.html$/,'/').replace(/([^/])$/,'$1/');
       if(db&&req.method==='GET'&&controlledPages.has(page)&&!(req.headers['user-agent']||'').match(/bot|crawler|spider|lighthouse|headless|preview/i)){
         const tag=(url.searchParams.get('src')||url.searchParams.get('utm_source')||'').toLowerCase();
         db.landing(page,tag||'unbekannt');

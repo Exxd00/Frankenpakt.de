@@ -27,6 +27,11 @@
 @media(max-width:420px) { .bigtype .actual-item-fields,.bigtype .actual-room-fields,.bigtype .actual-move { grid-template-columns:minmax(0,1fr); } }
 
 [data-guided-pricing] [hidden] { display:none!important; }
+/* Before the guided view is initialized, show its stable service selector.
+   Without scripting the explanatory prices and package details stay readable. */
+@media (scripting: enabled) {
+  [data-guided-pricing]:not([data-guide-ready]) > :is(#preisvergleich,#raeumungsrechner,#preisfinder,.guide-tariffs,.household-guide) { display:none; }
+}
 .guide-choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; margin:.9rem 0 .35rem; max-width:46rem; }
 .guide-choices a { display:flex; align-items:center; gap:.65rem; min-width:0; padding:.85rem .9rem; color:var(--ink); background:var(--cream); border:1px solid #75836c; border-radius:.7rem; text-decoration:none; }
 .guide-choices a:is(:hover,:focus-visible), .guide-choices [aria-current] { background:var(--pale); }

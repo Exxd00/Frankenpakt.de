@@ -60,6 +60,7 @@ function mountGuide(guide) {
     guide.dispatchEvent(new CustomEvent('pricing-view-change',{bubbles:true,detail:{service,view}}));
   }
   render();
+  guide.dataset.guideReady = '';
   window.addEventListener('hashchange',() => {
     render();
     // The destination may have been hidden when the browser first tried to scroll.
@@ -71,7 +72,7 @@ function mountGuide(guide) {
 if (typeof document !== 'undefined') {
   const guide = document.querySelector('[data-guided-pricing]');
   if (guide) {
-    if (document.readyState === 'loading' || document.readyState === 'interactive') {
+    if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded',() => mountGuide(guide),{once:true});
     } else mountGuide(guide);
   }

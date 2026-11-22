@@ -1,4 +1,4 @@
-import {publicPagePaths} from './assets/search-routes.js';
+import {publicOrigin, publicPagePaths} from './assets/search-routes.js';
 
 // The production origin runs web/server.mjs with the operator's persistent lead store.
 // Keep preview deployments on the static site, including their contact settings.
@@ -10,10 +10,18 @@ const cloud = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt
 const pages = publicPagePaths.filter(path=>path!=='/').map(path=>path.slice(1,-1)).join('|');
 const read = ['GET','HEAD'];
 
+// Normalize published HTML before its internal rewrite. Vercel preserves the request query on redirects.
+const canonicalRoutes = configuredOrigin || cloudEnabled ? [
+  {src:'^/index\\.html$', methods:read, status:308, headers:{Location:publicOrigin+'/'}},
+  {src:'^/('+pages+')(?:/index\\.html)?$', methods:read, status:308, headers:{Location:publicOrigin+'/$1/'}},
+  {src:'^(/|/(?:'+pages+')/|/robots\\.txt|/sitemap\\.xml)$', methods:read,
+    has:[{type:'host',value:'frankenpakt.vercel.app'}], status:308, headers:{Location:publicOrigin+'$1'}}
+] : [];
+
 function cloudRoutes() {
   return [
-    {src:'^/(?:index\\.html)?$', methods:read, dest:'/betrieb/index.html'},
-    {src:'^/('+pages+')(?:/index\\.html|/)?$', methods:read, dest:'/betrieb/$1/index.html'},
+    {src:'^/$', methods:read, dest:'/betrieb/index.html'},
+    {src:'^/('+pages+')/$', methods:read, dest:'/betrieb/$1/index.html'},
     {src:'^/(robots\\.txt|sitemap\\.xml)$', methods:read, dest:'/betrieb/$1'},
     {src:'^/api/config$', methods:read, dest:cloud+'/config',headers:{'Cache-Control':'no-store'}},
     {src:'^/api/leads$', methods:['POST'], dest:cloud+'/leads',headers:{'Cache-Control':'no-store'}}
@@ -29,8 +37,8 @@ function intakeRoutes(value: string) {
   const origin = url.origin;
   // Route HTML as well as the API so contact links, legal information and receipts agree.
   return [
-    { src: '^/(?:index\\.html)?$', methods: read, dest: origin + '/' },
-    { src: '^/(' + pages + ')(?:/index\\.html|/)?$', methods: read, dest: origin + '/$1/' },
+    { src: '^/$', methods: read, dest: origin + '/' },
+    { src: '^/(' + pages + ')/$', methods: read, dest: origin + '/$1/' },
     { src: '^/(robots\\.txt|sitemap\\.xml)$', methods: read, dest: origin + '/$1' },
     { src: '^/api/config$', methods: read, dest: origin + '/api/config' },
     { src: '^/api/(leads|contact-events)$', methods: ['POST'], dest: origin + '/api/$1' }
@@ -39,6 +47,7 @@ function intakeRoutes(value: string) {
 
 export const config = {
   routes: [
+    ...canonicalRoutes,
     {src:'^/betrieb(?:/.*)?$',methods:read,status:404,dest:'/404.html',headers:{'X-Robots-Tag':'noindex, nofollow'}},
     {
       src: '^/api/office/([A-Za-z0-9_/-]+)$', methods: ['GET', 'POST'],

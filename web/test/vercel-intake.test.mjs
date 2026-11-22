@@ -12,12 +12,13 @@ function routesFor(target, origin = '', cloud = '') {
   });
   return JSON.parse(output);
 }
+function matchRoute(routes, method, pathname, host = 'frankenpakt.de') {
+  return routes.find(route => route.methods.includes(method) && new RegExp(route.src).test(pathname) &&
+    (!route.has || route.has.every(rule => rule.type === 'host' && rule.value === host)));
+}
 function destination(routes, method, pathname) {
-  for (const route of routes) {
-    const regex = new RegExp(route.src);
-    if (route.methods.includes(method) && regex.test(pathname)) return pathname.replace(regex, route.dest);
-  }
-  return null;
+  const route=matchRoute(routes,method,pathname);
+  return route?.dest ? pathname.replace(new RegExp(route.src),route.dest) : null;
 }
 
 test('static production and preview builds publish their preview status without routing customer input', () => {
@@ -40,7 +41,6 @@ test('configured production serves the same operator for pages, confirmed submis
   for (const route of ['/', ...pages, '/robots.txt','/sitemap.xml','/api/config']) {
     assert.equal(destination(routes, 'GET', route), origin + route);
   }
-  assert.equal(destination(routes, 'GET', '/anfrage/index.html'), origin + '/anfrage/');
   for (const route of ['/api/leads', '/api/contact-events']) {
     assert.equal(destination(routes, 'POST', route), origin + route);
     assert.equal(destination(routes, 'GET', route), null);
@@ -49,6 +49,33 @@ test('configured production serves the same operator for pages, confirmed submis
   for (const bad of ['http://betrieb.example','https://betrieb.example/pfad','https://frankenpakt.vercel.app']) {
     assert.throws(() => routesFor('production',bad));
   }
+});
+
+test('published page aliases redirect to canonical URLs while static previews and non-HTML endpoints keep their routes', () => {
+  for (const routes of [routesFor('production','','1'),routesFor('production','https://betrieb.example')]) {
+    for (const method of ['GET','HEAD']) {
+      for (const [path,target] of [
+        ['/index.html','/'],['/kueche-abbauen','/kueche-abbauen/'],['/kueche-abbauen/index.html','/kueche-abbauen/'],
+        ['/anfrage','/anfrage/'],['/anfrage/index.html','/anfrage/']
+      ]) {
+        for (const host of ['frankenpakt.de','frankenpakt.vercel.app']) {
+          const route=matchRoute(routes,method,path,host);
+          assert.equal(route?.status,308);
+          assert.equal(path.replace(new RegExp(route.src),route.headers.Location),'https://frankenpakt.de'+target);
+        }
+      }
+      for (const path of ['/','/sofa-entsorgen/','/robots.txt','/sitemap.xml']) {
+        const alias=matchRoute(routes,method,path,'frankenpakt.vercel.app');
+        assert.equal(alias?.status,308);
+        assert.equal(path.replace(new RegExp(alias.src),alias.headers.Location),'https://frankenpakt.de'+path);
+        assert.notEqual(matchRoute(routes,method,path,'frankenpakt.de')?.status,308);
+      }
+    }
+    for(const [method,path] of [['POST','/anfrage'],['POST','/api/leads'],['GET','/admin/'],['GET','/assets/statistik.html'],['GET','/not-a-service/']]){
+      assert.notEqual(matchRoute(routes,method,path,'frankenpakt.vercel.app')?.status,308);
+    }
+  }
+  assert.equal(matchRoute(routesFor('preview','','1'),'GET','/sofa-entsorgen/index.html','frankenpakt.vercel.app'),undefined);
 });
 
 test('cloud production serves operator pages and sends submissions only to the private intake backend', () => {

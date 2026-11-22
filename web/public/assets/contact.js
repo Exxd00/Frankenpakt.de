@@ -10,7 +10,10 @@
   const previewNote = dialog.querySelector('.handoff-preview');
   const consentLabel = dialog.querySelector('.handoff-consent');
   const consent = consentLabel.querySelector('input');
-  const confirm = dialog.querySelector('[data-handoff-confirm]');
+  const confirm = document.createElement('a');
+  confirm.className = 'button';
+  confirm.dataset.handoffConfirm = '';
+  confirm.rel = 'noreferrer';
   const callback = dialog.querySelector('[data-handoff-callback]');
   const demoResult = dialog.querySelector('.handoff-demo-result');
   const query = new URLSearchParams(location.search);
@@ -66,6 +69,7 @@
     consentLabel.hidden = !metricsEnabled;
     confirm.href = preview ? '#kontaktvorschau' : href;
     confirm.textContent = preview ? (phone ? 'Anruf testen' : 'WhatsApp testen') : (phone ? 'Jetzt anrufen' : 'WhatsApp öffnen');
+    if (!confirm.isConnected) callback.before(confirm);
     callback.setAttribute('href', callbackPath(link));
     dialog.showModal();
     title.focus({preventScroll: true});
