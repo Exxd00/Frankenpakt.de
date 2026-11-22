@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {publicMetric,mountMetrics} from '../public/assets/metrics.js';
-import {guideServices} from '../public/assets/search-routes.js';
+import {businessServices,guideServices} from '../public/assets/search-routes.js';
 import {adKeywords,campaignVisit,cleanAttribution} from '../public/assets/campaign-attribution.js';
 import {readFileSync} from 'node:fs';
 
@@ -41,9 +41,9 @@ test('only bought keywords enter the sheet and a fresh arrival in a reused tab s
   assert.deepEqual(cleanAttribution({...ad.attribution,medium:'organic'},'google'),{landing:'/sofa-entsorgen/',medium:'organic'});
   assert.equal(cleanAttribution({landing:'/admin/?token=private'},'google'),null);
 });
-test('every published guide records the correct service category and excludes query text',()=>{
+test('guide and commercial service pages record the correct category and exclude query text',()=>{
   assert.ok(Object.keys(guideServices).length>0);
-  for(const [path,service] of Object.entries(guideServices)){
+  for(const [path,service] of Object.entries({...guideServices,...businessServices})){
     const loc=new URL(path+'?thema=PRIVATE-TEST',url);
     const event=publicMetric('service_chosen',null,loc,uuid);
     assert.equal(event.service,service);

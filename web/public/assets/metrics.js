@@ -113,7 +113,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   win.addEventListener('pagehide',()=>{frame?.close();frame=null;enabled=false;});
   win.addEventListener('pageshow',e=>{if(e.persisted)set(read());});
   doc.addEventListener('click',event=>{
-    const chosen=event.target.closest?.('[data-guide-choice],a.service-card');
+    const chosen=event.target.closest?.('[data-guide-choice],a.service-card,a.firm-card');
     if(!chosen)return;
     const url=new URL(chosen.href,location.origin);
     const service=chosen.dataset.guideChoice || (url.origin===location.origin && pageServices[url.pathname]);
