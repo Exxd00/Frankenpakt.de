@@ -28,10 +28,10 @@ const iconpaths={
 };
 function ic(n,size=22){return '<svg aria-hidden="true" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+iconpaths[n]+'</svg>';}
 const services=[
- {url:'/raeumung/',title:'Entrümpelung',caption:'Keller oder Wohnung',label:'Räumung planen',icon:'home',short:'Unser Team sortiert den Hausrat nach Ihren Wünschen und trägt die vereinbarten Stücke hinaus.'},
- {url:'/entsorgung/',title:'Entsorgung',caption:'Sperrmüll und Geräte',label:'Gegenstände angeben',icon:'layers',short:'Beschreiben Sie, welche Möbel oder Geräte Sie aussortieren und wo sie stehen.'},
- {url:'/umzug/',title:'Privatumzug',caption:'Die ganze Wohnung',label:'Wohnung wechseln',icon:'home',short:'Wir bringen gepackte Kartons und vereinbarte Möbel in Ihre neue Wohnung.'},
- {url:'/seniorenumzug/',title:'Seniorenumzug',caption:'Mit Angehörigen',label:'Seniorenumzug planen',icon:'key',short:'Planen Sie den Umzug in Ruhe, auf Wunsch gemeinsam mit Ihren Angehörigen.'}
+ {url:'/entsorgung/',title:'Einzelnes entsorgen',caption:'Sofa, Matratze oder Gerät',label:'Zur Entsorgung',icon:'layers',short:'Sie wissen schon, welche Dinge weg sollen, etwa eine alte Couch und zwei Matratzen.'},
+ {url:'/raeumung/',title:'Räume leeren',caption:'Keller, Garage oder Wohnung',label:'Zur Entrümpelung',icon:'home',short:'Ein Raum soll frei werden. Sie bestimmen, was bleibt, was weitergegeben wird und was heraus soll.'},
+ {url:'/moebeltaxi/',title:'Möbel liefern',caption:'Ein Stück zur neuen Adresse',label:'Zum Möbeltaxi',icon:'van',short:'Ein Schrank, ein Tisch oder ein paar Möbel wechseln den Besitzer oder sollen an eine andere Adresse.'},
+ {url:'/umzug/',title:'Umziehen',caption:'Möbel und Kartons mitnehmen',label:'Zum Privatumzug',icon:'box',short:'Ihr Hausrat zieht mit Ihnen um. Wir planen das Tragen und die Fahrt zwischen Ihren beiden Wohnungen.'}
 ];
 const prices=[
  {id:'drei',name:'Umzugsteam · 3 Stunden',price:322,unit:'pro Einsatz',scope:'Zwei Personen mit Fahrzeug, drei Stunden Arbeit vor Ort. An- und Rückfahrt bis zusammen 20 km und 30 Minuten ab und bis 90453. Das Umzugsgut ist gepackt.'},
@@ -63,7 +63,10 @@ function contactDialog(){
 function header(pathname){
   const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/preise/','Preise']];
   const guide=taskPages.find(page=>page.path===pathname);
-  const request=guide?taskRequest(guide):({'/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung'})[pathname]||'/anfrage/';
+  const request=guide?taskRequest(guide):({
+    '/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung',
+    '/umzug/':'/anfrage/?service=umzug','/moebeltaxi/':'/anfrage/?service=moebeltaxi','/seniorenumzug/':'/anfrage/?service=seniorenumzug'
+  })[pathname]||'/anfrage/';
   return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>Anfrage stellen</a></div></header>';
 }
 function footer(pathname){
@@ -86,12 +89,17 @@ function taskRequest(page){
 function taskPage(page){
   const crumbs=breadcrumbItems(page.path).map(([label,url],i,items)=>i===items.length-1?'<span aria-current="page">'+text(label)+'</span>':'<a href="'+url+'">'+text(label)+'</a>');
   const request=taskRequest(page);
-  const priceUrl=['entruempelung','entsorgung','umzug'].includes(page.service)?'/preise/?vorhaben='+page.service+'#richtpreis':'/preise/?service='+page.service+'#preisfinder';
+  const hasPriceGuide=['entruempelung','entsorgung','umzug'].includes(page.service);
+  const secondary=hasPriceGuide
+    ?btn('Richtpreis einschätzen','/preise/?vorhaben='+page.service+'&amp;thema='+encodeURIComponent(page.path.split('/')[1])+'#richtpreis',true)
+    :btn('Angaben für das Angebot','#angaben',true);
   const intro='<section class="subhead task-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero"><nav class="crumb" aria-label="Brotkrumennavigation">'+crumbs.join('<span aria-hidden="true">/</span>')+'</nav>'+
     '<h1>'+text(page.heading)+'</h1><p class="lead">'+text(page.intro)+'</p><div class="actions"><a class="button" data-guide-choice="'+page.service+'" href="'+request+'">'+text(page.inquiryLabel||'Vorhaben anfragen')+'</a>'+
-    btn('Richtpreis ansehen',priceUrl,true)+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></section>';
-  const details='<div class="wrap task-sections">'+page.sections.map(([heading,paragraph])=>'<section><h2>'+text(heading)+'</h2><p>'+text(paragraph)+'</p></section>').join('')+'</div>';
-  const answers='<section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2>'+faq(page.questions.map(([q,a])=>[text(q),text(a)]))+'</div></section>';
+    secondary+'</div><a class="guide-callback" data-contact="callback" href="'+request+'&amp;kontakt=telefon">'+ic('phone',18)+'Rückruf anfragen</a></div></section>';
+  const details='<div id="angaben" class="wrap task-sections">'+page.sections.map(([heading,paragraph])=>'<section><h2>'+text(heading)+'</h2><p>'+text(paragraph)+'</p></section>').join('')+'</div>';
+  const answers='<section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2><div>'+faq(page.questions.map(([q,a])=>[text(q),text(a)]))+
+    '<p class="guide-offer">Wir prüfen Ihre Angaben und nennen Ihnen Umfang und Preis im persönlichen Angebot. '+
+    '<a href="'+request+'">'+text(page.inquiryLabel)+'</a></p></div></div></section>';
   const related=page.related.map(url=>taskPages.find(item=>item.path===url));
   if(related.some(item=>!item))throw new Error('Unbekannte Themenseite bei '+page.path);
   return intro+details+answers+topicList('Verwandte Vorhaben',related);
@@ -103,17 +111,18 @@ function serviceCards(){
     '<h3>'+s.title+'</h3><p>'+s.short+'</p><span class="card-link">'+s.label+'</span>'+
     '<span class="mobile-caption">'+s.caption+'</span></a>'
   ).join('');
-  return '<section class="wrap section" id="leistungen"><div class="section-head"><h2>Was haben Sie vor?</h2></div>'+
-    '<div class="service-grid">'+cards+'</div></section>';
+  return '<section class="wrap section" id="leistungen" tabindex="-1"><div class="section-head"><h2>Was soll mit den Sachen passieren?</h2></div>'+
+    '<div class="service-grid">'+cards+'</div><div class="service-alternatives"><p>Ein Teil geht zur Familie, der Rest soll raus? <a href="/wohnungsaufloesung/">Wohnungsauflösung planen</a></p>'+
+    '<p>Sie organisieren einen Umzug für Angehörige? <a href="/seniorenumzug/">Seniorenumzug planen</a></p></div></section>';
 }
 function faq(qas){return '<div class="faq">'+qas.map(([q,a])=>'<details><summary>'+q+'</summary><p>'+a+'</p></details>').join('')+'</div>';}
 function steps(){
-  const title='Wie fange ich an?';
+  const title='Wie komme ich zum Angebot?';
   return '<section class="how"><div class="wrap how-inner"><div class="how-title"><h2>'+title+'</h2></div>'+
     '<details class="process-steps" open><summary><h2>'+title+'</h2></summary><ol class="steps">'+
-    '<li><b>Ein Zimmer auswählen</b><p>Zeigen Sie uns den Keller, das Zimmer oder die Wohnung. Sagen Sie uns, was Sie behalten oder weitergeben möchten. Unser Team kennzeichnet die Stücke.</p></li>'+
-    '<li><b>Festlegen, was bleiben soll</b><p>Welche Möbel ziehen mit, welche geben Sie weiter und was soll aus den Räumen? In der <a href="/anfrage/?leistung=entruempelung">Anfrage</a> können Sie die Stücke auflisten oder Fotos beifügen.</p></li>'+
-    '<li><b>Den Transport abstimmen</b><p>Für Möbel, die weitergenutzt werden, können Sie bei FrankenPackt einen <a href="/anfrage/?service=transport">Transport anfragen</a>. Nennen Sie die beiden Adressen, das Stockwerk und den Wunschtermin.</p></li></ol></details></div></section>';
+    '<li><b>Vorhaben beschreiben</b><p>Geben Sie an, welche Sachen bleiben, abgeholt oder geliefert werden sollen. Für einen vollen Keller helfen Fläche und Füllstand, für ein Sofa Maße und Stückzahl.</p></li>'+
+    '<li><b>Aufwand einschätzen</b><p>Stockwerk, Aufzug und Weg zum Fahrzeug beeinflussen den Preis. Im <a href="/preise/">Rechner</a> erhalten Sie für passende Vorhaben einen unverbindlichen Ab-Preis.</p></li>'+
+    '<li><b>Angebot prüfen</b><p>Senden Sie uns Ihre <a href="/anfrage/">Anfrage</a>. Wir prüfen die Angaben und schicken Ihnen die vorgesehenen Arbeiten mit Preis. Sie entscheiden, ob Sie das Angebot annehmen.</p></li></ol></details></div></section>';
 }
 function responsivePhoto(name,alt,hero=false){
   const width=hero?1200:1280;
@@ -122,8 +131,8 @@ function responsivePhoto(name,alt,hero=false){
   return '<img src="'+base+'.webp" srcset="'+base+'-360.webp 360w, '+base+'-720.webp 720w, '+base+'.webp '+width+'w" sizes="'+sizes+'" width="'+width+'" height="'+(hero?800:853)+'" fetchpriority="high" alt="'+text(alt)+'">';
 }
 const home='<section class="hero"><div class="wrap hero-grid"><div class="hero-copy"><div class="hero-heading"><div class="location">'+ic('pin',17)+
-  ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Was soll bleiben, was kann raus? Wir sortieren Ihren Hausrat und tragen die vereinbarten Stücke hinaus. Möbel, die Sie behalten oder verschenken möchten, bringen wir auf Wunsch an die neue Adresse.</p>'+
-  '<div class="actions">'+btn('Richtpreis ansehen','/preise/#richtpreis')+btn('Entsorgung anfragen','/anfrage/?leistung=entsorgung',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
+  ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Eine Couch soll raus, ein Keller muss leer werden oder Möbel ziehen um? Wählen Sie Ihr Vorhaben. Wir prüfen den Aufwand und nennen Ihnen den Preis im persönlichen Angebot.</p>'+
+  '<div class="actions">'+btn('Vorhaben wählen','#leistungen')+btn('Preis einschätzen','/preise/',true)+'</div>'+contactChoices()+'</div>'+
   '<div class="hero-picture">'+responsivePhoto('entruempelung-franken','Zwei Frauen sortieren eine Schale und weiteren Hausrat',true)+'</div></div></section>'+
   serviceCards()+topicList('Häufige Vorhaben',taskPages.filter(page=>['/kueche-abbauen/','/sofa-entsorgen/','/keller-entruempeln/','/wohnungsaufloesung/'].includes(page.path)))+steps()+
   '<div class="wrap"><p data-business-address hidden></p></div>';
@@ -135,27 +144,26 @@ const serviceContent={
 function detail(d) {
   const item = prices.find(p => p.id === d.which);
   const fullDay = d.s === 'umzug' ? prices.find(p => p.id === 'sieben') : null;
-  const request = '/anfrage/?service=' + d.s + (fullDay ? '&amp;paket=' + fullDay.id : '');
+  const request = '/anfrage/?service=' + d.s;
   const priceUrl = '/preise/?service=' + d.s + '&amp;paket=';
-  const priceLink = item ? priceUrl + (fullDay||item).id + '#preisfinder' : '#transportablauf';
-  const smallMoveComparison = fullDay ? '<p class="comparison-shortcut"><a href="/preise/?vorhaben=umzug#richtpreis">Wohnungsgröße und Strecke für meinen Umzug eingeben</a></p>' : '';
-  const leadOffer = fullDay ? '<div class="lead-offer"><strong>' + startingPrice(fullDay.price) + ' · 2 Personen und Fahrzeug</strong><span>7 Stunden ab und bis 90453 Nürnberg · bis 50 km Gesamtroute. Unverbindlicher Richtpreis inkl. 19 % USt.</span></div>' : '';
-  return '<div class="subhead service-heading" data-interest-service="'+d.s+'" data-interest-package="'+(fullDay?.id||'')+'"><div class="wrap">' + crumb(d.t) +
-    '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p>' + leadOffer + '<div class="actions">' +
-    btn(fullDay ? '7-Stunden-Team anfragen' : 'Anfrage vorbereiten', request) +
-    btn(item ? 'Preis prüfen' : 'Ablauf ansehen',priceLink,true) + '</div>'+contactChoices(d.s,fullDay?.id)+'</div><div class="detail-img">'+responsivePhoto(d.img,d.alt)+'</div></div></div></div>' +
+  const priceLink = fullDay ? '/preise/?vorhaben=umzug#richtpreis' : '#transportablauf';
+  const requestLabel={umzug:'Umzug anfragen',seniorenumzug:'Seniorenumzug anfragen',moebeltaxi:'Möbeltransport anfragen'}[d.s];
+  const teamChoice = fullDay ? '<p class="comparison-shortcut">Für einen längeren Einsatz: <a href="'+priceUrl+fullDay.id+'#preisfinder">7-Stunden-Team '+startingPrice(fullDay.price)+' ansehen</a></p>' : '';
+  return '<div class="subhead service-heading" data-interest-service="'+d.s+'"><div class="wrap">' + crumb(d.t) +
+    '<div class="detail-hero"><div><h1>' + d.h + '</h1><p class="lead">' + d.p + '</p><div class="actions">' +
+    btn(requestLabel, request) +
+    btn(fullDay ? 'Preis einschätzen' : 'Ablauf ansehen',priceLink,true) + '</div>'+contactChoices(d.s)+'</div><div class="detail-img">'+responsivePhoto(d.img,d.alt)+'</div></div></div></div>' +
     '<section class="wrap section service-facts" id="transportablauf"><div class="section-head"><h2>' + d.title + '</h2></div><div class="info-grid">' +
     d.list.map(([h,p]) => '<article><h3>' + h + '</h3><p>' + p + '</p></article>').join('') +
     '</div><div class="mobile-facts">' + faq(d.list) + '</div>' + (item ? '<div class="price-callout"><div>' + ic('tag',28) + '<div><h3>' + item.name + ' · ' + startingPrice(item.price) +
     '</h3><p>' + item.scope + ' Unverbindlicher Richtpreis inkl. 19 % USt.</p></div></div>' + btn('Preise prüfen',priceUrl + item.id + '#preisfinder',true) +
-    '</div>' : '') + smallMoveComparison + '</section><section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2>' + faq(d.faqs) + '</div></section>' + endCta(d.s);
+    '</div>' : '') + teamChoice + '</section><section class="faq-section"><div class="wrap faq-layout"><h2>Häufige Fragen</h2>' + faq(d.faqs) + '</div></section>' + endCta(d.s);
 }
 function planningPage(page) {
   const cards=page.steps.map(([title,copy,icon])=>'<article>'+ic(icon,28)+'<h3>'+title+'</h3><p>'+copy+'</p></article>').join('');
-  const calculatorLink='<p class="comparison-shortcut"><a href="/preise/?leistung='+page.service+'#raeumungsrechner">Richtwerte für Räumung und Container ansehen</a></p>';
   return '<section class="subhead clearance-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero">'+
     crumb(page.name)+'<h1>'+page.heading+'</h1><p class="lead">'+page.intro+'</p><div class="actions">'+
-    btn('Richtpreis ermitteln','/preise/?vorhaben='+page.service+'#richtpreis')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+calculatorLink+contactChoices(page.service)+'</div></section>'+
+    btn(page.cta,'/anfrage/?leistung='+page.service)+btn('Richtpreis einschätzen','/preise/?vorhaben='+page.service+'#richtpreis',true)+'</div>'+contactChoices(page.service)+'</div></section>'+
     '<section id="'+page.anchor+'" class="wrap section service-facts"><h2>'+page.section+'</h2><div class="info-grid">'+cards+
     '</div><div class="mobile-facts">'+faq(page.steps)+'</div></section>'+
     topicList('Ihr Vorhaben im Detail',taskPages.filter(task=>task.service===page.service))+
@@ -163,7 +171,7 @@ function planningPage(page) {
 }
 const clear=planningPage({
   service:'entruempelung',name:'Entrümpelung',heading:'Entrümpelung in<br><em>Nürnberg planen.</em>',
-  intro:'Sie entscheiden, was im Keller oder in der Wohnung bleibt. Unser Team sortiert den Hausrat und trägt die vereinbarten Stücke hinaus. Was Sie behalten oder verschenken, bringen wir auf Wunsch zur neuen Adresse.',
+  intro:'Ein Raum soll frei werden? Sie bestimmen, was bleibt, was entsorgt werden soll und welche Stücke zur Familie ziehen. Beschreiben Sie das gemeinsam in einer Anfrage. Wir prüfen Umfang und Preis für die gewünschten Arbeiten.',
   cta:'Räumung anfragen',anchor:'ablauf',section:'Was steht in Ihren Räumen?',
   steps:[
     ['Keller und Dachboden','Notieren Sie sperrige Stücke und die Zahl der Kisten. Messen Sie bei großen Möbeln die engste Stelle im Treppenhaus aus.','box'],
@@ -173,13 +181,13 @@ const clear=planningPage({
   faqTitle:'Aufwand und Übergabe',
   questions:[
     ['Was bestimmt den Preis einer Entrümpelung?','Ein gut erreichbarer Keller mit wenigen Kisten braucht weniger Zeit als eine volle Wohnung ohne Aufzug. Hilfreich sind die ungefähre Menge, große Möbelstücke und der Weg zum Fahrzeug. Im Angebot sehen Sie, welche Arbeiten und Kosten enthalten sind.'],
-    ['Was gebe ich bei ausgedienten Stücken an?','Listen Sie Möbel, Geräte und andere Materialien getrennt auf. Ergänzen Sie die Stückzahl und, wenn möglich, ein Foto. So lässt sich einschätzen, welche Arbeiten vor Ort nötig sind.'],
+    ['Ich möchte nur einzelne Stücke loswerden. Was wähle ich?','Für eine Couch, eine Matratze oder einzelne Geräte passt die <a href="/anfrage/?leistung=entsorgung">Entsorgungsanfrage</a>. Geht es um einen ganzen Raum mit verschiedenen Sachen, erfassen Sie die Stücke zusammen in Ihrer Räumungsanfrage.'],
     ['Wie plane ich die Schlüsselübergabe?','Nennen Sie uns das Datum, an dem die Räume übergeben werden, und markieren Sie Einbauten, die bleiben sollen. So können wir einen passenden Termin für die vereinbarten Arbeiten anbieten.']
   ]
 });
 const disposal=planningPage({
   service:'entsorgung',name:'Entsorgung',heading:'Was möchten Sie<br><em>entsorgen?</em>',
-  intro:'Ein altes Sofa, mehrere Geräte oder der Inhalt eines Kellers? Nennen Sie die Gegenstände, das Stockwerk und den Weg bis zur Tür. Fotos helfen uns, Größe und Aufwand einzuschätzen. Im Angebot sehen Sie genau, welche Arbeiten wir übernehmen.',
+  intro:'Eine alte Couch, Matratzen oder Geräte sollen weg? Nennen Sie Stückzahl, Maße, Stockwerk und Weg zum Fahrzeug. Wir prüfen, was wir übernehmen können, und nennen Ihnen Leistungen und Preis im Angebot.',
   cta:'Entsorgung anfragen',anchor:'entsorgungswege',section:'Was möchten Sie aussortieren?',
   steps:[
     ['Möbel und Matratzen','Geben Sie Anzahl und ungefähre Maße an. Bei einem Sofa oder Schrank ist wichtig, ob das Stück am Stück durch die Tür passt oder zerlegt werden muss.','home'],
@@ -189,7 +197,7 @@ const disposal=planningPage({
   faqTitle:'Kosten und Abholung',
   questions:[
     ['Wann ist ein Container sinnvoll?','Bei größeren Mengen helfen Materialart, geschätztes Volumen und Stellfläche bei der Planung. Im <a href="/preise/?leistung=entsorgung#raeumungsrechner">Rechner</a> können Sie die Richtwerte für verschiedene Größen ansehen.'],
-    ['Was kann ich mit gut erhaltenen Stücken tun?','Klären Sie mit der Person oder Einrichtung, die das Möbelstück übernehmen möchte, ob es passt und wann es ankommen soll. Für die Fahrt dorthin können Sie bei FrankenPackt einen <a href="/anfrage/?service=transport">Möbeltransport anfragen</a>.'],
+    ['Ein Teil soll weg, ein Teil zur Familie. Wie frage ich das an?','Soll ein Keller oder eine Wohnung leer werden, beschreiben Sie beide Aufgaben in der <a href="/anfrage/?leistung=entruempelung">Räumungsanfrage</a>. Für ein einzelnes brauchbares Möbelstück, das nur zur neuen Adresse soll, wählen Sie das <a href="/moebeltaxi/">Möbeltaxi</a>.'],
     ['Kann ich auch für eine Adresse im Umland anfragen?','Ja. Geben Sie die Postleitzahl des Einsatzorts und Ihren Wunschtermin an. Wir prüfen, ob wir die gewünschten Arbeiten an dieser Adresse anbieten können.']
   ]
 });

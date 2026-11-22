@@ -61,3 +61,25 @@ test('sitemap includes only canonical, reachable public service and task pages',
   for (const rule of ['Allow: /admin$','Allow: /admin/$','Allow: /admin/index.html$','Disallow: /api/','Disallow: /admin']) assert.ok(rules.includes(rule),rule);
   assert.match(read('admin/index.html'),/<meta name="robots" content="noindex,nofollow">/);
 });
+
+test('service selection keeps mixed jobs together and leaves package and inventory choices to the visitor',()=>{
+  const home=markup('/');
+  const choices=[...home.matchAll(/class="service-card" href="([^"]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(choices,['/entsorgung/','/raeumung/','/moebeltaxi/','/umzug/']);
+  assert.match(home,/class="service-alternatives"[^]*?href="\/wohnungsaufloesung\/"/);
+  assert.match(home,/class="service-alternatives"[^]*?href="\/seniorenumzug\/"/);
+  const moving=markup('/umzug/');
+  assert.match(moving,/class="button head-cta" href="\/anfrage\/\?service=umzug"/);
+  assert.doesNotMatch(moving,/<a[^>]+href="\/anfrage\/\?[^"]*paket=sieben/);
+  assert.match(moving,/href="\/preise\/\?service=umzug&amp;paket=sieben#preisfinder"/);
+  for(const page of taskPages){
+    const html=markup(page.path);
+    if(['entruempelung','entsorgung','umzug'].includes(page.service)){
+      const slug=page.path.split('/')[1];
+      assert(html.includes('href="/preise/?vorhaben='+page.service+'&amp;thema='+slug+'#richtpreis"'),page.path);
+    }else{
+      assert(html.includes('href="#angaben"') && html.includes('id="angaben"'),page.path);
+    }
+    assert.match(html,/class="guide-offer"[^]*?<a href="\/anfrage\/\?[^"]+thema=[^"]+"/);
+  }
+});

@@ -42,7 +42,7 @@ export function priceComparison(scopeSlot = '') {
       </form>
       <div class="comparison-result" hidden>
         <div role="status" aria-live="polite" aria-atomic="true"><h3 data-comparison-title></h3><p class="comparison-amount" data-comparison-amount></p><p data-comparison-message></p><p class="comparison-note" data-estimate-scope-note></p></div>
-        <div class="comparison-actions"><a href="/anfrage/" data-comparison-inquiry hidden>Angaben zur Anfrage übernehmen</a><a href="#raeumungsrechner" data-scenario-calculator hidden></a></div>
+        <div class="comparison-actions"><a class="button" href="/anfrage/" data-comparison-inquiry hidden>Angaben zur Anfrage übernehmen</a><a href="/anfrage/?kontakt=telefon" data-contact="callback" data-comparison-callback hidden>Frage telefonisch klären</a></div>
       </div>
     </div>
     ${scopeSlot}

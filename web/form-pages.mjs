@@ -1,10 +1,10 @@
 export function inquiry(crumb, ic) {
-  const details = '<p>Für einen Rückruf genügen Ihr Name und Ihre Telefonnummer. Auf Wunsch kann eine Vertrauensperson die Anfrage übernehmen.</p>';
-  const agreement = '<p>Sie erhalten ein persönliches Angebot mit den einzelnen Arbeiten und dem Preis. Wenn Sie es annehmen, vereinbaren wir den Termin mit Ihnen.</p>';
+  const details = '<p>Für einen Rückruf genügen Name und Telefonnummer. Auch eine Vertrauensperson kann die Anfrage übernehmen.</p>';
+  const agreement = '<p>Wir prüfen Umfang und Zugang. Unser Angebot nennt die Arbeiten und den Preis. Nach Ihrer Zusage vereinbaren wir den Einsatztermin.</p>';
   const livePhone = '<p data-live-phone hidden></p>';
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
     ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
-    <p class="lead" id="inquiry-lead">Wählen Sie Ihre Leistung. Anhand Ihrer Angaben zu Inventar, Zugang und Termin erstellen wir Ihr persönliches Angebot.</p>
+    <p class="lead" id="inquiry-lead">Beschreiben Sie Ihr Vorhaben und wählen Sie, wie wir Sie erreichen. Sie entscheiden über den Auftrag, sobald Ihnen unser Angebot vorliegt.</p>
     <a class="inquiry-switch" id="inquiry-switch" hidden>Nur einen Rückruf anfragen</a>
   </div></section>
   <section class="wrap section form-layout"><div>
@@ -51,7 +51,7 @@ export function inquiry(crumb, ic) {
         </div>
         <div class="honeypot" aria-hidden="true"><label for="website">Website</label><input name="website" id="website" tabindex="-1" autocomplete="off"></div>
       </fieldset>
-      <p class="fine">Mit * markierte Angaben werden benötigt. Ihre Kontaktdaten dienen der Bearbeitung Ihrer Anfrage. Hinweise dazu im <a href="/datenschutz/">Datenschutz</a>.</p>
+      <p class="fine">Mit * markierte Felder sind erforderlich. Wir verwenden Ihre Kontaktdaten für diese Anfrage. <a href="/datenschutz/">Datenschutz</a></p>
       <button class="button js-only" type="submit" id="send-lead" disabled>Musteranfrage prüfen</button>
       <p id="form-result" role="status" aria-live="polite" tabindex="-1"></p>
     </form>

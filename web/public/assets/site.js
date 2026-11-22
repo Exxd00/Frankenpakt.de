@@ -26,6 +26,7 @@ const rawLabel = params.get('anzeige');
 const adVariant = params.getAll('src').length === 1 && params.get('src') === 'google' &&
   params.getAll('anzeige').length === 1 && adLabels.has(rawLabel) ? rawLabel : null;
 let largeType = params.get('schrift') === 'gross';
+let carryPricingTopic;
 const clearance = {
   entruempelung: {
     title: 'Entrümpelung planen', path: '/raeumung/',
@@ -93,6 +94,7 @@ function updateLink(anchor) {
   if (!href || !href.startsWith('/')) return;
   const url = new URL(href, location.href);
   if (url.origin !== location.origin) return;
+  if (carryPricingTopic) carryPricingTopic(new URL(location.href),url);
   for (const key of obsoleteAmountKeys) url.searchParams.delete(key);
   if (source !== 'unbekannt') url.searchParams.set('src', source);
   if (adVariant) url.searchParams.set('anzeige',adVariant);
@@ -238,14 +240,18 @@ const estimate = document.querySelector('#estimate');
 if (estimate) enableEstimate(estimate);
 
 if (estimate) {
-  document.addEventListener('pricing-view-change',event => {
-    const {service,view} = event.detail;
+  function projectPricingChoice({service,view}) {
     if (view === 'packages') {
       const pack = document.querySelector('#paket').value;
       updateProjectLinks(serviceForPackage(pack,pageInterest),pack,document.querySelector('#extra-units')?.value);
     } else if (view === 'quick') {
       updateProjectLinks(service,null,null,url => url.searchParams.set('vorhaben',service));
     } else updateProjectLinks(service);
+  }
+  document.addEventListener('pricing-view-change', event=>projectPricingChoice(event.detail));
+  import('/assets/price-guide.js').then(({carryPriceTopic,priceGuideRoute})=>{
+    carryPricingTopic=carryPriceTopic;
+    projectPricingChoice(priceGuideRoute(new URL(location.href)));
   });
   import('/assets/scope-flow.js').then(({calculatorScopes}) => {
     function selection(kind) {
@@ -342,9 +348,9 @@ function showReceipt() {
   next.hidden = false;
   next.textContent = sample
     ? 'Nach einer echten Übermittlung finden Sie hier Ihre Vorgangsnummer und den nächsten Schritt.'
-    : receipt.contactMethod === 'phone'
-      ? 'Wir melden uns unter der angegebenen Telefonnummer.'
-      : 'Wir melden uns an die angegebene E-Mail-Adresse.';
+    : callback ? 'Wir rufen Sie unter der angegebenen Nummer an, um Ihr Anliegen zu besprechen.'
+      : (receipt.contactMethod === 'phone' ? 'Wir melden uns telefonisch' : 'Wir melden uns per E-Mail') +
+        ', sobald wir Ihre Angaben geprüft haben. Sie entscheiden anschließend über unser Angebot.';
   const primary = document.querySelector('#receipt-primary');
   primary.textContent = topic ? topic.title : 'Zur Preisübersicht';
   primary.href = topic ? topic.path : '/preise/';
@@ -539,8 +545,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
       submit.textContent = 'Übermittlung derzeit nicht verfügbar';
       document.querySelector('#form-mode').textContent = 'Der Onlinekontakt ist derzeit nicht erreichbar. Bitte verwenden Sie die Kontaktdaten im Impressum.';
     } else if (mode === 'live') {
-      submit.textContent = callback ? 'Rückruf anfordern' : 'Unverbindlich anfragen';
-      document.querySelector('#form-mode').textContent = 'Ihre Angaben werden für die Bearbeitung dieser Anfrage an FrankenPackt übermittelt.';
+      submit.textContent = callback ? 'Rückruf anfordern' : 'Unverbindliches Angebot anfragen';
+      document.querySelector('#form-mode').hidden=true;
     }
   });
   form.addEventListener('submit', async event => {

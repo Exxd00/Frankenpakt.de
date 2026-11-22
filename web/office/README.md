@@ -4,6 +4,10 @@
 
 ## Nutzung
 
+Der Direktlink zum [Betriebshandbuch](https://frankenpakt.de/admin/#handbuch) öffnet nach der Anmeldung die Arbeitsanleitung und Links zur Sitemap, zu robots.txt, zur bestätigten Search-Console-Domain, zum Sitemap-Bericht sowie zu den Projektblättern Betriebsstand und Suchmonitoring. Gemessene Werte und Prüfdaten werden im Suchmonitoring gepflegt. Die Office-Sitzung und die Freigaben der externen Projektdienste werden unabhängig geprüft.
+
+Der Reiter **Anfragen** zeigt IXA beim Öffnen eines Vorgangs eine Entscheidungshilfe aus den eingegangenen Angaben. Der Rückruf, die Klärung einer offenen Einsatzfrage, die Abgrenzung einer Fachleistung und die Vorbereitung der Kalkulation führen zu unterschiedlichen nächsten Schritten. Die Entscheidung über Umfang, Durchführbarkeit und Preis trifft das Büro.
+
 - Mit dem vereinbarten Passwort lassen sich Preise, Mengenrechnung und Markenmaterial ansehen. Das Google-Konto frankenpakt.de@gmail.com hat im verknüpften Kalkulationsblatt Leserechte.
 - Über **Mit IXA bearbeiten** einen Anmeldelink an das IXA-Postfach anfordern und den Bestätigungslink aus dieser E-Mail einfügen. Damit kann IXA Positionen anlegen, Preise pflegen und Kundenangebote erstellen.
 - Für ein Angebot Mengen, Anbieter samt Anschrift, Empfänger und Arbeitsumfang eingeben. Die Ausgabe übernimmt die gespeicherten Bruttopreise. **Drucken / PDF speichern** öffnet den Druckdialog. Das Archiv zeigt die jüngsten 50 Angebote mit ihren ursprünglichen Positionen.

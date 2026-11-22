@@ -1,6 +1,7 @@
 import {evaluateActualJob,formatStartingPrice,normalizeActualJob,serviceFromQuery,serviceNames} from './actual-job.js';
 export {inquiryComparison} from './actual-job.js';
 import {readEstimateFacts,writeEstimateFacts} from './estimate-draft.js';
+import {carryPriceTopic} from './guide-topic.js';
 
 const moves = {Rooms:'rooms',Area:'area',Volume:'volume',Distance:'distance'};
 const rowTypes = {
@@ -11,6 +12,11 @@ const prompts = {
   entsorgung:'Nennen Sie jede Position und ihre Stückzahl (mindestens 1).',
   entruempelung:'Geben Sie je Raum die Bezeichnung, eine Fläche größer als 0 m² und den Füllstand an.',
   umzug:'Geben Sie Zimmerzahl, Fläche, Volumen und Strecke an. Was Sie noch nicht kennen, können Sie markieren.'
+};
+const individualReview = {
+  entsorgung:'Für diese Gegenstände prüfen wir Maße, Gewicht und Trageweg. Im nächsten Schritt können Sie den Zugang beschreiben und Fotos ergänzen.',
+  entruempelung:'Für diese Räume prüfen wir Inhalt, Füllstand und Trageweg. Geben Sie in der Anfrage an, was bleiben und was herausgetragen werden soll.',
+  umzug:'Für diesen Umzug prüfen wir Ladeumfang, Strecke und Zugang an beiden Adressen. Fehlende Angaben können wir im Gespräch klären.'
 };
 
 function mountEstimator(form) {
@@ -23,7 +29,7 @@ function mountEstimator(form) {
   const explanation = result.querySelector('[data-comparison-message]');
   const note = result.querySelector('[data-estimate-scope-note]');
   const inquiry = result.querySelector('[data-comparison-inquiry]');
-  const calculator = result.querySelector('[data-scenario-calculator]');
+  const callback = result.querySelector('[data-comparison-callback]');
   const panels = form.querySelectorAll('[data-job-panel]');
   function rowsContainer(type) { return form.querySelector('[data-'+type+'-rows]'); }
   function updateRows(type) {
@@ -81,22 +87,24 @@ function mountEstimator(form) {
       params.set(service === 'umzug' ? 'service' : 'leistung',service);
       params.set('vorhaben',service);
     }
-    inquiry.setAttribute('href','/anfrage/'+(params.size?'?'+params:''));
+    const source = new URL(location.href);
+    const target = new URL('/anfrage/', source);
+    target.search = params;
+    carryPriceTopic(source,target);
+    inquiry.setAttribute('href',target.pathname+target.search);
+    target.searchParams.set('kontakt','telefon');
+    callback.setAttribute('href',target.pathname+target.search);
     if (!draft) {lastAmount = null;return;}
     const hasAmount = estimate?.estimatedCents != null;
-    calculator.hidden = !estimate || hasAmount;
-    if (estimate && !hasAmount) {
-      calculator.setAttribute('href',estimate.route);
-      calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Räumung und Containerpreise ansehen';
-    }
-    title.textContent = estimate?.priceLabel || 'Ihre Angaben';
+    callback.hidden = hasAmount;
+    title.textContent = estimate?.priceLabel || 'Welche Angaben fehlen noch?';
     amount.textContent = hasAmount ? formatStartingPrice(estimate.estimatedCents) : '';
     amount.hidden = !hasAmount;
     const displayed = hasAmount ? service+'|'+estimate.estimatedCents : null;
     if (notify && displayed && displayed !== lastAmount) form.dispatchEvent(new CustomEvent('fp-estimate',{bubbles:true,detail:{service}}));
     lastAmount = displayed;
-    explanation.textContent = estimate ? estimate.basis : prompts[service];
-    note.textContent = estimate?.note || '';
+    explanation.textContent = estimate ? (hasAmount ? estimate.basis : individualReview[service]) : prompts[service];
+    note.textContent = hasAmount ? estimate.note : '';
     note.hidden = !note.textContent;
     if (estimate) inquiry.textContent = estimate.requestLabel;
   }

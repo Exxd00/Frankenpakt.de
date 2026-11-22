@@ -1,4 +1,6 @@
 import {serviceFromQuery} from './actual-job.js';
+import {carryPriceTopic,inquiryTopic} from './guide-topic.js';
+export {carryPriceTopic} from './guide-topic.js';
 
 const moveServices = new Set(['umzug','seniorenumzug','moebeltaxi','transport']);
 
@@ -28,10 +30,16 @@ function mountGuide(guide) {
   const tools = guide.querySelector('.guide-tools');
   guide.querySelector('[data-quick-service]').hidden = true;
   function render() {
-    const {service,view} = priceGuideRoute(new URL(location.href));
+    const source = new URL(location.href);
+    const {service,view} = priceGuideRoute(source);
+    const topic = inquiryTopic(source.searchParams,service);
+    document.getElementById('richtpreis').textContent = topic ? '„'+topic.label+'“ einschätzen' : 'Ihr Vorhaben einschätzen';
     for (const link of choices) {
       if (link.dataset.guideChoice === service) link.setAttribute('aria-current','true');
       else link.removeAttribute('aria-current');
+      const target = new URL(link.href);
+      carryPriceTopic(source,target);
+      link.setAttribute('href',target.pathname+target.search+target.hash);
     }
     quick.hidden = view !== 'quick';
     clearance.hidden = view !== 'clearance';

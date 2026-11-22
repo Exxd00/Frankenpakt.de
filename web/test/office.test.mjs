@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {randomUUID} from 'node:crypto';
 import {createOfficeHandler} from '../office/handler.mjs';
+import {caseReview} from '../office/handbook.mjs';
+import {readFileSync} from 'node:fs';
 
 const officeUrl = 'https://office.example/functions/v1/frankenpakt-office/';
 const origin = 'https://frankenpakt.vercel.app';
@@ -51,10 +53,14 @@ function fixtures(role) {
 
 test('private office accepts same-origin requests, rejects anonymous access and enforces viewer scope on the server',async()=>{
   const {run,calls}=fixtures('viewer');
-  assert.equal((await run('state',undefined,{cookie:''})).status,401);
+  const guest=await run('state',undefined,{cookie:''});
+  assert.equal(guest.status,401);assert.deepEqual(await guest.json(),{error:'Bitte anmelden.'});
   assert.equal((await run('editor-start',{},{origin:'https://other.example'})).status,403);
   const state = await run('state');
-  assert.equal((await state.json()).role,'viewer');
+  const viewer=await state.json();assert.equal(viewer.role,'viewer');
+  const links=viewer.handbook.groups.flatMap(([,items])=>items.map(([,href])=>href));
+  assert(links.includes('/sitemap.xml')&&links.includes('/robots.txt'));assert(links.some(h=>h.endsWith('#gid=85317568')));
+  assert(!links.some(h=>h.startsWith('https://github.com/')));
   assert.match(state.headers.get('Cache-Control'),/no-store/);
   for (const [route,body] of [['rate',{}],['quote',{}],['quotes',undefined],['cases',undefined],['case/AN-12345678ABCDEF12',undefined],['case/AN-12345678ABCDEF12/close',{confirm:true}],['files/AN-12345678ABCDEF12/1',undefined]]) {
     assert.equal((await run(route,body)).status,403,route);
@@ -64,10 +70,13 @@ test('private office accepts same-origin requests, rejects anonymous access and 
 
 test('IXA can open an inquiry and download a private attachment from the cloud store',async()=>{
   const {run}=fixtures('editor');
+  const {handbook}=await (await run('state')).json();
+  assert(handbook.groups.flatMap(([,items])=>items).some(([,href])=>href.startsWith('https://github.com/')));
   const list=await run('cases');
   const ref=(await list.json())[0].reference;
   const record=await run('case/'+ref);
-  assert.equal((await record.json()).lead.name,'Test');
+  const entry=await record.json();
+  assert.equal(entry.lead.name,'Test');assert.equal(entry.review.title,'Anfrage zuerst sichten');
   const file=await run('files/'+ref+'/1');
   assert.equal(file.status,200);
   assert.match(file.headers.get('Content-Disposition'),/attachment; filename\*=UTF-8''Fl%C3%A4che.pdf/);
@@ -77,6 +86,22 @@ test('IXA can open an inquiry and download a private attachment from the cloud s
   assert.equal((await run('case/'+ref+'/close',{})).status,400);
   const closed=await run('case/'+ref+'/close',{confirm:true});
   assert.equal((await closed.json()).closed,'2026-11-22T10:00:00Z');
+});
+
+test('office decisions disclose the relevant next step and private project links stay outside the public login bundle',()=>{
+  const review=fields=>caseReview({jobScope:{fields:{items:'[{}]',fromFloor:'ground',...fields}}});
+  assert.equal(caseReview({service:'rueckruf'}).title,'Rückruf vorbereiten');
+  const callback=caseReview({service:'rueckruf',requestedService:'entsorgung',jobScope:{fields:{items:'[{}]',fromFloor:'ground',wasteRoute:'provider',materials:'special'}}});
+  assert.equal(callback.title,'Rückruf vorbereiten');assert(callback.reasons.some(line=>line.includes('Besondere Stoffe')));
+  assert.equal(caseReview({jobScope:{fields:{wasteRoute:'provider',materials:'special'}}}).title,'Fachleistung abgrenzen');
+  assert.equal(review({}).title,'Kalkulation vorbereiten');
+  assert.equal(review({fromParking:'blocked'}).title,'Offene Punkte prüfen');
+  assert.equal(review({wasteRoute:'none',materials:'special'}).title,'Kalkulation vorbereiten');
+  assert.equal(review({wasteRoute:'provider',materials:'wood,special'}).title,'Fachleistung abgrenzen');
+  assert.match(review({loadWeightMode:'estimated',loadWeight:'1000,5'}).reasons.join(' '),/Zuladung/);
+  const guestFiles=['admin/index.html','assets/office.js','assets/office-cases.js'].map(file=>
+    readFileSync(new URL('../public/'+file,import.meta.url),'utf8')).join('\n');
+  assert.doesNotMatch(guestFiles,/docs\.google\.com\/spreadsheets|search\.google\.com\/search-console|analytics\.google\.com/);
 });
 
 test('editor quotes derive their unit prices from the durable catalogue and stale price edits return a conflict',async()=>{

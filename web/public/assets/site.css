@@ -300,6 +300,10 @@ header{border-bottom:0}
 .task-sections p{margin:0;max-width:60ch}
 .task-heading .crumb{flex-wrap:wrap}
 .task-heading .guide-callback{display:inline-flex;min-height:44px;align-items:center;gap:.45rem;margin-block:.4rem}
+.service-alternatives{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:.5rem 2rem;margin-top:1rem}
+.service-alternatives p,.guide-offer{margin:0;font-size:1rem;line-height:1.5;color:var(--muted)}
+.service-alternatives a,.guide-offer a{font-weight:650;text-underline-offset:.16em}
+.guide-offer{margin-top:1rem;max-width:56ch}
 .business-address{margin:1rem 0}
 @media(max-width:600px){.topics ul{grid-template-columns:repeat(2,minmax(0,1fr));gap:.32rem}.topics a{padding:.52rem .35rem;font-size:1rem}.task-heading h1{font-size:clamp(2rem,8.6vw,3.3rem);overflow-wrap:anywhere}.task-heading .actions{gap:.42rem}.task-sections{gap:1rem}}
 

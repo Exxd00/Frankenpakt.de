@@ -5,19 +5,12 @@ import {scopeConditionNotes,normalizeJobContext} from './job-scope-conditions.js
 import {readEstimateFacts,writeEstimateFacts} from './estimate-draft.js';
 import {factsFromEditedScope,scopeWithEstimateFacts} from './estimate-scope.js';
 import {evaluateActualJob,normalizeActualJob} from './actual-job.js';
-import {guideLabels,guideServices} from './search-routes.js';
+export {inquiryTopic} from './guide-topic.js';
 
 const services = new Set(['umzug','seniorenumzug','moebeltaxi','transport','entruempelung','entsorgung']);
 const memory = new Map();
 const key = service => 'frankenpackt.job.v1.'+service;
 const preview = !document.querySelector('#contact-dialog[data-contact-mode="live"]');
-
-export function inquiryTopic(params, service) {
-  const slugs = params.getAll('thema');
-  if (slugs.length !== 1 || !/^[a-z0-9-]{1,80}$/.test(slugs[0])) return null;
-  const path = Object.keys(guideServices).find(key => key.split('/').at(-2) === slugs[0] && guideServices[key] === service);
-  return path ? {slug:slugs[0], label:guideLabels[path], service} : null;
-}
 
 function storageAvailable() {
   try {

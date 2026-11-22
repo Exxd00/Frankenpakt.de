@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {normalizeActualJob,evaluateActualJob,inquiryComparison,serviceFromQuery} from '../public/assets/actual-job.js';
 import {priceComparison} from '../price-comparison.mjs';
+import {carryPriceTopic,inquiryTopic} from '../public/assets/guide-topic.js';
 
 const item = (name,quantity='1') => ({name,quantity});
 const room = (name,area,fill='half') => ({name,area,fill});
@@ -9,6 +10,26 @@ const disposal = (...items) => ({service:'entsorgung',items});
 const clearance = (...rooms) => ({service:'entruempelung',rooms});
 const move = (overrides={}) => ({service:'umzug',rooms:'2',area:'50',volume:'15',distance:'20',...overrides});
 const estimate = draft => evaluateActualJob(draft)?.estimatedCents;
+
+test('price handoffs carry only a known guide for the same service and origin',()=>{
+  const origin='https://frankenpakt.de';
+  const sofa=new URL('/preise/?vorhaben=entsorgung&thema=sofa-entsorgen',origin);
+  for(const path of ['/anfrage/?leistung=entsorgung&vorhaben=entsorgung', '/anfrage/?leistung=entsorgung&kontakt=telefon','/preise/?vorhaben=entsorgung']){
+    const target=new URL(path,origin);
+    carryPriceTopic(sofa,target);
+    assert.equal(inquiryTopic(target.searchParams,'entsorgung')?.label,'Sofa oder Couch');
+    assert.ok(!target.searchParams.has('preis'));
+  }
+  for(const [source,target] of [
+    [sofa,new URL('/anfrage/?leistung=entruempelung&thema=sofa-entsorgen',origin)],
+    [new URL('/preise/?vorhaben=entsorgung&thema=private-input',origin),new URL('/anfrage/?leistung=entsorgung',origin)],
+    [new URL(sofa.href+'&thema=sofa-entsorgen'),new URL('/anfrage/?leistung=entsorgung',origin)],
+    [sofa,new URL('/anfrage/?leistung=entsorgung','https://example.com')]
+  ]){
+    carryPriceTopic(source,target);
+    assert.equal(target.searchParams.has('thema'),false);
+  }
+});
 
 test('the inquiry identifies each regional starting price and who provides the offer', () => {
   for (const [job, expected, label, action] of [

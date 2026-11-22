@@ -1,3 +1,5 @@
+import {officeHandbook,caseReview} from './handbook.mjs';
+
 const VIEWER='frankenpakt.de@gmail.com', EDITOR='ixamarketing.de@gmail.com';
 const origins=new Set(['https://frankenpakt.vercel.app','https://frankenpakt.de','https://www.frankenpakt.de']);
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -105,7 +107,7 @@ export function createOfficeHandler(env,fetcher=fetch){
     if(route==='logout'&&write){await db('fp_office_sessions?digest=eq.'+digest,'DELETE');return reply({ok:true},200,{'Set-Cookie':cookie('',0)});}
     if(route==='state'&&!write){
       const rates=await db('fp_office_rates?select='+priceSelect+'&order=changed.asc,id.asc');
-      return reply({role:auth.role,email:auth.role==='editor'?EDITOR:VIEWER,rates});
+      return reply({role:auth.role,email:auth.role==='editor'?EDITOR:VIEWER,rates,handbook:officeHandbook(auth.role)});
     }
     if(auth.role!=='editor')reject(403,'Nur IXA kann Vorgänge und Preise bearbeiten.');
     if(!write&&route==='cases')return reply(await db('rpc/fp_intake_list','POST',{}));
@@ -113,7 +115,7 @@ export function createOfficeHandler(env,fetcher=fetch){
     if(!write&&caseMatch){
       const record=await db('rpc/fp_intake_case','POST',{p_ref:caseMatch[1]});
       if(!record)reject(404,'Anfrage nicht gefunden.');
-      return reply(record);
+      return reply({...record,review:caseReview(record.lead)});
     }
     const closeMatch=/^case\/(AN-[0-9A-F]{16})\/close$/.exec(route);
     if(write&&closeMatch){

@@ -23,7 +23,7 @@ function action(el,event,work){
 function reset(){
   state=null;quantities.clear();caseInbox.clear();documentId=crypto.randomUUID();document.body.removeAttribute('data-role');
   $('#login').hidden=false;$('#office').hidden=true;$('#logout').hidden=true;$('#document').hidden=true;
-  $('#who').textContent='Angebotsbüro';$('#paper').replaceChildren();$('#history').replaceChildren();$('#rates').replaceChildren();
+  $('#who').textContent='Angebotsbüro';$('#paper').replaceChildren();$('#history').replaceChildren();$('#rates').replaceChildren();$('#office-handbook').replaceChildren();
   $('#customer').value='';$('#scope').value='';$('#issuer').value=$('#issuer').defaultValue;$('#code').value='';$('#pass').value='';
 }
 function units(rate){return quantities.get(rate.id)||0;}
@@ -65,11 +65,11 @@ async function loadState(){
   state=await api('state');document.body.dataset.role=state.role;$('#login').hidden=true;$('#office').hidden=false;$('#logout').hidden=false;
   $('#who').textContent=state.role==='editor'?'IXA · Bearbeiten':'FrankenPackt · Leserechte';
   $('#role-copy').textContent=state.role==='editor'?'Preise pflegen, Leistungen zusammenstellen und Angebote ausgeben.':'Preise einsehen und Mengen zur Orientierung berechnen.';
-  drawRates();
+  drawRates();drawHandbook();
 }
 async function openTab(tab,loadList=true){
   if(['archive','cases'].includes(tab)&&state?.role!=='editor')return;activeTab=tab;
-  for(const t of ['calc','cases','archive','brand'])$('#'+t).hidden=t!==tab;
+  for(const t of ['calc','cases','archive','brand','handbuch'])$('#'+t).hidden=t!==tab;
   document.querySelectorAll('[data-open]').forEach(n=>n.setAttribute('aria-pressed',String(n.dataset.open===tab)));
   if(tab==='cases'&&loadList)await caseInbox.load();
   if(tab==='archive'){const list=$('#history');list.textContent='Angebote werden geladen …';const docs=await api('quotes');if(state?.role!=='editor')return;list.replaceChildren();
@@ -78,6 +78,10 @@ async function openTab(tab,loadList=true){
   }
 }
 async function startTab(){
+  const requested=location.hash.slice(1);
+  if(['calc','brand','handbuch'].includes(requested)||state.role==='editor'&&['cases','archive'].includes(requested)){
+    await openTab(requested);return;
+  }
   const reference=args.get('vorgang');
   if(state.role==='editor'&&/^AN-[0-9A-F]{16}$/.test(reference||'')){
     await openTab('cases',false);await caseInbox.show(reference);
@@ -95,6 +99,28 @@ function showDoc(quote){
 }
 function link(parent,name,url,download){
   const a=nodes('a',name);a.href=url;if(download)a.download=download;parent.append(a);return a;
+}
+function drawHandbook(){
+  const host=$('#office-handbook');host.replaceChildren();
+  if(!state.handbook){host.append(nodes('p','Das Handbuch wird gerade bereitgestellt. Bitte die Seite erneut laden.'));return;}
+  const guide=nodes('div',null,'handbook-guide');
+  for(const [title,copy] of state.handbook.steps){
+    const block=nodes('details');block.append(nodes('summary',title),nodes('p',copy));guide.append(block);
+  }
+  host.append(guide,nodes('h3','Arbeitslinks'),nodes('p','Projektdateien und Google-Berichte öffnen sich mit den Rechten des dort angemeldeten Kontos.','hint'));
+  const groups=nodes('div',null,'handbook-links');
+  for(const [title,items] of state.handbook.groups){
+    const group=nodes('section');group.append(nodes('h4',title));
+    const list=nodes('ul');
+    for(const [label,href] of items){
+      const dest=new URL(href,location.origin);
+      if(dest.protocol!=='https:'&&dest.origin!==location.origin)continue;
+      const li=nodes('li'),a=link(li,label,href);a.target='_blank';a.rel='noopener noreferrer';
+      list.append(li);
+    }
+    group.append(list);groups.append(group);
+  }
+  host.append(groups);
 }
 function resources(){
   const logos=$('#logos');link(logos,'SVG','/assets/marke.svg','FrankenPackt.svg');link(logos,'Signet (SVG)','/assets/signet.svg','FrankenPackt-Signet.svg');
@@ -117,7 +143,11 @@ action($('#quote-form'),'submit',async()=>{
 $('#quote-form').addEventListener('input',()=>{documentId=crypto.randomUUID();});
 $('#print').addEventListener('click',()=>window.print());
 action($('#back'),'click',async()=>{$('#document').hidden=true;$('#office').hidden=false;await openTab(activeTab);});
-document.querySelectorAll('[data-open]').forEach(el=>action(el,'click',()=>openTab(el.dataset.open)));
+document.querySelectorAll('[data-open]').forEach(el=>action(el,'click',async()=>{
+  await openTab(el.dataset.open);
+  history.replaceState(null,'',location.pathname+location.search+'#'+activeTab);
+}));
+window.addEventListener('hashchange',()=>{if(state)startTab().catch(error=>show(error.message));});
 async function downloadFile(ref,id){
   if(!/^AN-[0-9A-F]{16}$/.test(ref)||!/^\d{1,10}$/.test(id))throw Error('Vorgangs- und Dateinummer prüfen.');
   const r=await fetch('/api/office/files/'+ref+'/'+id,{cache:'no-store'});

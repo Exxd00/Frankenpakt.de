@@ -1,4 +1,5 @@
 import {formatStartingPrice} from './actual-job.js';
+import {carryPriceTopic} from './guide-topic.js';
 
 const containerPrices = new Map([
   ['container-2', {size: '2', cents: 30107}],
@@ -84,6 +85,7 @@ function enableCalculator(form) {
       url.searchParams.set('leistung', estimate.service);
       for (const [key, value] of selectionParams(choice)) url.searchParams.set(key, value);
     }
+    carryPriceTopic(new URL(location.href),url);
     inquiry.setAttribute('href', url.pathname + url.search);
     inquiry.hidden = !estimate.service;
     const displayed = estimate.totalCents === null ? null : estimate.service+'|'+estimate.totalCents;

@@ -30,6 +30,11 @@ export function mountOfficeCases({api,action,editor,onQuote,download}){
     panel.replaceChildren();panel.hidden=false;query.value=reference;
     const title=el('h3',serviceNames[lead.service]||'Anfrage');
     panel.append(title,el('p',record.reference+' · '+dateFormat.format(new Date(record.created))));
+    if(record.review&&!record.closed){
+      const review=el('section',null,'case-review');review.append(el('h4',record.review.title));
+      const reasons=el('ul');for(const reason of record.review.reasons)reasons.append(el('li',reason));
+      review.append(reasons);panel.append(review);
+    }
     addField('Kontakt',[lead.name,lead.contact].filter(Boolean).join('\n'));
     if(lead.contactMethod==='phone'&&/^\+?[0-9 ()/.-]{7,24}$/.test(lead.contact)){
       const phone=el('a','Anrufen');phone.href='tel:'+lead.contact.replace(/[ ()/.-]/g,'');panel.append(phone);
