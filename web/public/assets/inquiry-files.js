@@ -56,7 +56,7 @@ export function mountInquiryFiles(host) {
   const input=host.querySelector('input'),list=host.querySelector('ul'),status=host.querySelector('[role=status]'),progress=host.querySelector('progress');
   const clock=host.querySelector('[data-file-time]');
   const entries=[];
-  let queue=Promise.resolve(),locked=false,generation=0;
+  let queue=Promise.resolve(),locked=false,generation=0,rejectedCount=0,wasReady=false;
   function meter(label,value) {
     progress.hidden=false;
     if(value==null)progress.removeAttribute('value');else progress.value=value;
@@ -72,20 +72,42 @@ export function mountInquiryFiles(host) {
       remove.setAttribute('aria-label',entry.file.name+' entfernen');
       remove.addEventListener('click',()=>{entries.splice(entries.indexOf(entry),1);refresh();});row.append(info,remove);return row;
     }));
+    if(rejectedCount){
+      const row=document.createElement('li');
+      const discard=make('button',entries.length?'Nur die vorhandenen Dateien verwenden':'Ohne Anhang fortfahren');
+      discard.type='button';discard.disabled=locked;
+      discard.addEventListener('click',()=>{rejectedCount=0;refresh();});
+      row.append(discard);list.append(row);
+    }
+  }
+  function selectionIssue(){
+    if(rejectedCount)return 'Maximal fünf Dateien pro Anfrage. Die letzte Auswahl ('+rejectedCount+') wurde nicht übernommen. Bitte weniger Dateien auswählen oder die Auswahl verwerfen.';
+    const failed=entries.find(e=>e.error);
+    if(failed)return failed.file.name+' – '+failed.error+' Bitte entfernen oder ersetzen.';
+    let wireBytes=0,storedBytes=0;
+    for(const entry of entries)if(entry.result){
+      wireBytes+=entry.result.blob.size;storedBytes+=entry.result.storedBytes;
+    }
+    if(wireBytes>maxWireBytes||storedBytes>maxContentBytes)return 'Die Dateien sind zusammen zu groß. Bitte entfernen Sie eine Datei (maximal 3 MB Versandgröße und 8 MB Dateiinhalt insgesamt).';
+    return '';
   }
   function refresh(){
     render();
+    const issue=selectionIssue();
     const working=entries.find(e=>!e.result&&!e.error);
-    if(working){meter(working.file.name+' wird auf Ihrem Gerät aufbereitet…');return;}
-    const failed=entries.find(e=>e.error);
-    if(failed){status.textContent='Bitte entfernen oder ersetzen Sie die markierte Datei.';progress.hidden=true;return;}
-    if(entries.length){meter(entries.length+' von '+entries.length+' für den Versand bereit.',1);}
+    const ready=entries.length>0&&!issue&&!working;
+    if(issue){status.textContent=issue;progress.hidden=true;}
+    else if(working){meter(working.file.name+' wird auf Ihrem Gerät aufbereitet…');}
+    else if(ready){meter(entries.length+' von '+entries.length+' für den Versand bereit.',1);}
     else{progress.hidden=true;status.textContent='';}
+    const announce=ready&&!wasReady;wasReady=ready;
+    if(announce)host.dispatchEvent(new CustomEvent('fp-upload-ready',{bubbles:true}));
   }
   function acceptSelection(){
     const chosen=Array.from(input.files);input.value='';
     if(!chosen.length||locked)return;
-    if(entries.length+chosen.length>maxFiles){status.textContent='Pro Anfrage können Sie höchstens fünf Dateien auswählen.';return;}
+    if(entries.length+chosen.length>maxFiles){rejectedCount=chosen.length;refresh();return;}
+    rejectedCount=0;
     const batch=chosen.map(file=>({file,id:crypto.randomUUID()})),current=generation;
     entries.push(...batch);refresh();
     for(const e of batch)queue=queue.then(async()=>{
@@ -100,25 +122,18 @@ export function mountInquiryFiles(host) {
       e.elapsed=seconds<1?'unter 1 s':amount.format(seconds)+' s';
       if(generation===current)refresh();
     });
-    queue=queue.then(()=>{
-      if(generation===current&&batch.some(e=>entries.includes(e)&&e.result)){
-        host.dispatchEvent(new CustomEvent('fp-upload-ready',{bubbles:true}));
-      }
-    });
   }
   input.addEventListener('change',acceptSelection);
   if(input.files?.length)acceptSelection();
   return {
     async ready(){
       locked=input.disabled=true;render();await queue;
-      const failed=entries.find(e=>e.error);
-      if(failed)throw invalid(failed.file.name+' – '+failed.error+' Bitte entfernen oder ersetzen.');
-      if(entries.reduce((n,e)=>n+e.result.blob.size,0)>maxWireBytes||entries.reduce((n,e)=>n+e.result.storedBytes,0)>maxContentBytes)
-        throw invalid('Die Auswahl ist zu groß. Bitte entfernen Sie eine Datei (3 MB Versandgröße und 8 MB Dokumentinhalt insgesamt).');
+      const issue=selectionIssue();
+      if(issue)throw invalid(issue);
       return entries.map(e=>({...e.result,id:e.id}));
     },
     unlock(){locked=input.disabled=false;render();},
-    reset(){generation++;entries.length=0;locked=input.disabled=false;input.value='';refresh();},
+    reset(){generation++;entries.length=0;rejectedCount=0;locked=input.disabled=false;input.value='';refresh();},
     send(fields,files){
       const payload=new FormData();payload.append('inquiry',JSON.stringify(fields));
       for(const file of files)payload.append('attachment',file.blob,file.name);
