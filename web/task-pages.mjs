@@ -18,7 +18,7 @@ export const taskPages = [
     questions:[
       ['Was kostet der Abbau einer Küchenzeile?', 'Eine freistehende Zeile mit wenigen Unterschränken verursacht anderen Aufwand als eine Küche über Eck mit Hängeschränken und durchgehender Arbeitsplatte. Anhand von Aufbau, Befestigung und Etage prüfen wir, welche Möbelarbeiten wir anbieten können.'],
       ['Herd und Spüle sind noch angeschlossen. Kann ich schon anfragen?', 'Ja. Geben Sie den Anschlusszustand und den Übergabetermin an. Die nötigen Anschlussarbeiten müssen vor dem vereinbarten Möbelabbau fachkundig geklärt sein.'],
-      ['Kann ein Teil der Küche für den Nachmieter bleiben?', 'Ja, Sie können einzelne Teile zum Verbleib kennzeichnen. Ein Foto mit den betroffenen Schränken oder Geräten hilft, den Ausbau präzise abzugrenzen.']
+      ['Ich möchte meine Küche abbauen und entsorgen lassen. Was gebe ich an?', 'Markieren Sie auf einem Foto, welche Schränke und Arbeitsplatten bleiben, welche weiterverwendet werden und welche entsorgt werden sollen. Listen Sie Herd, Kühlschrank und Geschirrspüler separat auf. Wenn Sie nur Möbelabbau und Heraustragen brauchen, nennen Sie den Ablageort. Wünschen Sie auch Abtransport und Entsorgung, führt unser Angebot auf, welche Teile und Leistungen wir übernehmen können.']
     ],
     inquiryLabel:'Küchenabbau anfragen', related:['/wohnungsaufloesung/','/elektrogeraete-entsorgen/']
   },
@@ -34,6 +34,7 @@ export const taskPages = [
     ],
     questions:[
       ['Welchen Richtpreis zeigt der Rechner für ein Sofa?', 'Für ein einzelnes vergleichbares Sofa in Nürnberg zeigt der Rechner einen regionalen Brutto-Richtwert '+sofaReference+' für Tragen, Abholung und Entsorgung. Ein großes Schlafsofa, mehrere Teile oder ein schwieriger Zugang brauchen eine eigene Einschätzung. Unser Angebot nennt die vereinbarten Arbeiten.'],
+      ['Was gebe ich an, wenn mein Sofa zum Sperrmüll soll?', 'Haben Sie bereits einen Abholtermin, nennen Sie das Datum und den vereinbarten Abstellort. Dann können Sie gezielt das Heraustragen dorthin anfragen. Wünschen Sie auch Abtransport und Entsorgung, geben Sie das in der Anfrage an. Im Angebot sehen Sie, welche Leistungen für Ihre Couch enthalten sind.'],
       ['Die Couch soll verschenkt werden. Welche Angaben fehlen dann noch?', 'Nennen Sie die Zieladresse, den Zugang dort und das Zeitfenster, in dem jemand das Sofa annehmen kann. So können wir die Fahrt und beide Tragewege in einem Transportangebot berücksichtigen.']
     ],
     inquiryLabel:'Anfrage für mein Sofa', related:['/schrank-abbauen/','/wohnungsaufloesung/']

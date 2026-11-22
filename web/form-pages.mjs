@@ -11,7 +11,7 @@ export function inquiry(crumb, ic) {
     <div id="form-mode" class="note compact" role="status">Vorschau: Bitte verwenden Sie nur Beispieldaten. Ihre Angaben bleiben in diesem Browser.</div>
     <noscript><p>Das Onlineformular benötigt JavaScript. Unsere Kontaktangaben finden Sie im <a href="/impressum/">Impressum</a>.</p></noscript>
     <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off" novalidate>
-      <fieldset id="project-fields"><legend>Ihr Vorhaben</legend>
+      <fieldset id="project-fields" disabled><legend>Ihr Vorhaben</legend>
         <div class="fields">
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>
             <select id="service" name="service" required>

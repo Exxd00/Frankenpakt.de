@@ -534,9 +534,9 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
     }
   });
   configure.then(() => {
+    submit.disabled = mode === 'unavailable';
     if (mode === 'unavailable') {
       submit.textContent = 'Übermittlung derzeit nicht verfügbar';
-      submit.disabled = true;
       document.querySelector('#form-mode').textContent = 'Der Onlinekontakt ist derzeit nicht erreichbar. Bitte verwenden Sie die Kontaktdaten im Impressum.';
     } else if (mode === 'live') {
       submit.textContent = callback ? 'Rückruf anfordern' : 'Unverbindlich anfragen';
@@ -594,7 +594,9 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
       if (!response.ok) throw new Error(String(response.status));
       const answer = await response.json();
       if (!answer.ok || answer.mode !== 'live' || !/^AN-[A-F0-9]{16}$/.test(answer.reference)) throw new Error('invalid');
+      const submittedService = service.value;
       form.reset();
+      service.value = submittedService;
       lastId = '';
       finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope||facts);
     } catch (error) {
@@ -605,6 +607,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
       summary.focus();
     }
   });
+  if (!callback) document.querySelector('#project-fields').disabled = false;
 }
 if (form) {
   form.addEventListener('submit',event => event.preventDefault());
@@ -617,7 +620,6 @@ if (form) {
   Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),preparedFiles]).then(([draftTools,results,fileBox]) => {
     const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
     enableInquiry(form,valid.map(result => result.value),draftTools,fileBox);
-    submit.disabled = false;
   }).catch(() => {
     submit.disabled = true;
     document.querySelector('#form-mode').textContent = 'Die Auftragsfelder konnten nicht geladen werden. Bitte laden Sie die Seite neu.';
