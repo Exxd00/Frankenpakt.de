@@ -84,9 +84,10 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     if (!enabled) return;
     const metric = publicMetric(name,service,location,uuid,visit);
     if (!metric) return;
+    if (name === 'contact_intent' && ['phone','whatsapp'].includes(parameters.channel)) metric.contactChannel = parameters.channel;
     send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
       headers:{'Content-Type':'application/json'},body:JSON.stringify(metric)}).catch(()=>{});
-    frame?.send(metric,location.pathname,parameters);
+    frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,parameters);
   }
   toggle.hidden=false;
   set(read());

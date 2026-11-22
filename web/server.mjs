@@ -96,7 +96,7 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
   }
   const noticeTimer=setInterval(notifyOps,30000);noticeTimer.unref();notifyOps();
   const server=http.createServer(async(req,res)=>{
-    res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin-when-cross-origin');
+    res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','strict-origin');
     res.setHeader('X-Frame-Options','DENY');res.setHeader('Permissions-Policy','camera=(), microphone=(), geolocation=()');
     if(!config.live)res.setHeader('X-Robots-Tag','noindex, nofollow');
     try{

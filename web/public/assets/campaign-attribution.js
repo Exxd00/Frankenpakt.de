@@ -1,7 +1,7 @@
 import {publicPagePaths} from './search-routes.js';
 
-export const statisticsChoice = 'frankenpakt.statistik.v1';
-const visitKey = 'frankenpakt.kampagne.v1';
+export const statisticsChoice = 'frankenpakt.statistik.v2';
+const visitKey = 'frankenpakt.kampagne.v2';
 const pages = new Set(publicPagePaths);
 const channels = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
 const paid = new Set(['cpc','ppc','paidsearch','paid_search']);
@@ -23,6 +23,7 @@ export function cleanAttribution(input, source) {
   if (source === 'google' && result.medium === 'cpc') {
     if (typeof input.campaign === 'string' && (/^[1-9]\d{0,18}$/.test(input.campaign) || campaignSlugs.has(input.campaign))) result.campaign = input.campaign;
     if (keywords.has(input.keyword)) result.keyword = input.keyword;
+    if (typeof input.gclid === 'string' && input.gclid.length <= 512 && /^[A-Za-z0-9_][A-Za-z0-9._~-]*={0,2}$/.test(input.gclid)) result.gclid = input.gclid;
   }
   return result;
 }
@@ -59,6 +60,7 @@ export function campaignVisit(location, win, referrer = '') {
   if (paid.has(rawMedium) || (!rawMedium && source === 'google' && (campaignSlugs.has(one('anzeige')) || adClick))) medium='cpc';
   else if (!rawMedium && external) medium=google && referring.pathname === '/search' ? 'organic' : 'referral';
   const attribution = cleanAttribution({landing:location.pathname,medium,campaign:one('utm_campaign'),
+    gclid:query.getAll('gclid').length === 1 ? query.get('gclid') : null,
     keyword:one('utm_term').normalize('NFC').replace(/\s+/g,' ')},source);
   const visit = {source,attribution};
   try { win.sessionStorage.setItem(visitKey,JSON.stringify(visit)); } catch {}

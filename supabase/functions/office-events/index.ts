@@ -22,7 +22,7 @@ async function rpc(name: string, args: Record<string,unknown>) {
 async function payload(req:Request) {
   const reader=req.body?.getReader();if(!reader)return null;
   let size=0;const chunks:Uint8Array[]=[];
-  while(true){const item=await reader.read();if(item.done)break;size+=item.value.byteLength;if(size>768){await reader.cancel();return null;}chunks.push(item.value);}
+  while(true){const item=await reader.read();if(item.done)break;size+=item.value.byteLength;if(size>1536){await reader.cancel();return null;}chunks.push(item.value);}
   const bytes=new Uint8Array(size);let pos=0;for(const part of chunks){bytes.set(part,pos);pos+=part.length;}
   try{return JSON.parse(new TextDecoder().decode(bytes));}catch{return null;}
 }
@@ -37,18 +37,24 @@ Deno.serve(async req=>{
       const read=endpoint.searchParams.get('key')||'';if(!/^[a-f0-9]{64}$/.test(read))return result(403);
       const csv=await rpc('fp_sheet_events',{access_digest:await hash(read)});
       if(typeof csv!=='string')return result(403);
-      headers['Content-Type']='text/csv; charset=utf-8';return result(200,csv);
+      // IMPORTDATA infers numbers/dates before cell formatting. The workbook strips this text marker after import.
+      const output=endpoint.searchParams.get('gclid_text')==='1' ? csv.split('\n').map((line:string,i:number)=>{
+        const last=line.lastIndexOf(',')+1;
+        return i && last<line.length ? line.slice(0,last)+'GC:'+line.slice(last) : line;
+      }).join('\n') : csv;
+      headers['Content-Type']='text/csv; charset=utf-8';return result(200,output);
     }
     if(req.method!=='POST')return result(405);
     if(!req.headers.get('Content-Type')?.startsWith('application/json'))return result(415);
     const e=await payload(req);
-    if(!e||Array.isArray(e)||typeof e!=='object'||Object.keys(e).some(k=>!['id','event','service','source','count','consent','attribution'].includes(k))||
+    if(!e||Array.isArray(e)||typeof e!=='object'||Object.keys(e).some(k=>!['id','event','service','source','count','consent','attribution','contactChannel'].includes(k))||
+      (e.contactChannel!==undefined && (e.event!=='contact_intent'||!['phone','whatsapp'].includes(e.contactChannel)))||
       !uuid.test(e.id)||typeof e.id!=='string'||!services.has(e.service)||!sources.has(e.source)||e.count!==1)return result(400);
     const internal=internalEvents.has(e.event);const bearer=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
     if(internal){if(!/^[a-f0-9]{64}$/.test(bearer))return result(403);}
     else if(!clientEvents.has(e.event)||!origins.has(origin)||e.consent!==true)return result(403);
     const peer=(req.headers.get('x-forwarded-for')||'shared').split(',')[0].slice(0,64);
-    const status=await rpc('fp_record_attributed_event',{eid:e.id,kind:e.event,category:e.service,channel:e.source,attribution:cleanAttribution(e.attribution,e.source),
+    const status=await rpc('fp_record_event_detail',{eid:e.id,kind:e.event,category:e.service,channel:e.source,attribution:cleanAttribution(e.attribution,e.source),contact_method:e.contactChannel||null,
       rate_bucket:internal?null:await hash(key+'|'+new Date().toISOString().slice(0,10)+'|'+peer),access_digest:internal?await hash(bearer):null});
     return result(status==='ok'?204:status==='limited'?429:403);
   }catch{return result(503);}

@@ -7,14 +7,24 @@ import {readFileSync} from 'node:fs';
 
 const url = new URL('https://frankenpakt.de/anfrage/?src=google&person=PRIVATE-TEST&service=umzug#PRIVATE-TEST');
 const uuid = () => '469053a8-77e0-4ec7-b777-ed2482b07ffa';
+test('a single Google Ads click ID keeps case and is never inferred from a different identifier',()=>{
+  const visit=(query)=>campaignVisit(new URL('/?'+query,url),{sessionStorage:{getItem:()=>null,setItem(){}}}).attribution;
+  for (const value of ['Ab_C-091','001234567890123456','1E23','TRUE']) {
+    assert.equal(visit('gclid='+value).gclid,value);
+  }
+  for (const query of ['gclid=A&gclid=B','gclid=%2Bcmd','gclid=%3D1','gclid=a%0Ab','gclid=alice%40example.com',
+    'gbraid=Ab_C-091','wbraid=Ab_C-091','src=kleinanzeigen&gclid=Ab_C-091','utm_medium=organic&gclid=Ab_C-091','gclid='+'A'.repeat(513)]) {
+    assert.equal(visit(query).gclid,undefined,query);
+  }
+});
 test('only bought keywords enter the sheet and a fresh arrival in a reused tab starts a new visit',()=>{
   const plan=JSON.parse(readFileSync(new URL('../../kampagnen/anzeigen.json',import.meta.url),'utf8'));
   assert.deepEqual([...adKeywords].sort(),[...new Set(plan.groups.flatMap(g=>g.keywords))].sort());
   const data=new Map();
   const win={sessionStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v)},performance:{getEntriesByType:()=>[{type:'navigate'}]}};
-  const paid=new URL('/sofa-entsorgen/?src=google&utm_medium=cpc&utm_campaign=1234567891234567890&utm_term=Sofa+entsorgen+N%C3%BCrnberg&gclid=private123',url);
+  const paid=new URL('/sofa-entsorgen/?src=google&utm_medium=cpc&utm_campaign=1234567891234567890&utm_term=Sofa+entsorgen+N%C3%BCrnberg&gclid=Mixed_Qa-42',url);
   const ad=campaignVisit(paid,win,'https://www.google.de/search?q=private');
-  assert.deepEqual(ad,{source:'google',attribution:{landing:'/sofa-entsorgen/',medium:'cpc',campaign:'1234567891234567890',keyword:'sofa entsorgen nürnberg'}});
+  assert.deepEqual(ad,{source:'google',attribution:{landing:'/sofa-entsorgen/',medium:'cpc',campaign:'1234567891234567890',keyword:'sofa entsorgen nürnberg',gclid:'Mixed_Qa-42'}});
   assert.deepEqual(campaignVisit(new URL('/anfrage/?src=google',url),win,paid.href),ad);
   win.performance.getEntriesByType=()=>[{type:'reload'}];
   assert.deepEqual(campaignVisit(new URL('/danke/',url),win,''),ad);
@@ -61,7 +71,7 @@ test('no outgoing requests before opt-in or after revocation, including persiste
   const requests=[],frames=[],sent=[];
   const send=async(url,init)=>{requests.push({url,init});};
   const frameFactory=()=>{const entry={send:(m,p)=>sent.push([m,p]),close:()=>entry.closed=true};frames.push(entry);return entry;};
-  storage.set('frankenpakt.statistik.v1','no');
+  storage.set('frankenpakt.statistik.v2','no');
   mountMetrics({doc,win,location:url,storage:pref,send,uuid,frameFactory});
   const file=()=>doc.dispatchEvent(new CustomEvent('fp-upload-ready',{detail:{filename:'PRIVATE-TEST.pdf',email:'PRIVATE-TEST'}}));
   file();assert.equal(requests.length,0);assert.equal(frames.length,0);
@@ -70,11 +80,11 @@ test('no outgoing requests before opt-in or after revocation, including persiste
   assert.equal(requests.length,1);const {init}=requests[0];const data=JSON.parse(init.body);
   assert.deepEqual(data,{id:uuid(),event:'upload_ready',service:'entsorgung',source:'google',attribution:{landing:'/anfrage/'},count:1,consent:true});
   assert.equal(init.credentials,'omit');assert.equal(init.referrerPolicy,'no-referrer');
-  assert.deepEqual(sent,[[data,'/anfrage/']]);assert.equal(JSON.stringify(requests).includes('PRIVATE-TEST'),false);
+  assert.deepEqual(sent,[[{event:data.event,source:data.source,service:data.service},'/anfrage/']]);assert.equal(JSON.stringify(requests).includes('PRIVATE-TEST'),false);
   toggle.dispatchEvent(new Event('click'));file();assert.equal(frames[0].closed,true);assert.equal(requests.length,1);
   toggle.dispatchEvent(new Event('click'));assert.equal(frames.length,2);
-  storage.set('frankenpakt.statistik.v1','no');
-  const otherTab=new Event('storage');otherTab.key='frankenpakt.statistik.v1';win.dispatchEvent(otherTab);
+  storage.set('frankenpakt.statistik.v2','no');
+  const otherTab=new Event('storage');otherTab.key='frankenpakt.statistik.v2';win.dispatchEvent(otherTab);
   doc.dispatchEvent(new Event('fp-contact-handoff'));assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
 });
 
