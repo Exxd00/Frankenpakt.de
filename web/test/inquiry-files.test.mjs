@@ -11,6 +11,22 @@ import {mailAttachment} from '../lib/attachments.mjs';
 import {startServer} from '../server.mjs';
 import {deliverOfficeEvents} from '../lib/office-events.mjs';
 
+test('compressed mail attachments carry the binary CRC in both ZIP headers; small files stay intact',()=>{
+  const binary=Buffer.from(Array.from({length:4096},(_,i)=>i%256));
+  const result=mailAttachment({name:'Inventar.pdf',mime:'application/pdf',content:binary});
+  assert.equal(result.filename,'Inventar.pdf.zip');
+  const zip=Buffer.from(result.content,'base64');
+  const centralOffset=zip.readUInt32LE(zip.length-22+16);
+  assert.equal(zip.readUInt32LE(14),0xa2912082);
+  assert.equal(zip.readUInt32LE(centralOffset+16),0xa2912082);
+  const dataOffset=30+zip.readUInt16LE(26);
+  assert.deepEqual(inflateRawSync(zip.subarray(dataOffset,dataOffset+zip.readUInt32LE(18))),binary);
+  const tiny=Buffer.from('Stückliste');
+  const direct=mailAttachment({name:'Liste.txt',mime:'text/plain',content:tiny});
+  assert.equal(direct.filename,'Liste.txt');
+  assert.deepEqual(Buffer.from(direct.content,'base64'),tiny);
+});
+
 test('accepted web submissions queue only anonymous operational events with stable retry IDs',async()=>{
   const db=openStore(':memory:');
   try{
