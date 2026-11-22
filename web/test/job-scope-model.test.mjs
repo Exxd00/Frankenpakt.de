@@ -3,6 +3,17 @@ import test from 'node:test';
 import {validateJobScope,summarizeJobScope,summarizeJobTiming,readItems,movingServices,clearanceServices,jobSections} from '../public/assets/job-scope-model.js';
 import {exampleJobScope} from '../test-support/job-scope.mjs';
 
+test('an older pickup selection keeps its inventory and becomes a plain pickup without a container',()=>{
+  const draft=exampleJobScope('entsorgung');
+  draft.fields.wasteRoute='city';
+  const checked=validateJobScope(draft,draft.service);
+  assert.ok(checked.ok);
+  assert.equal(checked.value.fields.wasteRoute,'provider');
+  assert.deepEqual(readItems(checked.value.fields.items),readItems(draft.fields.items));
+  const route=jobSections('entsorgung').flatMap(group=>group.fields).find(field=>field.key==='wasteRoute');
+  assert.ok(!route.options.some(([id])=>id==='city'));
+});
+
 test('each supported service normalizes a scoped example and keeps address-specific access',()=>{
   for(const service of [...movingServices,...clearanceServices]){
     const scope=exampleJobScope(service);

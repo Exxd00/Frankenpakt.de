@@ -110,7 +110,7 @@ export function renderLeadMail(record) {
   const amount = formatStartingPrice(person.priceOrientation?.estimatedCents);
   if (amount && ['entsorgung','entruempelung','umzug'].includes(service)) {
     if (service === 'umzug') add('Regionaler Richtwert', amount+' brutto für Laden, Fahrt und Entladen.');
-    else add('Regionaler Richtwert inkl. Entsorgung',amount+' brutto. Abholung und Entsorgung werden separat beim Entsorger beauftragt.');
+    else add('Regionaler Richtwert inkl. Entsorgung',amount+' brutto als Orientierung. Den Leistungsumfang im persönlichen Angebot aufführen.');
   }
   add('Nachricht',brief(person.details,480));
   const attachments = Array.isArray(record?.attachments) ? record.attachments : [];

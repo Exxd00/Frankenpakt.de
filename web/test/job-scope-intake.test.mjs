@@ -73,9 +73,9 @@ test('a scoped inquiry reaches the private quote review with independent address
   const disposalLead=ops('show',(await cleared.json()).reference);
   assert.equal(disposalLead.person.zipTo,'');
   assert.equal(JSON.parse(disposalLead.person.jobScope.fields.items).length,50);
-  assert.ok(disposalLead.jobScopeSummary.join('\n').includes('Entsorgung durch Dritte'));
+  assert.ok(disposalLead.jobScopeSummary.join('\n').includes('Zur Entsorgung vorgesehen'));
   assert.equal(disposalLead.quote,null);
-  assert.ok(disposalLead.person.jobConditionNotes.some(note=>note.includes('Entsorgungsweg')));
+  assert.deepEqual(disposalLead.person.jobContext,{leistung:'entsorgung',hilfe:'none',entsorgungsweg:'individual'});
   const rooms=exampleJobScope('entruempelung');
   const actualRoom={name:'Keller',area:'18',fill:'most'};
   rooms.fields.roomBreakdown=JSON.stringify([actualRoom]);

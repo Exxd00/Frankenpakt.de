@@ -72,13 +72,13 @@ const offers = {
   entsorgung:{
     priceLabel:'Regionaler Richtwert inkl. Entsorgung',
     basis:'Der Bruttowert umfasst Tragen, Abholung und Entsorgung eines einzelnen Möbelstücks in Nürnberg.',
-    note:'FrankenPackt hilft Ihnen, den Entsorgungsweg zu klären. Das Angebot für Abholung und Entsorgung erhalten Sie direkt vom Entsorger.',
-    requestLabel:'Entsorgungsweg mit uns klären'
+    note:'Unser persönliches Angebot nennt die Arbeiten, die wir nach Prüfung Ihrer Angaben übernehmen können.',
+    requestLabel:'Entsorgung anfragen'
   },
   entruempelung:{
     priceLabel:'Regionaler Richtwert inkl. Entsorgung',
     basis:'Dieser Bruttowert richtet sich nach der Fläche des Kellerabteils. Füllstand, Etage und Trageweg berücksichtigen wir im persönlichen Angebot.',
-    note:'Unser Angebot gilt für das Sortieren und Tragen vor Ort. Abholung und Entsorgung vereinbaren Sie separat mit dem Entsorger.',
+    note:'Unser Angebot für das Sortieren und Tragen vor Ort richtet sich nach Ihrem Inventar und dem Zugang zu den Räumen.',
     requestLabel:'Angebot für die Arbeiten vor Ort anfragen'
   },
   umzug:{

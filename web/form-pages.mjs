@@ -1,6 +1,6 @@
 export function inquiry(crumb, ic) {
   const details = '<p>Für einen Rückruf genügen Ihr Name und Ihre Telefonnummer. Auf Wunsch kann eine Vertrauensperson die Anfrage übernehmen.</p>';
-  const agreement = '<p>Für den Transport von weiterverwendetem Hausrat vereinbaren wir Preis und Termin mit Ihnen. Eine Abfallabholung buchen Sie direkt bei der zuständigen Stelle oder einem Fachbetrieb.</p>';
+  const agreement = '<p>Sie erhalten ein persönliches Angebot mit den einzelnen Arbeiten und dem Preis. Wenn Sie es annehmen, vereinbaren wir den Termin mit Ihnen.</p>';
   const livePhone = '<p data-live-phone hidden></p>';
   return `<section class="subhead inquiry-heading"><div class="wrap narrowhero">
     ${crumb('Anfrage')}<h1 id="inquiry-title">Wobei brauchen<br><em>Sie Hilfe?</em></h1>
@@ -16,7 +16,7 @@ export function inquiry(crumb, ic) {
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>
             <select id="service" name="service" required>
               <option value="" disabled selected>Bitte auswählen</option>
-              <option value="entruempelung">Entrümpelung planen</option><option value="entsorgung">Entsorgungsweg klären</option>
+              <option value="entruempelung">Entrümpelung planen</option><option value="entsorgung">Entsorgung anfragen</option>
               <option value="umzug">Privatumzug</option><option value="seniorenumzug">Seniorenumzug</option>
               <option value="moebeltaxi">Möbeltaxi</option><option value="transport">Transportanteil bei Wohnungsauflösung</option>
             </select></div>

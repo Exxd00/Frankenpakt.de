@@ -13,6 +13,10 @@ if (params.get('paket') === 'taxi') {
 if (['one-helper','individual'].includes(params.get('hilfe'))) {
   for (const key of ['hilfe','entsorgungsweg','asn','container']) params.delete(key);
 }
+if (params.getAll('entsorgungsweg').length === 1 && params.get('entsorgungsweg') === 'asn') {
+  params.set('entsorgungsweg','individual');
+}
+params.delete('asn');
 if (pageUrl.href !== location.href) history.replaceState(history.state,'',pageUrl);
 const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
 const rawSource = (params.get('src') || params.get('utm_source') || '').toLowerCase();
@@ -25,13 +29,13 @@ let largeType = params.get('schrift') === 'gross';
 const clearance = {
   entruempelung: {
     title: 'Entrümpelung planen', path: '/raeumung/',
-    scope: 'Beschreiben Sie die Räume und welche Gegenstände weiterverwendet werden. Für diesen Hausrat können wir einen Transport prüfen. Für Abfälle beauftragen Sie den Entsorger direkt.',
-    example: 'Zum Beispiel ein Kellerabteil und ein Schrank. Der Schrank soll zu meiner Tochter, für den Rest brauche ich einen Entsorgungsweg.'
+    scope: 'Welche Räume sollen frei werden? Geben Sie an, was bleibt und was hinausgetragen werden soll. So können wir den Aufwand für Ihr Angebot einschätzen.',
+    example: 'Zum Beispiel ein halb volles Kellerabteil und ein Schrank, der zu meiner Tochter soll.'
   },
   entsorgung: {
-    title: 'Entsorgungsweg klären', path: '/entsorgung/',
-    scope: 'Wir können Hinweise zum Entsorgungsweg geben. Abholung und Preis vereinbaren Sie direkt mit der zuständigen Stelle oder einem Fachbetrieb.',
-    example: 'Zum Beispiel eine Matratze und drei leere Regale in Nürnberg. Ich möchte wissen, wohin ich sie geben kann.'
+    title: 'Entsorgung anfragen', path: '/entsorgung/',
+    scope: 'Was soll weg und wo steht es? Art, Menge und Zugang helfen uns zu prüfen, welche Arbeiten wir für Ihren Auftrag anbieten können.',
+    example: 'Zum Beispiel eine Matratze und drei Regale im zweiten Stock, ohne Aufzug.'
   }
 };
 const projectServices = new Set(['umzug','seniorenumzug','moebeltaxi','transport',...Object.keys(clearance)]);

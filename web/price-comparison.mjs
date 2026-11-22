@@ -46,6 +46,6 @@ export function priceComparison(scopeSlot = '') {
       </div>
     </div>
     ${scopeSlot}
-    <noscript><p>Für eine Berechnung mit eigenen Angaben aktivieren Sie JavaScript. Hier finden Sie <a href="#raeumungsrechner">externe Entsorgungspreise</a> und die <a href="#preisfinder">Umzugspakete</a>.</p></noscript>
+    <noscript><p>Für eine Berechnung mit eigenen Angaben aktivieren Sie JavaScript. Hier finden Sie <a href="#raeumungsrechner">Richtwerte für Container</a> und die <a href="#preisfinder">Umzugspakete</a>.</p></noscript>
   </section>`;
 }

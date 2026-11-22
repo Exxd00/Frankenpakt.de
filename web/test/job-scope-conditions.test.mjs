@@ -20,7 +20,8 @@ test('compares exact disposal route, selected size, material and private placeme
   const questionable=notes('entsorgung',selected,{wasteRoute:'container',site:'public',wasteVolume:'5',materials:'electrical'});
   for(const term of ['Privatgrund','Containergröße','Annahme'])assert.ok(questionable.includes(term));
   assert.match(notes('entsorgung',selected,{wasteRoute:'city'}),/abweicht|weicht/);
-  assert.match(notes('entsorgung',{leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'},{wasteRoute:'provider'}),/weicht/);
+  assert.deepEqual(normalizeJobContext({leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'},'entsorgung'),
+    {leistung:'entsorgung',hilfe:'none',entsorgungsweg:'individual'});
   assert.match(notes('entruempelung',{leistung:'entruempelung',hilfe:'team',entsorgungsweg:'none'},{retainedTransport:'destination'}),/Transport zur Zieladresse/);
   assert.equal(normalizeJobContext({leistung:'entruempelung',hilfe:'one-helper',entsorgungsweg:'none'},'entruempelung'),null);
 });

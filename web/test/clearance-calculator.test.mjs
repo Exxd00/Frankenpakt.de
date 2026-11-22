@@ -15,7 +15,7 @@ test('external prices stand on their own and never serve as a price for team wor
     assert.equal(calculateEstimate({help:'none',disposal,containerEligible:false}).totalCents,null);
   }
   assert.equal(calculateEstimate({help:'team',disposal:'none'}).service,'entruempelung');
-  assert.equal(calculateEstimate({help:'none',disposal:'asn',asnEligible:true}).totalCents,0);
+  assert.equal(calculateEstimate({help:'none',disposal:'asn'}).service,null);
   for (const [help,disposal] of [['none','asn'],['none','none'],['team','individual'],['unknown','none']]) {
     assert.equal(calculateEstimate({help,disposal}).totalCents,null);
   }
@@ -25,7 +25,7 @@ test('inquiry receives only the selected service and recomputed calculator conte
   const params = new URLSearchParams({leistung:'entruempelung',hilfe:'team',entsorgungsweg:'container-4-5',container:'ja',preis:'1',name:'irrelevant'});
   const estimate = inquiryEstimate(params);
   assert.deepEqual([...estimate.summary.matchAll(/ab ([\d,]+)\s*€/g)].map(match => match[1]), ['470,05']);
-  assert.match(estimate.summary,/FrankenPackt-Team.*individuelles Angebot.*Schutt Karl/);
+  assert.equal(estimate.summary.replaceAll('\u00a0',' '),'Sortieren und Tragen durch das FrankenPackt-Team · individuelles Angebot. Sperrmüllcontainer 4,5 m³ · ab 470,05 €.');
   assert.equal(estimate.params.toString(),'hilfe=team&entsorgungsweg=container-4-5&container=ja');
   params.set('leistung','entsorgung');
   assert.equal(inquiryEstimate(params),null);
@@ -34,23 +34,24 @@ test('inquiry receives only the selected service and recomputed calculator conte
   assert.equal(inquiryEstimate(params),null);
 });
 
-test('eligible municipal pickup stays free and unpriced work keeps its price open', () => {
+test('retired pickup links retain the requested service without a free pickup or the retired route', () => {
   const params = new URLSearchParams({leistung:'entsorgung',hilfe:'none',entsorgungsweg:'asn',asn:'ja'});
-  assert.match(inquiryEstimate(params).summary,/ASN\).*kostenfrei/);
-  assert.doesNotMatch(inquiryEstimate(params).summary,/€/);
+  const initial=inquiryEstimate(params);
+  assert.match(initial.summary,/individuelle Einschätzung/);
+  assert.equal(initial.params.toString(),'hilfe=none&entsorgungsweg=individual');
+  assert.doesNotMatch(initial.summary,/kostenfrei|€/);
   params.set('leistung','entruempelung');
   params.set('hilfe','team');
   const mixed = inquiryEstimate(params).summary;
   assert.match(mixed,/individuelles Angebot/);
-  assert.match(mixed,/kostenfrei/);
-  assert.doesNotMatch(mixed,/€/);
+  assert.doesNotMatch(mixed,/kostenfrei|€/);
 });
 
 test('price information available without JavaScript labels all paid services with ab', () => {
   const html = clearanceCalculator();
   assert.deepEqual([...html.matchAll(/ab ([\d,]+) €/g)].map(match => match[1]), ['301,07','470,05','642,60']);
   assert.equal([...html.matchAll(/€/g)].length,3);
-  assert.match(html,/einmal pro Kalenderjahr kostenfrei/);
+  assert.doesNotMatch(html,/data-asn-confirm|value="asn"|https?:\/\//);
   assert.doesNotMatch(html,/one-helper|Tragehelfer|fülle selbst|Sie befüllen|Fahrzeug stellen Sie/i);
 });
 

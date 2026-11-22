@@ -12,7 +12,7 @@ const estimate = draft => evaluateActualJob(draft)?.estimatedCents;
 
 test('the inquiry identifies each regional starting price and who provides the offer', () => {
   for (const [job, expected, label, action] of [
-    [disposal(item('Sofa')), '78', 'Regionaler Richtwert inkl. Entsorgung', 'Entsorgungsweg mit uns klären'],
+    [disposal(item('Sofa')), '78', 'Regionaler Richtwert inkl. Entsorgung', 'Entsorgung anfragen'],
     [clearance(room('Keller','4')), '148', 'Regionaler Richtwert inkl. Entsorgung', 'Angebot für die Arbeiten vor Ort anfragen'],
     [move(), '298', 'Regionaler Richtwert für den Umzug', 'Umzugsangebot anfragen']
   ]) {
@@ -21,7 +21,7 @@ test('the inquiry identifies each regional starting price and who provides the o
     assert.equal(requestLabel,action);
     assert.ok(summary.replaceAll('\u00a0',' ').includes(label+' · ab '+expected+' €'));
     assert.ok(summary.includes(note));
-    if (job.service !== 'umzug') assert.match(note,/Entsorger/);
+    if (job.service !== 'umzug') assert.match(note,/Angebot/);
     assert.equal([...summary.matchAll(/€/g)].length,1);
   }
   for (const fill of ['little','full']) {

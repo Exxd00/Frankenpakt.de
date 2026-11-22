@@ -27,13 +27,13 @@ const iconpaths={
 function ic(n,size=22){return '<svg aria-hidden="true" width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+iconpaths[n]+'</svg>';}
 const services=[
  {url:'/raeumung/',title:'Entrümpelung',caption:'Keller oder Wohnung',label:'Räumung planen',icon:'home',short:'Unser Team sortiert den Hausrat nach Ihren Wünschen und trägt die vereinbarten Stücke hinaus.'},
- {url:'/entsorgung/',title:'Entsorgung',caption:'Sperrmüll und Geräte',label:'Entsorgungsweg finden',icon:'layers',short:'Finden Sie für alte Möbel, Elektrogeräte und besondere Abfälle die passende Anlaufstelle in Nürnberg.'},
+ {url:'/entsorgung/',title:'Entsorgung',caption:'Sperrmüll und Geräte',label:'Gegenstände angeben',icon:'layers',short:'Beschreiben Sie, welche Möbel oder Geräte Sie aussortieren und wo sie stehen.'},
  {url:'/umzug/',title:'Privatumzug',caption:'Die ganze Wohnung',label:'Wohnung wechseln',icon:'home',short:'Wir bringen gepackte Kartons und vereinbarte Möbel in Ihre neue Wohnung.'},
  {url:'/seniorenumzug/',title:'Seniorenumzug',caption:'Mit Angehörigen',label:'Seniorenumzug planen',icon:'key',short:'Planen Sie den Umzug in Ruhe, auf Wunsch gemeinsam mit Ihren Angehörigen.'}
 ];
 const prices=[
  {id:'drei',name:'Umzugsteam · 3 Stunden',price:322,unit:'pro Einsatz',scope:'Zwei Personen mit Fahrzeug, drei Stunden Arbeit vor Ort. An- und Rückfahrt bis zusammen 20 km und 30 Minuten ab und bis 90453. Das Umzugsgut ist gepackt.'},
- {id:'kompakt',name:'Kompaktumzug',price:498,unit:'pro Auftrag',scope:'Zwei Personen, bis 20 m³ insgesamt in höchstens zwei Ladungen. Bis fünf Stunden und 35 km ab und bis 90453. Erdgeschoss zu Erdgeschoss, je bis 15 m Trageweg, alles gepackt. Vor der Buchung prüfen wir Inventar, Gewicht je Ladung und Zugang. Danach erhalten Sie Ihr persönliches Angebot. Packen sowie Möbelabbau und -aufbau sind nicht enthalten. Für Entsorgung beauftragen Sie selbst einen Fachbetrieb.'},
+ {id:'kompakt',name:'Kompaktumzug',price:498,unit:'pro Auftrag',scope:'Zwei Personen, bis 20 m³ insgesamt in höchstens zwei Ladungen. Bis fünf Stunden und 35 km ab und bis 90453. Erdgeschoss zu Erdgeschoss, je bis 15 m Trageweg, alles gepackt. Vor der Buchung prüfen wir Inventar, Gewicht je Ladung und Zugang. Danach erhalten Sie Ihr persönliches Angebot. Packen sowie Möbelabbau und -aufbau sind nicht enthalten. Das Paket gilt für den Transport von Umzugsgut. Entsorgungskosten sind darin nicht enthalten.'},
  {id:'sieben',name:'Umzugsteam · 7 Stunden',price:789,unit:'pro Einsatz',scope:'Zwei Personen mit Fahrzeug. Sieben Stunden ab und bis 90453, bis 50 km Gesamtroute. Vereinbarte Fahrten und Fahrzeit sind Teil der sieben Stunden.'},
  {id:'extra',name:'Verlängerung',price:55,unit:'je 30 Minuten',scope:'Im laufenden Auftrag nach Vereinbarung für dieselben zwei Personen und dasselbe Fahrzeug. Eine zweite Anfahrt fällt dabei nicht an.'}
 ];
@@ -87,18 +87,18 @@ function steps(){
   return '<section class="how"><div class="wrap how-inner"><div class="how-title"><h2>'+title+'</h2></div>'+
     '<details class="process-steps" open><summary><h2>'+title+'</h2></summary><ol class="steps">'+
     '<li><b>Ein Zimmer auswählen</b><p>Zeigen Sie uns den Keller, das Zimmer oder die Wohnung. Sagen Sie uns, was Sie behalten oder weitergeben möchten. Unser Team kennzeichnet die Stücke.</p></li>'+
-    '<li><b>Den Weg für jedes Stück festlegen</b><p>Wer übernimmt das Regal? Wer holt das alte Sofa ab? Für Sperrmüll finden Sie hier die <a href="/entsorgung/#entsorgungswege">Anlaufstellen in Nürnberg</a>.</p></li>'+
+    '<li><b>Festlegen, was bleiben soll</b><p>Welche Möbel ziehen mit, welche geben Sie weiter und was soll aus den Räumen? In der <a href="/anfrage/?leistung=entruempelung">Anfrage</a> können Sie die Stücke auflisten oder Fotos beifügen.</p></li>'+
     '<li><b>Den Transport abstimmen</b><p>Für Möbel, die weitergenutzt werden, können Sie bei FrankenPackt einen <a href="/anfrage/?service=transport">Transport anfragen</a>. Nennen Sie die beiden Adressen, das Stockwerk und den Wunschtermin.</p></li></ol></details></div></section>';
 }
 const home='<section class="hero"><div class="wrap hero-grid"><div class="hero-copy"><div class="hero-heading"><div class="location">'+ic('pin',17)+
-  ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Sie entscheiden, was bleibt. Unser Team sortiert vor Ort und trägt die vereinbarten Stücke hinaus. Für Abfälle buchen Sie die Abholung direkt bei der Stadt oder einem Fachbetrieb.</p>'+
-  '<div class="actions">'+btn('Richtpreis ansehen','/preise/#richtpreis')+btn('Entsorgungswege','/entsorgung/',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
+  ' Nürnberg und Umgebung</div><h1>Entrümpeln<br><em>&amp; entsorgen.</em></h1></div><p>Was soll bleiben, was kann raus? Wir sortieren Ihren Hausrat und tragen die vereinbarten Stücke hinaus. Möbel, die Sie behalten oder verschenken möchten, bringen wir auf Wunsch an die neue Adresse.</p>'+
+  '<div class="actions">'+btn('Richtpreis ansehen','/preise/#richtpreis')+btn('Entsorgung anfragen','/anfrage/?leistung=entsorgung',true)+'</div>'+contactChoices('entruempelung')+'</div>'+
   '<div class="hero-picture"><img src="/assets/entruempelung-franken.webp" width="1200" height="800" fetchpriority="high" alt="Zwei Frauen sortieren eine Schale und weiteren Hausrat"></div></div></section>'+
   serviceCards()+steps();
 const serviceContent={
  '/umzug/':{t:'Privatumzug',desc:'Privatumzug mit zwei Personen und Fahrzeug ab Nürnberg. Zeit, Zugang und Leistung vor dem Termin abstimmen.',h:'Ihre neue Wohnung.<br><em>Ihr Umzug.</em>',p:'Wir tragen und transportieren gepackte Kartons und vereinbarte Möbel. Sie wählen ein Team auf Zeit oder lassen einen kompakten Umzug kalkulieren.',s:'umzug',img:'umzug-franken',alt:'Kartons und Umzugsgut vor einem Hauseingang',which:'drei',title:'Was wir vorab klären',list:[['Umzugsgut','Welche großen Möbelstücke und wie viele Kartons wechseln die Adresse? Was bleibt zurück?'],['Zugang an beiden Orten','Stockwerk, Aufzug, enger Hausflur und die Entfernung zum Fahrzeug bestimmen den Aufwand.'],['Fahrt und Tragen','Unser Team trägt und verlädt Ihr Umzugsgut an beiden Adressen. Hin- und Rückfahrt zählen zur Gesamtroute ab 90453.']],faqs:[['Was ist im 3-Stunden-Paket enthalten?','Zwei Personen und Fahrzeug für drei Stunden Arbeit vor Ort. Hin- und Rückfahrt sind bis insgesamt 20 km und 30 Minuten ab und bis 90453 enthalten.'],['Können Termine gleich online gebucht werden?','Die Anfrage ist unverbindlich. Ein Termin steht erst nach Abstimmung und schriftlicher Vereinbarung fest.']]},
  '/seniorenumzug/':{t:'Seniorenumzug',desc:'Seniorenumzüge in Nürnberg gemeinsam planen. Wünsche, Ansprechperson, Zugang und Ablauf persönlich abstimmen.',h:'Umziehen<br><em>in Ihrem Tempo.</em>',p:'Ein Wohnungswechsel lässt sich Schritt für Schritt planen. Wir gehen mit Ihnen oder einer Vertrauensperson durch, welche Möbel mitkommen und welche Hilfe Sie brauchen.',s:'seniorenumzug',img:'seniorenumzug',alt:'Anschauliche Szene zur Umzugsplanung für ältere Menschen',which:'drei',title:'Ein Plan, der zu Ihnen passt',list:[['Vertraute Personen einbeziehen','Auf Ihren Wunsch klären wir die Planung gemeinsam mit einem Angehörigen. Sie bestimmen, wer Ansprechperson ist.'],['Raum für Raum besprechen','Welche Lieblingsstücke sollen mit? Wo stehen sie im neuen Zuhause? Ein kurzer Zimmerplan hilft beim Einräumen.'],['Einen erreichbaren Termin finden','Nennen Sie Ihren Wunschtermin oder wählen Sie einen Rückruf. Pflege, Betreuung und Personentransport gehören nicht zum Umzug.']],faqs:[['Kann meine Tochter oder mein Sohn die Anfrage übernehmen?','Ja. Eine Vertrauensperson kann eigene Kontaktdaten angeben und in Ihrem Auftrag um Rücksprache bitten.'],['Brauche ich Fotos oder eine E-Mail-Adresse?','Für eine erste Anfrage reichen eine kurze Beschreibung und eine erreichbare Telefonnummer oder E-Mail-Adresse. Fotos sind im Formular nicht nötig.']]},
- '/moebeltaxi/':{t:'Möbeltaxi',desc:'Möbeltransport in Nürnberg mit Abholung, Tragen und Lieferung durch unser Team. Persönliches Angebot nach Maßen, Gewicht und Zugang.',h:'Ein Möbelstück.<br><em>Von Tür zu Tür.</em>',p:'Unser Team holt Ihr Möbelstück am vereinbarten Platz ab, trägt es zum Fahrzeug und bringt es am Ziel an seinen Platz. Für Ihr Angebot brauchen wir die Maße und den Zugang an beiden Adressen.',s:'moebeltaxi',img:'umzug-franken',alt:'Umzugsgut beim Transport von einem Wohnhaus',title:'So planen wir Ihren Möbeltransport',list:[['Das Möbelstück','Nennen Sie Art, Anzahl, Maße und möglichst das Gewicht.'],['Der Weg zum Fahrzeug','Etage, Aufzug, Treppen und die Entfernung zum Stellplatz helfen uns, das passende Team zu planen.'],['Am Ziel','Unser Team übernimmt auch das Ausladen und Tragen bis zum vereinbarten Platz.']],faqs:[['Wer trägt das Möbelstück?','Unser Team übernimmt das Tragen an beiden Adressen. Geben Sie bitte an, ob das Möbelstück durch Türen, Treppenhaus und Aufzug passt.'],['Wie erfahre ich den Preis?','Nach Prüfung von Möbelstück, Strecke und Zugang erhalten Sie Ihr persönliches Angebot.'],['Was gilt für ausgediente Möbel?','Eine Abfallabholung vereinbaren Sie direkt mit einem geeigneten Entsorger.']]}
+ '/moebeltaxi/':{t:'Möbeltaxi',desc:'Möbeltransport in Nürnberg mit Abholung, Tragen und Lieferung durch unser Team. Persönliches Angebot nach Maßen, Gewicht und Zugang.',h:'Ein Möbelstück.<br><em>Von Tür zu Tür.</em>',p:'Unser Team holt Ihr Möbelstück am vereinbarten Platz ab, trägt es zum Fahrzeug und bringt es am Ziel an seinen Platz. Für Ihr Angebot brauchen wir die Maße und den Zugang an beiden Adressen.',s:'moebeltaxi',img:'umzug-franken',alt:'Umzugsgut beim Transport von einem Wohnhaus',title:'So planen wir Ihren Möbeltransport',list:[['Das Möbelstück','Nennen Sie Art, Anzahl, Maße und möglichst das Gewicht.'],['Der Weg zum Fahrzeug','Etage, Aufzug, Treppen und die Entfernung zum Stellplatz helfen uns, das passende Team zu planen.'],['Am Ziel','Unser Team übernimmt auch das Ausladen und Tragen bis zum vereinbarten Platz.']],faqs:[['Wer trägt das Möbelstück?','Unser Team übernimmt das Tragen an beiden Adressen. Geben Sie bitte an, ob das Möbelstück durch Türen, Treppenhaus und Aufzug passt.'],['Wie erfahre ich den Preis?','Nach Prüfung von Möbelstück, Strecke und Zugang erhalten Sie Ihr persönliches Angebot.'],['Was gilt für ausgediente Möbel?','Das Möbeltaxi bringt Möbel an eine neue Adresse. Für ausgediente Stücke beschreiben Sie uns Ihr Vorhaben in der <a href="/anfrage/?leistung=entsorgung">Entsorgungsanfrage</a>.']]}
 };
 function detail(d) {
   const item = prices.find(p => p.id === d.which);
@@ -121,7 +121,7 @@ function detail(d) {
 }
 function planningPage(page) {
   const cards=page.steps.map(([title,copy,icon])=>'<article>'+ic(icon,28)+'<h3>'+title+'</h3><p>'+copy+'</p></article>').join('');
-  const calculatorLink='<p class="comparison-shortcut"><a href="/preise/?leistung='+page.service+'#raeumungsrechner">Räumung anfragen oder externe Abhol- und Containerpreise ansehen</a></p>';
+  const calculatorLink='<p class="comparison-shortcut"><a href="/preise/?leistung='+page.service+'#raeumungsrechner">Richtwerte für Räumung und Container ansehen</a></p>';
   return '<section class="subhead clearance-heading" data-interest-service="'+page.service+'"><div class="wrap narrowhero">'+
     crumb(page.name)+'<h1>'+page.heading+'</h1><p class="lead">'+page.intro+'</p><div class="actions">'+
     btn('Richtpreis ermitteln','/preise/?vorhaben='+page.service+'#richtpreis')+btn(page.cta,'/anfrage/?leistung='+page.service,true)+'</div>'+calculatorLink+contactChoices(page.service)+'</div></section>'+
@@ -131,7 +131,7 @@ function planningPage(page) {
 }
 const clear=planningPage({
   service:'entruempelung',name:'Entrümpelung',heading:'Entrümpelung in<br><em>Nürnberg planen.</em>',
-  intro:'Sie entscheiden, was im Keller oder in der Wohnung bleibt. Unser Team sortiert den Hausrat und trägt die vereinbarten Stücke hinaus. Was Sie behalten oder verschenken, bringen wir auf Wunsch zur neuen Adresse. Für Abfälle beauftragen Sie die Stadt oder einen Fachbetrieb direkt.',
+  intro:'Sie entscheiden, was im Keller oder in der Wohnung bleibt. Unser Team sortiert den Hausrat und trägt die vereinbarten Stücke hinaus. Was Sie behalten oder verschenken, bringen wir auf Wunsch zur neuen Adresse.',
   cta:'Räumung anfragen',anchor:'ablauf',section:'Was steht in Ihren Räumen?',
   steps:[
     ['Keller und Dachboden','Notieren Sie sperrige Stücke und die Zahl der Kisten. Messen Sie bei großen Möbeln die engste Stelle im Treppenhaus aus.','box'],
@@ -140,25 +140,25 @@ const clear=planningPage({
   ],
   faqTitle:'Aufwand und Übergabe',
   questions:[
-    ['Was bestimmt den Preis einer Entrümpelung?','Bei einer vollständigen Räumung können Menge, Demontage, Treppen, Laufwege und Abfallarten den Preis beeinflussen. Lassen Sie sich vom gewählten Räumungsbetrieb schriftlich auflisten, was er trägt, abholt und entsorgt.'],
-    ['Wer übernimmt die Abholung?','Für Sperrmüll können Sie sich direkt an die Stadt oder einen geeigneten Entsorgungsbetrieb wenden. Unsere Übersicht zeigt die <a href="/entsorgung/#entsorgungswege">Entsorgungswege für Nürnberg</a>.'],
-    ['Wie plane ich die Schlüsselübergabe?','Notieren Sie Ihren Übergabetermin und klären Sie, welche Einbauten bleiben. Vereinbaren Sie mit den beauftragten Betrieben, wann Möbel und Abfälle aus den Räumen sein sollen.']
+    ['Was bestimmt den Preis einer Entrümpelung?','Ein gut erreichbarer Keller mit wenigen Kisten braucht weniger Zeit als eine volle Wohnung ohne Aufzug. Hilfreich sind die ungefähre Menge, große Möbelstücke und der Weg zum Fahrzeug. Im Angebot sehen Sie, welche Arbeiten und Kosten enthalten sind.'],
+    ['Was gebe ich bei ausgedienten Stücken an?','Listen Sie Möbel, Geräte und andere Materialien getrennt auf. Ergänzen Sie die Stückzahl und, wenn möglich, ein Foto. So lässt sich einschätzen, welche Arbeiten vor Ort nötig sind.'],
+    ['Wie plane ich die Schlüsselübergabe?','Nennen Sie uns das Datum, an dem die Räume übergeben werden, und markieren Sie Einbauten, die bleiben sollen. So können wir einen passenden Termin für die vereinbarten Arbeiten anbieten.']
   ]
 });
 const disposal=planningPage({
   service:'entsorgung',name:'Entsorgung',heading:'Was möchten Sie<br><em>entsorgen?</em>',
-  intro:'Ein ausgedientes Sofa, ein Kühlschrank oder Reste von Lack gehören an unterschiedliche Stellen. Hier finden Sie die Anlaufstellen in Nürnberg. Die Abholung vereinbaren Sie direkt mit der Stadt oder Ihrem Entsorgungsbetrieb.',
-  cta:'Entsorgungsweg klären',anchor:'entsorgungswege',section:'Wohin mit diesen Dingen?',
+  intro:'Ein altes Sofa, mehrere Geräte oder der Inhalt eines Kellers? Nennen Sie die Gegenstände, das Stockwerk und den Weg bis zur Tür. Fotos helfen uns, Größe und Aufwand einzuschätzen. Im Angebot sehen Sie genau, welche Arbeiten wir übernehmen.',
+  cta:'Entsorgung anfragen',anchor:'entsorgungswege',section:'Was möchten Sie aussortieren?',
   steps:[
-    ['Möbel und Matratzen','Ein Sofa, ein Schrank oder eine Matratze können zum Sperrmüll gehören. Nürnberger Haushalte können einmal im Kalenderjahr kostenlos eine Abholung beantragen. Geben Sie die Stücke und ihre Anzahl an. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/sperrmuell.html">Sperrmüll bei der Stadt Nürnberg anmelden</a>.','home'],
-    ['Elektrogeräte','Für Kühlschränke und Waschmaschinen kommen Nürnberger Wertstoffhöfe infrage. Prüfen Sie vor der Fahrt die Annahmebedingungen und Mengen. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/wertstoffhoefe.html">Annahme am Wertstoffhof prüfen</a>.','layers'],
-    ['Lacke und Lösungsmittel','Für solche Reste bietet die Stadt das Schadstoffmobil an. Prüfen Sie Stoff und Annahmebedingungen vor dem Transport. <a href="https://www.nuernberg.de/internet/abfallwirtschaft/schadstoffmobil.html">Standorte und Termine des Schadstoffmobils</a>.','pin']
+    ['Möbel und Matratzen','Geben Sie Anzahl und ungefähre Maße an. Bei einem Sofa oder Schrank ist wichtig, ob das Stück am Stück durch die Tür passt oder zerlegt werden muss.','home'],
+    ['Elektrogeräte','Nennen Sie die Geräteart und den Standort. Bei einer Waschmaschine oder einem Kühlschrank hilft uns die Angabe, ob das Gerät bereits vom Anschluss getrennt ist.','layers'],
+    ['Lacke und Lösungsmittel','Lacke, Lösungsmittel und unbekannte Flüssigkeiten holen wir nicht ab. Wenn solche Stoffe im Raum stehen, vermerken Sie das bitte in der Anfrage.','pin']
   ],
   faqTitle:'Kosten und Abholung',
   questions:[
-    ['Wann ist ein Container sinnvoll?','Wenn mehrere Räume voll sind, fragen Sie Ihren Entsorgungsbetrieb nach Containergröße, zulässigen Materialien und Stellfläche. Für den Preisvergleich zählen Anfahrt, Abholung, Standzeit, enthaltenes Gewicht und mögliche Zuschläge.'],
+    ['Wann ist ein Container sinnvoll?','Bei größeren Mengen helfen Materialart, geschätztes Volumen und Stellfläche bei der Planung. Im <a href="/preise/?leistung=entsorgung#raeumungsrechner">Rechner</a> können Sie die Richtwerte für verschiedene Größen ansehen.'],
     ['Was kann ich mit gut erhaltenen Stücken tun?','Klären Sie mit der Person oder Einrichtung, die das Möbelstück übernehmen möchte, ob es passt und wann es ankommen soll. Für die Fahrt dorthin können Sie bei FrankenPackt einen <a href="/anfrage/?service=transport">Möbeltransport anfragen</a>.'],
-    ['Was gilt außerhalb der Stadt Nürnberg?','Für Fürth, Erlangen und die Landkreise gelten die Angebote der jeweiligen kommunalen Abfallwirtschaft. Wenden Sie sich an die für die Adresse des Haushalts zuständige Stelle.']
+    ['Kann ich auch für eine Adresse im Umland anfragen?','Ja. Geben Sie die Postleitzahl des Einsatzorts und Ihren Wunschtermin an. Wir prüfen, ob wir die gewünschten Arbeiten an dieser Adresse anbieten können.']
   ]
 });
 function scopeSlot(calculator) {
@@ -166,7 +166,7 @@ function scopeSlot(calculator) {
 }
 
 function pricePage() {
-  const note = 'Stand 20. November 2026. Bei Treppen, längeren Laufwegen, mehreren Fahrten, Außenaufzug, Packmaterial oder Halteverbotszone stimmen wir den Aufwand vorab mit Ihnen ab. Für Entsorgung und Spezialtransporte wählen und beauftragen Sie selbst einen geeigneten Fachbetrieb.';
+  const note = 'Stand 20. November 2026. Bei Treppen, längeren Laufwegen, mehreren Fahrten, Außenaufzug, Packmaterial oder Halteverbotszone stimmen wir den Aufwand vorab mit Ihnen ab. Entsorgung und Spezialtransporte sind in den Umzugspaketen nicht enthalten.';
   const mobileRows = prices.map(item => {
     const value = startingPrice(item.price);
     return '<details><summary><span class="tile-name">' + item.name + '</span><span class="tile-price">' + value +
@@ -178,10 +178,10 @@ function pricePage() {
     ['Einfamilienhaus','1.800–5.000 €']
   ];
   const householdGuide = '<div class="wrap household-guide"><details><summary>Was kostet eine komplette Haushaltsauflösung?</summary>' +
-    '<p>LV Transporte nennt für abgeschlossene Räumungen in Nürnberg und Umgebung diese Gesamtpreise einschließlich Entsorgung und Mehrwertsteuer. Diese Vergleichswerte gelten für den gesamten Auftrag beim Fremdanbieter.</p>' +
+    '<p>Die Tabelle zeigt regionale Vergleichspreise für vollständige Räumungen in Nürnberg und Umgebung, einschließlich Entsorgung und Mehrwertsteuer. Für Ihr persönliches Angebot zählen die tatsächlich vereinbarten Arbeiten.</p>' +
     '<table><thead><tr><th scope="col">Wohnung oder Haus</th><th scope="col">Preisspanne</th></tr></thead><tbody>' +
     marketExamples.map(([home,range])=>'<tr><th scope="row">'+home+'</th><td>'+range+'</td></tr>').join('') +
-    '</tbody></table><p>Füllmenge, Treppen und verwertbare Möbel beeinflussen das Angebot. <a href="https://entrumpelungnurnberg.de/haushaltsaufloesung-nuernberg">Preisbeispiele von LV Transporte, September 2026</a></p></details></div>';
+    '</tbody></table><p>Stand der Vergleichswerte ist September 2026. Füllmenge, Treppen und verwertbare Möbel beeinflussen den Preis.</p></details></div>';
   const overview = '<section class="wrap mobile-prices"><h2>Preisbeispiele für Umzüge</h2><p class="tile-hint">Paket antippen und Bedingungen ansehen.</p>' +
     '<div class="price-tiles">' + mobileRows + '</div><details class="price-note"><summary>Stand und weitere Kosten</summary><p>' + note + '</p></details></section>';
   const desktopRows = prices.map(i=>'<article data-paket="'+i.id+'" data-euro="'+i.price+'"><div><h3>'+i.name+'</h3><p>'+i.scope+'</p></div><div class="amount"><strong>'+startingPrice(i.price)+'</strong><small>'+i.unit+'</small></div></article>').join('');
@@ -204,18 +204,18 @@ function pricePage() {
   const tariffs = '<details class="wrap guide-tariffs"><summary>Alle Umzugspakete und Bedingungen</summary>' + overview +
     '<section class="price-section desktop-prices"><div class="wrap"><h2>Preisbeispiele für Umzüge</h2><div class="tariffs">' + desktopRows +
     '</div><p class="fine">' + note + '</p></div></section></details>';
-  const fallback = '<noscript><p class="wrap guide-fallback">Für den persönlichen Richtwert benötigen Sie JavaScript. <a href="/anfrage/">Anfrage öffnen</a> oder unten Paketpreise und externe Kosten nachlesen.</p></noscript>';
+  const fallback = '<noscript><p class="wrap guide-fallback">Für den persönlichen Richtwert benötigen Sie JavaScript. <a href="/anfrage/">Anfrage öffnen</a> oder unten Paketpreise und Richtwerte nachlesen.</p></noscript>';
   return '<div data-guided-pricing>'+header+fallback+priceComparison(scopeSlot('comparison'))+serviceTools+
     clearanceCalculator(scopeSlot('clearance'))+moving+tariffs+householdGuide+'</div>';
 }
 
 const pages=[
- ['/', 'Entrümpeln und entsorgen in Nürnberg', 'Entrümpelung für Keller und Wohnung vorbereiten, Entsorgungswege für Sperrmüll in Nürnberg finden und den Transport brauchbarer Möbel anfragen.',home],
+ ['/', 'Entrümpelung &amp; Entsorgung in Nürnberg', 'Keller oder Wohnung räumen? Wir helfen beim Sortieren, Tragen und Transportieren. Beschreiben Sie Ihr Vorhaben und erhalten Sie ein persönliches Angebot.',home],
  ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc,detail(d)]),
  ['/raeumung/','Entrümpelung in Nürnberg planen','Kellerentrümpelung und Wohnungsauflösung vorbereiten. Hausrat sortieren, Zugang prüfen und den Transport weiter genutzter Möbel in Nürnberg anfragen.',clear],
- ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Alte Möbel, Elektrogeräte und Lacke in Nürnberg entsorgen. Städtische Sperrmüllabholung, Wertstoffhöfe und das Schadstoffmobil direkt finden.',disposal],
- ['/preise/','Preisrechner für Entrümpelung, Entsorgung und Umzug','Räumung durch unser Team anfragen und externe Preise für Sperrmüllcontainer in Nürnberg ansehen. Bruttopreise, Bedingungen und regionale Vergleichswerte direkt ansehen.',pricePage()],
- ['/anfrage/','Anfrage zu Entrümpelung, Entsorgung oder Umzug','Anliegen in Nürnberg beschreiben, Entsorgungswege klären oder einen Transport anfragen und den gewünschten Rückmeldeweg wählen.',inquiry(crumb,ic)],
+ ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Ein Sofa, alte Geräte oder ein voller Keller in Nürnberg? Nennen Sie uns Gegenstände, Menge und Zugang. Wir prüfen Ihre Anfrage und den passenden Leistungsumfang.',disposal],
+ ['/preise/','Preisrechner für Entrümpelung, Entsorgung und Umzug','Was kostet Ihr Vorhaben in Nürnberg? Berechnen Sie einen unverbindlichen Richtpreis für Entrümpelung, Entsorgung oder Umzug anhand Ihrer Angaben.',pricePage()],
+ ['/anfrage/','Anfrage zu Entrümpelung, Entsorgung oder Umzug','Entrümpelung, Entsorgung oder Umzug in Nürnberg anfragen. Nennen Sie Inventar, Zugang und Termin und fügen Sie auf Wunsch Fotos bei.',inquiry(crumb,ic)],
  ['/danke/','Rückmeldung zu Ihrer Anfrage','Rückmeldung zu Ihrer Anfrage bei FrankenPackt.',thankYou(crumb,ic)],
  ['/impressum/','Impressum','Anbieterangaben zur Website von FrankenPackt.',legal(crumb,false)],
  ['/datenschutz/','Datenschutz','Informationen zum Umgang mit Angaben auf dieser Website.',legal(crumb,true)]
@@ -230,5 +230,5 @@ for(const [url,title,description,body] of pages){
   ]);
 }
 await writeFile(path.join(dir,'betrieb','robots.txt'),'User-agent: *\nDisallow: /admin\nDisallow: /api/\nDisallow: /danke/\nDisallow: /betrieb/\n','utf8');
-await writeFile(path.join(dir,'404.html'),shell('/404/','Seite nicht gefunden','Diese Seite ist nicht verfügbar.','<section class="wrap section"><h1>Seite nicht gefunden</h1><p>Auf der Startseite finden Sie Entrümpelung, Entsorgungswege und Umzüge.</p>'+btn('Zur Startseite','/')+'</section>'),'utf8');
+await writeFile(path.join(dir,'404.html'),shell('/404/','Seite nicht gefunden','Diese Seite ist nicht verfügbar.','<section class="wrap section"><h1>Seite nicht gefunden</h1><p>Auf der Startseite finden Sie unsere Leistungen für Entrümpelung, Entsorgung und Umzüge.</p>'+btn('Zur Startseite','/')+'</section>'),'utf8');
 await writeFile(path.join(dir,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');

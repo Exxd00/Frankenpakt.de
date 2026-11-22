@@ -87,7 +87,7 @@ function mountEstimator(form) {
     calculator.hidden = !estimate || hasAmount;
     if (estimate && !hasAmount) {
       calculator.setAttribute('href',estimate.route);
-      calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Räumung und externe Entsorgungspreise ansehen';
+      calculator.textContent = service === 'umzug' ? 'Umzugspakete ansehen' : 'Räumung und Containerpreise ansehen';
     }
     title.textContent = estimate?.priceLabel || 'Ihre Angaben';
     amount.textContent = hasAmount ? formatStartingPrice(estimate.estimatedCents) : '';

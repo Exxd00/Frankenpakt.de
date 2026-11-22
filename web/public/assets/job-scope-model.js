@@ -46,9 +46,9 @@ function addressFields(p) {
   ];
 }
 export const itemTypes = [['box','Kartons / Kisten'],['furniture','Möbel'],['appliance','Elektrogerät'],['bulky','Besonders schwer / sperrig'],['loose','Säcke / loses Material'],['other','Sonstiges']];
-export const destinations = [['stay','Bleibt im Raum'],['keep','Behalten / weiterverwenden'],['give','Weitergeben / spenden'],['discard','Entsorgung durch Dritte']];
+export const destinations = [['stay','Bleibt im Raum'],['keep','Behalten / weiterverwenden'],['give','Weitergeben / spenden'],['discard','Zur Entsorgung vorgesehen']];
 const movingTasks = [['none','Alles gepackt und demontiert'],['pack','Einpacken'],['unpack','Auspacken'],['disassemble','Möbel abbauen'],['assemble','Möbel aufbauen'],['supplies','Packmaterial bereitstellen']];
-const wasteRoutes = [['none','Keine Abfälle'],['city','Kommunale Abholung'],['provider','Abholung durch einen Fachbetrieb'],['container','Containerdienst'],['undecided','Beratung zum Entsorgungsweg gewünscht']];
+const wasteRoutes = [['none','Keine Abfälle'],['provider','Abholung ohne Container'],['container','Container vorgesehen'],['undecided','Noch offen']];
 const wasteTypes = [['bulky','Sperrmüll / Möbel'],['wood','Holz'],['metal','Metall'],['electrical','Elektrogeräte'],['rubble','Bauschutt'],['mixed','Gemischte Abfälle'],['special','Farben, Batterien oder unbekannte Gefahrstoffe'],['other','Andere Materialien']];
 const measurementModes=[['known','Gemessen / laut Unterlagen'],['estimated','Grob geschätzt'],['unknown','Unbekannt']];
 const hasRetained = f=>readItems(f.items).some(r=>['give','keep'].includes(r.destination));
@@ -78,7 +78,7 @@ const inventoryFields = (isMove,service)=>{
     select('retainedTransport','Was geschieht mit weiterverwendbaren Stücken?',[
       ['onsite','Am Einsatzort belassen / zur Abholung bereitstellen'],['destination','Zu einer Zieladresse transportieren']
     ],{when:hasRetained}),
-    select('wasteRoute','Wie ist die Abholung von Abfällen geplant?',wasteRoutes,{hint:'Abfallabholung und Entsorgung vereinbaren Sie direkt mit der zuständigen Stelle.'}),
+    select('wasteRoute','Was ist für die zu entsorgenden Gegenstände vorgesehen?',wasteRoutes),
     checkboxes('materials','Welche Abfallarten sind enthalten?',wasteTypes,{when:f=>Boolean(f.wasteRoute)&&f.wasteRoute!=='none'}),
     textField('specialMaterials','Art, geschätzte Menge und Behälter',260,{when:f=>f.wasteRoute!=='none'&&f.materials?.split(',').some(v=>['special','other'].includes(v))}),
     field('wasteVolume','Geschätztes Abfallvolumen (m³)','decimal',{min:0.01,max:99999,when:f=>Boolean(f.wasteRoute)&&f.wasteRoute!=='none',hint:'Die Außenmaße der bereitgestellten Menge genügen als Schätzung.'}),
@@ -128,6 +128,7 @@ export function currentJobFields(fields) {
   }
   delete current.clearanceWork;
   if(current.wasteRoute==='self')delete current.wasteRoute;
+  if(current.wasteRoute==='city')current.wasteRoute='provider';
   return current;
 }
 export function readItems(encoded) {

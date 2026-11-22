@@ -104,7 +104,7 @@ function createEditor(host, service, isCalculator, getContext) {
     const current = value?.fields.wasteRoute;
     if (current && !(updateAutomatic && current === automaticRoute)) return value;
     const disposal = query.has('entsorgungsweg') && inquiryEstimate(query)?.service === service ? query.get('entsorgungsweg') : '';
-    automaticRoute = disposal === 'asn' ? 'city' : disposal.startsWith('container-') ? 'container' : undefined;
+    automaticRoute = disposal.startsWith('container-') ? 'container' : undefined;
     if (current === automaticRoute) return value;
     const fields = {...value?.fields};
     if (automaticRoute) fields.wasteRoute = automaticRoute;

@@ -26,7 +26,11 @@ export function normalizeJobContext(raw,service) {
   const estimate=inquiryEstimate(query);
   if(!estimate||estimate.service!==service)return null;
   const canonical={leistung:service,...Object.fromEntries(estimate.params)};
-  if(Object.keys(raw).some(k=>raw[k]!==canonical[k]))return null;
+  if(raw.entsorgungsweg==='asn'&&(!query.has('asn')||raw.asn==='ja')){
+    query.set('entsorgungsweg','individual');
+    query.delete('asn');
+  }
+  for(const [key,value] of query)if(canonical[key]!==value)return null;
   return canonical;
 }
 
@@ -49,12 +53,12 @@ function disposalConditions(query,fields) {
   const notes=[];
   const disposal=query.get('entsorgungsweg'),help=query.get('hilfe');
   const size=containerVolumes.get(disposal);
-  const route=size?'container':disposal==='asn'?'city':disposal==='none'?'none':null;
+  const route=size?'container':disposal==='none'?'none':null;
   if(fields.wasteRoute&&route&&route!==fields.wasteRoute){
     notes.push('Der Entsorgungsweg in den Auftragsdetails weicht vom Rechner ab. Bitte den Abholweg im Angebot klären.');
   }else if(size){
-    if(fields.site&&fields.site!=='private')notes.push('Der Container-Richtwert setzt Privatgrund voraus. Die angegebene Stellfläche muss der Anbieter prüfen.');
-    if(Number((fields.wasteVolume||'').replace(',','.'))>size)notes.push('Das angegebene Abfallvolumen übersteigt die gewählte Containergröße. Größe mit dem Anbieter abgleichen.');
+    if(fields.site&&fields.site!=='private')notes.push('Der Container-Richtwert setzt Privatgrund voraus. Die angegebene Stellfläche muss für das Angebot geprüft werden.');
+    if(Number((fields.wasteVolume||'').replace(',','.'))>size)notes.push('Das angegebene Abfallvolumen übersteigt die gewählte Containergröße. Im Angebot ist eine andere Größe zu berücksichtigen.');
     if((fields.materials||'').split(',').some(v=>['special','electrical','rubble','mixed','other'].includes(v)))notes.push('Für die angegebenen Abfallarten die Annahme gesondert prüfen. Der Container-Richtwert gilt für zugelassenen Sperrmüll.');
   }
   if(help==='team'&&fields.retainedTransport==='destination')notes.push('Der gewünschte Transport zur Zieladresse wird bei der Angebotserstellung mit eingeplant.');
