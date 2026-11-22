@@ -6,7 +6,8 @@ import {clearanceCalculator} from './clearance-calculator.mjs';
 import {scenarioPrices} from './scenario-prices.mjs';
 import {cloudPage} from './lib/cloud-pages.mjs';
 import {taskPages} from './task-pages.mjs';
-import {breadcrumbItems,guideServices,publicOrigin,publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
+import {firmPages,firmRequest,renderFirmPage} from './firmen-pages.mjs';
+import {breadcrumbItems,businessServices,guideServices,publicOrigin,publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
 const dir=path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
 await mkdir(path.join(dir,'assets'), {recursive:true});
 // Keep source styles independent while serving one shared layout request per page.
@@ -71,20 +72,22 @@ function contactDialog(){
     '<p class="handoff-demo-result" role="status" hidden></p></dialog>';
 }
 function header(pathname){
-  const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/preise/','Preise']];
+  const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/firmenkunden/','Für Firmen'],['/preise/','Preise']];
   const guide=taskPages.find(page=>page.path===pathname);
-  const request=guide?taskRequest(guide):({
+  const firm=firmPages.find(page=>page.path===pathname);
+  const request=firm?text(firmRequest(firm)):guide?taskRequest(guide):({
     '/raeumung/':'/anfrage/?leistung=entruempelung','/entsorgung/':'/anfrage/?leistung=entsorgung',
     '/umzug/':'/anfrage/?service=umzug','/moebeltaxi/':'/anfrage/?service=moebeltaxi','/seniorenumzug/':'/anfrage/?service=seniorenumzug'
   })[pathname]||'/anfrage/';
-  return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>Anfrage stellen</a></div></header>';
+  return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':firm && p==='/firmenkunden/'?' aria-current="location"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>'+(firm?'Firmenanfrage':'Anfrage stellen')+'</a></div></header>';
 }
 function footer(pathname){
   const includeContacts=['/anfrage/','/danke/','/datenschutz/','/impressum/','/404/'].includes(pathname);
-  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Statistik mit Google Analytics. Bei Anzeigenklicks speichern wir die Google-Klick-ID (GCLID) im Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
+  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+(includeContacts?contactChoices():'')+'</div><div class="footlinks"><a href="/firmenkunden/">Für Firmen und Hausverwaltungen</a><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Statistik mit Google Analytics. Bei Anzeigenklicks speichern wir die Google-Klick-ID (GCLID) im Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
 function shell(pathname,title,desc,body){
+  const firmStyles=firmPages.some(page=>page.path===pathname)?'<link rel="stylesheet" href="/assets/firmen.css">':'';
   const priceAssets=pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/estimator.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '';
-  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/layout.css">'+(pathname==='/anfrage/'?'<link rel="stylesheet" href="/assets/request.css">':pathname==='/danke/'?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/layout.css">'+firmStyles+(pathname==='/anfrage/'?'<link rel="stylesheet" href="/assets/request.css">':pathname==='/danke/'?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script defer src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname)+contactDialog()+'</body></html>';}
 function crumb(text){return '<nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>'+text+'</span></nav>';}
 function text(value){return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
 function topicList(title,pages){
@@ -124,7 +127,7 @@ function serviceCards(){
   ).join('');
   return '<section class="wrap section" id="leistungen" aria-labelledby="leistungen-titel"><div class="section-head"><h2 id="leistungen-titel">Was soll mit den Sachen passieren?</h2></div>'+
     '<div class="service-grid">'+cards+'</div><div class="service-alternatives"><p>Ein Teil geht zur Familie, der Rest soll raus? <a href="/wohnungsaufloesung/">Wohnungsauflösung planen</a></p>'+
-    '<p>Sie organisieren einen Umzug für Angehörige? <a href="/seniorenumzug/">Seniorenumzug planen</a></p></div></section>';
+    '<p>Sie organisieren einen Umzug für Angehörige? <a href="/seniorenumzug/">Seniorenumzug planen</a></p><p>Sie planen für einen Betrieb? <a href="/firmenkunden/">Leistungen für Unternehmen ansehen</a></p></div></section>';
 }
 function faq(qas){return '<div class="faq">'+qas.map(([q,a])=>'<details><summary>'+q+'</summary><p>'+a+'</p></details>').join('')+'</div>';}
 function steps(){
@@ -260,22 +263,27 @@ function pricePage() {
     clearanceCalculator(scopeSlot('clearance'))+moving+tariffs+householdGuide+'</div>';
 }
 
+function commercialLinks(service){
+  return topicList('Für Firmen und Hausverwaltungen',firmPages.filter(page=>page.service===service));
+}
+
 const pages=[
  ['/', 'Entrümpelung &amp; Entsorgung in Nürnberg', 'Keller oder Wohnung räumen? Wir helfen beim Sortieren, Tragen und Transportieren. Beschreiben Sie Ihr Vorhaben und erhalten Sie ein persönliches Angebot.',home],
- ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc, detail(d)+topicList('Ihr Vorhaben im Detail',taskPages.filter(page=>page.service===d.s))]),
- ['/raeumung/','Entrümpelung in Nürnberg planen','Kellerentrümpelung und Wohnungsauflösung vorbereiten. Hausrat sortieren, Zugang prüfen und den Transport weiter genutzter Möbel in Nürnberg anfragen.',clear],
- ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Ein Sofa, alte Geräte oder ein voller Keller in Nürnberg? Nennen Sie uns Gegenstände, Menge und Zugang. Wir prüfen Ihre Anfrage und den passenden Leistungsumfang.',disposal],
+ ...Object.entries(serviceContent).map(([u,d])=>[u,d.t+' in Nürnberg',d.desc, detail(d)+topicList('Ihr Vorhaben im Detail',taskPages.filter(page=>page.service===d.s))+(d.s==='umzug'?commercialLinks('umzug'):'')]),
+ ['/raeumung/','Entrümpelung in Nürnberg planen','Kellerentrümpelung und Wohnungsauflösung vorbereiten. Hausrat sortieren, Zugang prüfen und den Transport weiter genutzter Möbel in Nürnberg anfragen.',clear+commercialLinks('entruempelung')],
+ ['/entsorgung/','Entsorgung und Sperrmüll in Nürnberg','Ein Sofa, alte Geräte oder ein voller Keller in Nürnberg? Nennen Sie uns Gegenstände, Menge und Zugang. Wir prüfen Ihre Anfrage und den passenden Leistungsumfang.',disposal+commercialLinks('entsorgung')],
  ['/preise/','Preisrechner für Entrümpelung, Entsorgung und Umzug','Was kostet Ihr Vorhaben in Nürnberg? Berechnen Sie einen unverbindlichen Richtpreis für Entrümpelung, Entsorgung oder Umzug anhand Ihrer Angaben.',pricePage()],
  ['/anfrage/','Anfrage zu Entrümpelung, Entsorgung oder Umzug','Entrümpelung, Entsorgung oder Umzug in Nürnberg anfragen. Nennen Sie Inventar, Zugang und Termin und fügen Sie auf Wunsch Fotos bei.',inquiry(crumb,ic)],
  ['/danke/','Rückmeldung zu Ihrer Anfrage','Rückmeldung zu Ihrer Anfrage bei FrankenPackt.',thankYou(crumb,ic)],
  ['/impressum/','Impressum','Anbieterangaben zur Website von FrankenPackt.',legal(crumb,false)],
  ['/datenschutz/','Datenschutz','Informationen zum Umgang mit Angaben auf dieser Website.',legal(crumb,true)]
 ];
-pages.push(...taskPages.map(page=>[page.path,text(page.title),text(page.description),taskPage(page)]));
+pages.push(...taskPages.map(page=>[page.path,text(page.title),text(page.description),taskPage(page)+(page.path==='/buero-raeumen/'?commercialLinks('entruempelung'):'')]));
+pages.push(...firmPages.map(page=>[page.path,text(page.title),text(page.description),renderFirmPage(page)]));
 const generatedRoutes=new Set(pages.map(([url])=>url));
 if(generatedRoutes.size!==pages.length||publicPagePaths.length!==pages.length||publicPagePaths.some(url=>!generatedRoutes.has(url)))throw new Error('Seiten und öffentliche Routen stimmen nicht überein.');
 const guideLabels=Object.fromEntries(taskPages.map(page=>[page.path,page.label]));
-const manifest=Object.entries({publicOrigin,publicPagePaths,searchPaths,guideServices,guideLabels}).map(([key,value])=>'export const '+key+' = '+JSON.stringify(value,null,2)+';');
+const manifest=Object.entries({publicOrigin,publicPagePaths,searchPaths,guideServices,guideLabels,businessServices}).map(([key,value])=>'export const '+key+' = '+JSON.stringify(value,null,2)+';');
 await writeFile(path.join(dir,'assets','search-routes.js'),manifest.join('\n')+'\n','utf8');
 for(const [url,title,description,body] of pages){
   const html=shell(url,title,description,body);

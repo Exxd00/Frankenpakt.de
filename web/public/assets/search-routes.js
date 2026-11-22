@@ -19,6 +19,11 @@ export const publicPagePaths = [
   "/buero-raeumen/",
   "/moebel-nach-privatkauf-abholen/",
   "/umzug-ins-pflegeheim/",
+  "/firmenkunden/",
+  "/bueroaufloesung-nuernberg/",
+  "/bueromoebel-entsorgen-nuernberg/",
+  "/bueroumzug-nuernberg/",
+  "/entruempelung-hausverwaltung-nuernberg/",
   "/anfrage/",
   "/impressum/",
   "/datenschutz/",
@@ -43,7 +48,12 @@ export const searchPaths = [
   "/matratze-entsorgen/",
   "/buero-raeumen/",
   "/moebel-nach-privatkauf-abholen/",
-  "/umzug-ins-pflegeheim/"
+  "/umzug-ins-pflegeheim/",
+  "/firmenkunden/",
+  "/bueroaufloesung-nuernberg/",
+  "/bueromoebel-entsorgen-nuernberg/",
+  "/bueroumzug-nuernberg/",
+  "/entruempelung-hausverwaltung-nuernberg/"
 ];
 export const guideServices = {
   "/kueche-abbauen/": "entruempelung",
@@ -72,4 +82,10 @@ export const guideLabels = {
   "/buero-raeumen/": "Büro und Arbeitszimmer räumen",
   "/moebel-nach-privatkauf-abholen/": "Möbel nach Privatkauf abholen",
   "/umzug-ins-pflegeheim/": "Teilumzug ins Pflegeheim"
+};
+export const businessServices = {
+  "/bueroaufloesung-nuernberg/": "entruempelung",
+  "/bueromoebel-entsorgen-nuernberg/": "entsorgung",
+  "/bueroumzug-nuernberg/": "umzug",
+  "/entruempelung-hausverwaltung-nuernberg/": "entruempelung"
 };

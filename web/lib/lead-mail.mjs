@@ -1,5 +1,6 @@
 import {jobSections, readItems, summarizeJobTiming} from '../public/assets/job-scope-model.js';
 import {formatStartingPrice, normalizeActualJob, fillLevels} from '../public/assets/actual-job.js';
+import {businessLines} from '../public/assets/business-projects.js';
 
 const services = new Map(Object.entries({
   entruempelung:'Entrümpelung', entsorgung:'Entsorgung', umzug:'Umzug',
@@ -86,7 +87,8 @@ export function renderLeadMail(record) {
   const callback = record?.service === 'rueckruf';
   const service = callback ? person.requestedService : record?.service;
   const serviceLabel = services.get(service) || '';
-  const title = callback ? 'Rückruf gewünscht' : serviceLabel ? serviceLabel+' angefragt' : 'Neue Anfrage';
+  const business=businessLines(person.business);
+  const title = business.length ? (callback?'Firmenrückruf gewünscht':'Firmenanfrage · '+(person.business.project==='firmenkunden'?serviceLabel:business[0][1])) : callback ? 'Rückruf gewünscht' : serviceLabel ? serviceLabel+' angefragt' : 'Neue Anfrage';
   const ref = /^AN-[A-Z0-9-]{1,40}$/.test(record?.ref) ? record.ref : '';
   const subject = [title,ref].filter(Boolean).join(' · ');
   const preheader = callback ? 'Kontakt und gewünschte Rückrufzeit im Überblick.' : 'Kontakt und Eckdaten für das persönliche Angebot.';
@@ -102,6 +104,7 @@ export function renderLeadMail(record) {
     add('Rückrufzeit',brief(person.timeframe));
     add('Anliegen',serviceLabel);
   }
+  for(const [label,value] of business)add(label,brief(value,440));
   const timing = brief(summarizeJobTiming(person.jobScope)) || (!callback && brief(person.timeframe));
   add('Gewünschter Einsatztermin',timing);
   add(service === 'entruempelung' || service === 'entsorgung' ? 'Einsatzort' : 'Abholung',...locationLines('from',person.jobScope,person.zipFrom));

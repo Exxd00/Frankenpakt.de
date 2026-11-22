@@ -382,15 +382,17 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     }
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, contexts, draftTools, preparedFiles) {
+function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessInquiry) {
   const service = form.elements.service;
   const requestedTopic = params.get('vorhaben') || params.get('vergleich');
-  const initialService = pageInterest || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
+  const callback = params.get('kontakt') === 'telefon' || pageInterest === 'rueckruf';
+  const business = mountBusinessInquiry(form,params,callback);
+  const initialService = pageInterest || business.initialService || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
   const pack = contexts.length || Object.hasOwn(clearance,initialService) ? null : params.get('paket');
   const requestedService = Object.hasOwn(packageLabels,pack) ? serviceForPackage(pack,initialService) : initialService;
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
-  const callback = params.get('kontakt') === 'telefon' || initialService === 'rueckruf';
+  business.update();
   const fileBox = callback ? null : preparedFiles;
   const phone = form.elements.phone;
   const email = form.elements.email;
@@ -465,6 +467,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
   const presetDetails = details.value;
   function writeContext(url) {
     clearEstimateContext(url);
+    business.writeContext(url);
     url.searchParams.delete('thema');
     if (guide && url.pathname === '/anfrage/') url.searchParams.set('thema',guide.slug);
     for (const context of contexts) {
@@ -486,7 +489,15 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
     updateProjectLinks(interest,currentPack,params.get('zusatz'),writeContext);
   }
   updateFormLinks(serviceOption?.value);
+  business.toggle.addEventListener('change',()=>{
+    business.update();
+    const url=new URL(location.href);
+    business.writeContext(url);
+    history.replaceState(history.state,'',url);
+    updateFormLinks(service.value);
+  });
   service.addEventListener('change', () => {
+    business.update();
     if (guide && guide.service !== service.value) guide = null;
     showServiceFields();
     if (contexts.length && service.value !== contexts[0].service) {
@@ -559,6 +570,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (submit.disabled) return;
+    if (business.toggle.checked && !form.querySelector('#business-company').reportValidity()) return;
     if (!callback && (!service.reportValidity() || !editor.validate())) return;
     if (phone.required && !telephoneLooksValid(phone.value)) phone.setCustomValidity('Bitte geben Sie eine erreichbare Telefonnummer mit Vorwahl ein.');
     if (email.required && !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.value)) email.setCustomValidity('Bitte prüfen Sie Ihre E-Mail-Adresse.');
@@ -580,6 +592,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
         return;
       }
       const body = Object.fromEntries(new FormData(form));
+      const companyProject=business.value();
+      if(companyProject)body.business=companyProject;
       if (jobScope) {
         body.jobScope = jobScope;
         const jobContext = draftTools.offerContext(jobScope.service,new URLSearchParams(location.search));
@@ -614,6 +628,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles) {
       const submittedService = service.value;
       form.reset();
       service.value = submittedService;
+      business.update();
       lastId = '';
       finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope||facts);
     } catch (error) {
@@ -634,9 +649,9 @@ if (form) {
   }
   const submit = form.querySelector('#send-lead');
   const preparedFiles = import('/assets/inquiry-files.js').then(({mountInquiryFiles}) => mountInquiryFiles(form.querySelector('#inquiry-files')));
-  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),preparedFiles]).then(([draftTools,results,fileBox]) => {
+  Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),preparedFiles,import('/assets/business-inquiry.js')]).then(([draftTools,results,fileBox,{mountBusinessInquiry}]) => {
     const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
-    enableInquiry(form,valid.map(result => result.value),draftTools,fileBox);
+    enableInquiry(form,valid.map(result => result.value),draftTools,fileBox,mountBusinessInquiry);
   }).catch(() => {
     submit.disabled = true;
     document.querySelector('#form-mode').textContent = 'Die Auftragsfelder konnten nicht geladen werden. Bitte laden Sie die Seite neu.';

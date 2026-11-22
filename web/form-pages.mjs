@@ -11,6 +11,21 @@ export function inquiry(crumb, ic) {
     <div id="form-mode" class="note compact" role="status">Vorschau: Bitte verwenden Sie nur Beispieldaten. Ihre Angaben bleiben in diesem Browser.</div>
     <noscript><p>Das Onlineformular benötigt JavaScript. Unsere Kontaktangaben finden Sie im <a href="/impressum/">Impressum</a>.</p></noscript>
     <form id="lead-form" method="post" action="/api/leads" class="lead-form" autocomplete="off" novalidate>
+      <label class="business-toggle"><input id="business-mode" type="checkbox"> Ich frage für eine Firma oder Hausverwaltung an</label>
+      <fieldset id="business-fields" disabled hidden><legend>Firmenanfrage</legend>
+        <label for="business-company">Unternehmen oder Hausverwaltung <span id="business-name-rule">*</span></label>
+        <input id="business-company" maxlength="140" autocomplete="organization">
+        <details id="business-options" class="inquiry-files"><summary>Angaben für Einkauf und Objektleitung <small>(optional)</small></summary>
+          <div class="fields">
+            <div><label for="business-reference">Projekt- oder Objektnummer</label><input id="business-reference" data-business="reference" maxlength="80"></div>
+            <div><label for="business-offer-by">Bis wann benötigen Sie das Angebot?</label><input id="business-offer-by" data-business="offerBy" type="date"></div>
+          </div>
+          <label for="business-logistics">Was muss das Team im laufenden Betrieb beachten?</label>
+          <textarea id="business-logistics" data-business="logistics" rows="2" maxlength="420" placeholder="Zum Beispiel Anmeldung am Empfang, reservierte Laderampe oder Arbeiten erst nach Geschäftsschluss"></textarea>
+          <label for="business-recipient">Abweichender Angebotsempfänger mit Anschrift</label>
+          <textarea id="business-recipient" data-business="recipient" rows="2" maxlength="160"></textarea>
+        </details>
+      </fieldset>
       <fieldset id="project-fields" disabled><legend>Ihr Vorhaben</legend>
         <div class="fields">
           <div><label for="service">Welche Hilfe wünschen Sie? <span>*</span></label>

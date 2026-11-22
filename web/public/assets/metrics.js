@@ -1,4 +1,4 @@
-import {guideServices, publicPagePaths} from './search-routes.js';
+import {businessServices, guideServices, publicPagePaths} from './search-routes.js';
 import {campaignVisit,forgetVisit,statisticsChoice as choiceKey} from './campaign-attribution.js';
 
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
@@ -9,7 +9,7 @@ const pages = new Set(publicPagePaths);
 const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
 const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf']);
 const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
-const pageServices = {...guideServices,'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
+const pageServices = {...guideServices,...businessServices,'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
 
 function metricCategories(explicitService,location) {
   const q = new URLSearchParams(location.search);

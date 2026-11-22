@@ -1,7 +1,9 @@
 import {taskPages} from './task-pages.mjs';
+import {firmPages} from './firmen-pages.mjs';
 
 export const publicOrigin = 'https://frankenpakt.de';
 export const guideServices = Object.fromEntries(taskPages.map(page => [page.path, page.service]));
+export const businessServices = Object.fromEntries(firmPages.filter(page => page.service).map(page => [page.path, page.service]));
 const serviceRoutes = {
   entruempelung:'/raeumung/', entsorgung:'/entsorgung/', umzug:'/umzug/',
   moebeltaxi:'/moebeltaxi/', seniorenumzug:'/seniorenumzug/'
@@ -11,11 +13,17 @@ const sectionNames = {
   '/umzug/':'Privatumzug', '/moebeltaxi/':'Möbeltaxi', '/seniorenumzug/':'Seniorenumzug',
   '/preise/':'Preise'
 };
-export const searchPaths = [...Object.keys(sectionNames), ...taskPages.map(page => page.path)];
+export const searchPaths = [...Object.keys(sectionNames), ...taskPages.map(page => page.path), ...firmPages.map(page => page.path)];
 export const utilityPaths = ['/anfrage/', '/impressum/', '/datenschutz/', '/danke/'];
 export const publicPagePaths = [...searchPaths,...utilityPaths];
 
 export function breadcrumbItems(pathname) {
+  const firm=firmPages.find(page=>page.path===pathname);
+  if(firm){
+    const items=[['Startseite','/'],['Firmenkunden','/firmenkunden/']];
+    if(firm.path!=='/firmenkunden/')items.push([firm.label,firm.path]);
+    return items;
+  }
   const task=taskPages.find(page=>page.path===pathname);
   if (task) {
     const parent=serviceRoutes[task.service];
@@ -69,6 +77,19 @@ export function searchHead(html,settings,canonical) {
   const webPage={'@type':'WebPage','@id':canonical+'#webpage',url:canonical,name:unescape(title),description:unescape(description),inLanguage:'de-DE',
     isPartOf:{'@id':siteId},publisher:{'@id':businessId}};
   if(photo)webPage.primaryImageOfPage={'@type':'ImageObject',contentUrl:origin+photo};
+  const firm=firmPages.find(page=>page.path===pathname);
+  if(firm){
+    const entityId=canonical+(firm.service?'#leistung':'#leistungen');
+    webPage.mainEntity={'@id':entityId};
+    if(firm.service){
+      graph.push({'@type':'Service','@id':entityId,name:firm.heading,serviceType:firm.label,description:firm.description,
+        url:canonical,provider:{'@id':businessId},areaServed:{'@type':'City',name:'Nürnberg'},
+        audience:{'@type':'BusinessAudience',audienceType:firm.project==='hausverwaltung'?'Hausverwaltungen':'Unternehmen'}});
+    }else{
+      graph.push({'@type':'ItemList','@id':entityId,name:'Leistungen für Firmenkunden',
+        itemListElement:firmPages.filter(page=>page.service).map((page,index)=>({'@type':'ListItem',position:index+1,name:page.label,url:origin+page.path}))});
+    }
+  }
   if(pathname==='/'){
     const business={'@type':'LocalBusiness','@id':businessId,name:'FrankenPackt',url:canonical,
       legalName:settings.operatorName,telephone:settings.phone,email:settings.email,

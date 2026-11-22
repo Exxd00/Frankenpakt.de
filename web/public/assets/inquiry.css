@@ -49,6 +49,8 @@
 .inquiry-files { margin-top:.85rem; padding:.55rem .8rem; border:1px solid #b6c2a7; border-radius:.85rem; background:#f3f4eb; }
 .inquiry-files summary { display:list-item; cursor:pointer; font-weight:650; padding:.45rem 0; color:#314b35; }
 .inquiry-files summary small { font-weight:400; }
+.lead-form .business-toggle {display:flex;align-items:center;gap:.65rem;min-height:44px;margin-bottom:.55rem;cursor:pointer}
+.lead-form .business-toggle input[type="checkbox"] {width:1.25rem;height:1.25rem;min-height:0;flex:0 0 auto;margin:0;padding:0;accent-color:#365437}
 .inquiry-files input[type=file] { max-width:100%; padding:.5rem; font-size:1rem; }
 .inquiry-files input::file-selector-button { min-height:40px; margin-right:.4rem; border:1px solid #647959; border-radius:.5rem; background:#fff; color:#263d29; padding:.35rem .65rem; }
 .inquiry-files ul { margin:.55rem 0; padding:0; list-style:none; }

@@ -1,5 +1,6 @@
 import {summarizeJobScope} from './job-scope-model.js';
 import {evaluateActualJob,formatStartingPrice} from './actual-job.js';
+import {businessLines} from './business-projects.js';
 
 const serviceNames = {
   entruempelung:'Entrümpelung', entsorgung:'Entsorgung', umzug:'Umzug', seniorenumzug:'Seniorenumzug',
@@ -36,6 +37,7 @@ export function mountOfficeCases({api,action,editor,onQuote,download}){
       review.append(reasons);panel.append(review);
     }
     addField('Kontakt',[lead.name,lead.contact].filter(Boolean).join('\n'));
+    for(const [label,value] of businessLines(lead.business))addField(label,value);
     if(lead.contactMethod==='phone'&&/^\+?[0-9 ()/.-]{7,24}$/.test(lead.contact)){
       const phone=el('a','Anrufen');phone.href='tel:'+lead.contact.replace(/[ ()/.-]/g,'');panel.append(phone);
     }else if(lead.contactMethod==='email'&&/^[^@\s?,;:<>]+@[^@\s?,;:<>]+$/.test(lead.contact)){

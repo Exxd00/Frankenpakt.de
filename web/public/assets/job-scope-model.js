@@ -58,8 +58,8 @@ const inventoryFields = (isMove,service)=>{
   field('items','Gegenstände und Mengen','items',{hint:isMove?'Gleiche Stücke können Sie in einer Position zusammenfassen.':service==='entruempelung'?'Unser Team übernimmt die vereinbarten Arbeiten vor Ort. Geben Sie für jedes Stück Menge und Verbleib an.':'Geben Sie je Position Menge und vorgesehenen Verbleib an.'}),
   ...(isMove?[
     ...(service==='umzug'?[
-      field('moveRooms','Anzahl der Zimmer','moveMetric',{required:false,metric:'rooms',hint:'Zum Beispiel 2 oder 2,5.'}),
-      field('moveArea','Wohnfläche (m²)','moveMetric',{required:false,hint:'Schätzwert oder „unbekannt“.'}),
+      field('moveRooms','Anzahl der Räume','moveMetric',{required:false,metric:'rooms',hint:'Zum Beispiel 2 oder 2,5.'}),
+      field('moveArea','Fläche am bisherigen Standort (m²)','moveMetric',{required:false,hint:'Schätzwert oder „unbekannt“.'}),
       field('moveDistance','Strecke von der Abholung zum Ziel (km)','moveMetric',{required:false,hint:'Schätzwert oder „unbekannt“.'})
     ]:[]),
     checkboxes('tasks','Gewünschte Zusatzarbeiten',movingTasks),
@@ -67,7 +67,7 @@ const inventoryFields = (isMove,service)=>{
     select('stops','Weitere Lade- oder Entladeadresse?',yesNo),
     paragraph('stopDetails','Adresse und Zugang jedes Zwischenstopps',700,{when:f=>f.stops==='yes',hint:'Bitte pro Stopp Adresse, Geschoss, Aufzug, Parkmöglichkeit, Trageweg und die dortigen Stücke angeben.'})
   ]:[
-    select('extent','Was soll bearbeitet werden?',[['items','Einzelne Gegenstände'],['rooms','Einzelne Räume / Kellerabteil'],['unit','Ganze Wohnung / ganzes Haus'],['other','Mehrere Teilflächen']]),
+    select('extent','Was soll bearbeitet werden?',[['items','Einzelne Gegenstände'],['rooms','Einzelne Räume oder Kellerabteile'],['unit','Gesamtes Objekt (Büro, Wohnung oder Haus)'],['other','Mehrere Teilflächen']]),
     field('roomBreakdown','Räume, Fläche und Füllstand','rooms',{required:false,when:f=>f.extent==='rooms'}),
     textField('areas','Betroffene Räume oder Flächen',150,{placeholder:'z. B. Kellerabteil und Garage',when:f=>f.extent!=='rooms'||!f.roomBreakdown}),
     field('areaSqm','Betroffene Fläche insgesamt (m²)','decimal',{min:0.01,max:99999,when:f=>Boolean(f.extent)&&f.extent!=='items'&&!(f.extent==='rooms'&&f.roomBreakdown)}),
@@ -94,7 +94,7 @@ const inventoryFields = (isMove,service)=>{
 export function jobSections(service) {
   if(!services.includes(service)) return [];
   const moving=movingServices.includes(service);
-  const inventory={key:'inventory',title:moving?'Transportgut und Arbeiten':'Hausrat und Entsorgungsweg',fields:inventoryFields(moving,service)};
+  const inventory={key:'inventory',title:moving?'Transportgut und Arbeiten':'Gegenstände und Entsorgungsweg',fields:inventoryFields(moving,service)};
   const destination={key:'to',title:'Zieladresse und Zugang',fields:addressFields('to')};
   return [
     {key:'from',title:moving?'Abholadresse und Zugang':'Einsatzadresse und Zugang',fields:addressFields('from')},

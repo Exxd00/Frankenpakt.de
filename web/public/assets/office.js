@@ -163,8 +163,9 @@ action($('#file-form'),'submit',()=>downloadFile($('#case-ref').value.trim().toU
 const caseInbox=mountOfficeCases({api,action,editor:()=>state?.role==='editor',download:downloadFile,onQuote:async record=>{
   const fields=record.lead.jobScope?.fields||{};
   const address=[fields.fromStreet,[fields.fromZip,fields.fromTown].filter(Boolean).join(' ')].filter(Boolean).join(', ');
-  $('#customer').value=[record.lead.name,address].filter(Boolean).join('\n').slice(0,160);
-  $('#scope').value=[record.reference,record.lead.details].filter(Boolean).join('\n').slice(0,1200);
+  const business=record.lead.business;
+  $('#customer').value=business ? (business.recipient || [business.company,record.lead.name].filter(Boolean).join('\n')).slice(0,160) : [record.lead.name,address].filter(Boolean).join('\n').slice(0,160);
+  $('#scope').value=[record.reference,business?.reference && 'Projekt-/Objektnummer '+business.reference,record.lead.details].filter(Boolean).join('\n').slice(0,1200);
   quantities.clear();documentId=crypto.randomUUID();drawRates();await openTab('calc');$('#calc').scrollIntoView();
 }});
 resources();

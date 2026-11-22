@@ -3,6 +3,7 @@ const domainProperty='resource_id=sc-domain%3Afrankenpakt.de';
 const projectSheet='https://docs.google.com/spreadsheets/d/1OuzX7yf5VhcsspSsCpjt-fPPWuzOaMTl2qIv5-u0WvE/edit';
 const publicLinks=[
   ['Leistungen und Einsatzgebiet','/'],
+  ['Leistungen für Firmen und Hausverwaltungen','/firmenkunden/'],
   ['Preisorientierung für Kunden','/preise/'],
   ['Anfrage mit Auftragsdetails','/anfrage/'],
   ['Beispiel für einen Ratgeber · Küchenabbau','/kueche-abbauen/'],
@@ -29,7 +30,8 @@ const guidance=[
   ['Fachleistung abgrenzen','Bei angeschlossener Küchentechnik, besonderen Stoffen oder einem Stück außerhalb der Fahrzeug- oder Tragemöglichkeiten den betroffenen Teil vor der Zusage fachlich klären. Nur die tatsächlich ausführbaren Arbeiten anbieten. Die zulässige Restladung des eingesetzten Fahrzeugs und die Maße des Einzelstücks prüfen.'],
   ['Suchergebnisse einordnen','Die Sitemap enthält die öffentlichen Suchseiten. Den Abruf und die Indexierung einer bestimmten Seite in der URL-Prüfung der Search Console ansehen. Messzeitpunkt und Ergebnis im Suchmonitoring dokumentieren. Den Eingang einer Kundenanfrage im Angebotsbüro prüfen.'],
   ['Ratgeberbilder pflegen','Beim Austausch eines Bildes beide WebP-Größen und die Bildbeschreibung aktualisieren. Für Einsatzfotos die Freigabe zur Veröffentlichung prüfen. Den Ausschnitt auf dem Smartphone und am Desktop kontrollieren.'],
-  ['Anzeigen-Keywords auswerten','Im Ereignisprotokoll nach Kampagne, Einstiegsseite und Keyword (Anzeige) filtern. Eine befüllte Keyword-Spalte bezeichnet das übermittelte Anzeigen-Keyword. Suchanfragen aus der organischen Google-Suche auf Seitenebene in der Search Console auswerten.']
+  ['Anzeigen-Keywords auswerten','Im Ereignisprotokoll nach Kampagne, Einstiegsseite und Keyword (Anzeige) filtern. Eine befüllte Keyword-Spalte bezeichnet das übermittelte Anzeigen-Keyword. Suchanfragen aus der organischen Google-Suche auf Seitenebene in der Search Console auswerten.'],
+  ['Firmenauftrag prüfen','Unternehmen, Einsatzort und Projekt im Eingang lesen. Für eine Objektübergabe die Freigabe der Gegenstände, Übergabefrist und Zugangszeiten abgleichen. Bei einem Büroumzug Start und Ziel sowie die Zuordnung des Inventars prüfen. Eine mitgeschickte Kostenstelle oder Objektreferenz ins Angebot übernehmen. Für die Erfolgskontrolle führen die fünf Einstiegsseiten im Suchmonitoring zu den zugehörigen Messwerten.']
 ];
 
 export function officeHandbook(role){

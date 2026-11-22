@@ -4,6 +4,7 @@ import {validateJobScope,summarizeJobTiming} from '../public/assets/job-scope-mo
 import {factsFromEditedScope} from '../public/assets/estimate-scope.js';
 import {scopeConditionNotes,normalizeJobContext} from '../public/assets/job-scope-conditions.js';
 import {normalizeActualJob,evaluateActualJob} from '../public/assets/actual-job.js';
+import {businessProjects} from '../public/assets/business-projects.js';
 
 const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
 export const sources = new Set(['direkt','google','kleinanzeigen','empfehlung','sonstige','unbekannt']);
@@ -27,6 +28,25 @@ export function mobileNumber(phone){
 }
 // Keep the service identifiers from older form submissions for receipt replays.
 const formerTopics = new Map([['sofa','entsorgung'],['keller','entruempelung'],['kleinumzug','umzug']]);
+function businessInquiry(input,service,requestedService){
+  if(!input || typeof input!=='object' || Array.isArray(input) || typeof input.project!=='string' || !Object.hasOwn(businessProjects,input.project))
+    throw new InputError('Firmenvorhaben bitte prüfen.');
+  const intended=businessProjects[input.project].service;
+  const selected=service==='rueckruf'?requestedService:service;
+  if(intended && selected && selected!==intended)throw new InputError('Firmenvorhaben und Leistung passen nicht zusammen.');
+  const business={project:input.project,company:string(input.company,140,'Unternehmen',{required:service!=='rueckruf'})};
+  if(service==='rueckruf')return business;
+  for(const [key,max,label] of [['reference',80,'Projekt- oder Objektnummer'],['recipient',160,'Angebotsempfänger'],['logistics',420,'Organisation vor Ort'],['offerBy',10,'Angebotsfrist']]){
+    const entered=string(input[key],max,label);
+    if(entered)business[key]=entered;
+  }
+  if(business.offerBy){
+    const day=new Date(business.offerBy+'T12:00:00Z');
+    if(!/^\d{4}-\d\d-\d\d$/.test(business.offerBy) || !Number.isFinite(day.valueOf()) || day.toISOString().slice(0,10)!==business.offerBy)
+      throw new InputError('Angebotsfrist bitte prüfen.');
+  }
+  return business;
+}
 export function validate(body){
   if(!body||Array.isArray(body)||typeof body!=='object')throw new InputError('Anfrage bitte prüfen.');
   if(body.website)throw new InputError('Anfrage bitte prüfen.');
@@ -67,6 +87,7 @@ export function validate(body){
     lead.requestedService=body.requestedService;
   }
   const requestedService=lead.requestedService||service;
+  if(Object.hasOwn(body,'business'))lead.business=businessInquiry(body.business,service,lead.requestedService);
   if(body.vorhaben!=null){
     if(!['umzug','entsorgung','entruempelung'].includes(requestedService)||(formerTopics.get(body.vorhaben)||body.vorhaben)!==requestedService)throw new InputError('Das Vorhaben passt nicht zur ausgewählten Leistung.');
     lead.vorhaben=body.vorhaben;
