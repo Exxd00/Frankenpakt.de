@@ -82,7 +82,7 @@ function mountEstimator(form) {
     if (detailSlot) detailSlot.hidden = !actualJob;
     inquiry.hidden = !estimate;
     const params = new URLSearchParams(new URL(inquiry.href).search);
-    for (const key of [...params.keys()]) if (!['src','anzeige','schrift'].includes(key)) params.delete(key);
+    for (const key of [...params.keys()]) if (!['src','anzeige','schrift','telefonkanal'].includes(key)) params.delete(key);
     if (draft) {
       params.set(service === 'umzug' ? 'service' : 'leistung',service);
       params.set('vorhaben',service);

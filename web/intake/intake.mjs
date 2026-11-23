@@ -5,6 +5,7 @@ import {InputError,maxLeadBodyBytes} from '../lib/inputs.mjs';
 import {parseFileRequest,maxMultipartBytes} from '../lib/file-input.mjs';
 import {mailAttachment} from '../lib/attachments.mjs';
 import {renderLeadMail} from '../lib/lead-mail.mjs';
+import {phoneLines} from '../public/assets/phone-lines.js';
 
 const trusted=new Set(['https://frankenpakt.vercel.app','https://frankenpakt.de','https://www.frankenpakt.de']);
 const headers={'Content-Type':'application/json; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'no-referrer','X-Content-Type-Options':'nosniff'};
@@ -73,7 +74,7 @@ export function createCloudIntake(env,fetcher=fetch){
       const route=new URL(req.url).pathname.split('/').filter(Boolean).pop();
       if(req.method==='GET'&&route==='config'){
         const live=await rpc('live');
-        return response(200,live?{mode:'live',leadIntake:true,phone:'+4917620126149',phoneDisplay:'+49 176 20126149',email:'info@frankenpakt.de',whatsapp:'',contactMetrics:false}:{mode:'preview',leadIntake:false});
+        return response(200,live?{mode:'live',leadIntake:true,...phoneLines.main,email:'info@frankenpakt.de',whatsapp:'',contactMetrics:false}:{mode:'preview',leadIntake:false});
       }
       if(req.method==='POST'&&route==='flush'){
         const token=(req.headers.get('Authorization')||'').replace(/^Bearer /,'');

@@ -1,4 +1,5 @@
 import {searchHead,searchPaths} from '../search-site.mjs';
+import {phoneLines} from '../public/assets/phone-lines.js';
 
 function escapeHtml(value){
   return String(value||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
@@ -6,6 +7,9 @@ function escapeHtml(value){
 function lines(value){return escapeHtml(value).replace(/\r?\n/g,'<br>');}
 export function liveHtml(html,settings,canonical){
   const tel='<a href="tel:'+escapeHtml(settings.phone)+'">'+escapeHtml(settings.phoneDisplay)+'</a>';
+  const campaignPhones=settings.phone===phoneLines.main.phone
+    ? ' data-google-phone="'+phoneLines.google.phone+'" data-kleinanzeigen-phone="'+phoneLines.kleinanzeigen.phone+'"'
+    : '';
   const mail='<a href="mailto:'+escapeHtml(settings.email)+'">'+escapeHtml(settings.email)+'</a>';
   const privacy=escapeHtml(settings.privacyContact);
   const pathname=new URL(canonical).pathname;
@@ -20,7 +24,7 @@ export function liveHtml(html,settings,canonical){
   const extra=settings.legalExtra?'<p>'+lines(settings.legalExtra)+'</p>':'';
   return html
     .replace('<meta name="robots" content="noindex,follow">','<meta name="robots" content="'+robots+'">')
-    .replaceAll('data-contact-mode="preview"','data-contact-mode="live" data-metrics="'+(settings.contactMetrics?'1':'0')+'"')
+    .replaceAll('data-contact-mode="preview"','data-contact-mode="live" data-metrics="'+(settings.contactMetrics?'1':'0')+'"'+campaignPhones)
     .replaceAll('data-contact="phone" hidden href="/anfrage/?kontakt=telefon"','data-contact="phone" href="tel:'+escapeHtml(settings.phone)+'"')
     .replaceAll('data-contact="whatsapp" hidden href="/anfrage/"',settings.whatsapp?'data-contact="whatsapp" rel="noreferrer" href="https://wa.me/'+escapeHtml(settings.whatsapp.slice(1))+'"':'data-contact="whatsapp" hidden href="/anfrage/"')
     .replace('</head>',()=>searchHead(html,settings,canonical)+'</head>')

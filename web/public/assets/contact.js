@@ -60,7 +60,7 @@
       ? 'Ihre Telefon-App öffnet sich. Sie können auch einen Rückruf anfragen.'
       : 'Sie wechseln zu WhatsApp. Dort können Sie Ihre Nachricht schreiben und selbst absenden.';
     number.hidden = !phone || preview;
-    number.textContent = !number.hidden ? href.slice(4) : '';
+    number.textContent = !number.hidden ? (link.dataset.phoneDisplay || href.slice(4).replace(/^\+49911/, '+49 911 ')) : '';
     previewNote.hidden = !preview;
     previewNote.textContent = preview ? 'Vorschau. Sie können den Ablauf ohne Verbindung testen.' : '';
     demoResult.hidden = true;

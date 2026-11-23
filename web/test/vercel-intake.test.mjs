@@ -82,7 +82,7 @@ test('cloud production serves operator pages and sends submissions only to the p
   const routes=routesFor('production','','1');
   const read=(path)=>readFileSync(new URL('../public'+destination(routes,'GET',path),import.meta.url),'utf8');
   const legal=read('/impressum/');
-  for(const value of ['Mohamad Alzaim','Einsteinring 12','90453 Nürnberg','mailto:info@frankenpakt.de','tel:+4917620126149']){
+  for(const value of ['Mohamad Alzaim','Einsteinring 12','90453 Nürnberg','mailto:info@frankenpakt.de','tel:+4991181672879']){
     assert.ok(legal.includes(value));
   }
   assert.ok(read('/anfrage/').includes('Anfrage senden'));

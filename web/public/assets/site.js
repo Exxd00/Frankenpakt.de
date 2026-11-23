@@ -1,4 +1,4 @@
-'use strict';
+import {carryContactCampaign, contactCampaign} from './contact-channel.js';
 
 document.documentElement.classList.add('js');
 const pageUrl = new URL(location.href);
@@ -18,13 +18,8 @@ if (params.getAll('entsorgungsweg').length === 1 && params.get('entsorgungsweg')
 }
 params.delete('asn');
 if (pageUrl.href !== location.href) history.replaceState(history.state,'',pageUrl);
-const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
-const rawSource = (params.get('src') || params.get('utm_source') || '').toLowerCase();
-const source = channels.has(rawSource) ? rawSource : 'unbekannt';
-const adLabels = new Set(['privatumzug-team','seniorenumzug-team','entruempelung-nuernberg','entsorgung-nuernberg']);
-const rawLabel = params.get('anzeige');
-const adVariant = params.getAll('src').length === 1 && params.get('src') === 'google' &&
-  params.getAll('anzeige').length === 1 && adLabels.has(rawLabel) ? rawLabel : null;
+const campaign = contactCampaign(params);
+const {source, adVariant} = campaign;
 let largeType = params.get('schrift') === 'gross';
 let carryPricingTopic;
 const clearance = {
@@ -96,9 +91,7 @@ function updateLink(anchor) {
   if (url.origin !== location.origin) return;
   if (carryPricingTopic) carryPricingTopic(new URL(location.href),url);
   for (const key of obsoleteAmountKeys) url.searchParams.delete(key);
-  if (source !== 'unbekannt') url.searchParams.set('src', source);
-  if (adVariant) url.searchParams.set('anzeige',adVariant);
-  else url.searchParams.delete('anzeige');
+  carryContactCampaign(url.searchParams, campaign);
   if (largeType) url.searchParams.set('schrift', 'gross');
   else url.searchParams.delete('schrift');
   anchor.setAttribute('href', url.pathname + url.search + url.hash);
@@ -314,8 +307,7 @@ function telephoneLooksValid(value) {
 // The confirmation belongs to this history entry. A bookmarked or shared URL opens the neutral page.
 function goToReceipt(receipt) {
   const target = new URL('/danke/', location.href);
-  if (source !== 'unbekannt') target.searchParams.set('src', source);
-  if (adVariant) target.searchParams.set('anzeige',adVariant);
+  carryContactCampaign(target.searchParams, campaign);
   if (largeType) target.searchParams.set('schrift', 'gross');
   const measureLead = receipt.mode === 'live' && document.querySelector('[data-statistics]')?.getAttribute('aria-pressed') === 'true';
   history.pushState({frankenpacktReceipt: receipt, frankenpacktMeasureLead:measureLead}, '', target);
@@ -365,7 +357,28 @@ function showReceipt() {
 }
 showReceipt();
 
-const liveDocument = Boolean(document.querySelector('#contact-dialog[data-contact-mode="live"]'));
+const liveDialog = document.querySelector('#contact-dialog[data-contact-mode="live"]');
+const liveDocument = Boolean(liveDialog);
+const legalContactPage = ['/impressum/','/datenschutz/'].includes(location.pathname);
+const campaignNumber = !legalContactPage && (campaign.phoneChannel === 'google' ? liveDialog?.dataset.googlePhone :
+  campaign.phoneChannel === 'kleinanzeigen' ? liveDialog?.dataset.kleinanzeigenPhone : '');
+function applyContactLine(config) {
+  if (!liveDocument) return;
+  if (campaignNumber) {
+    const display = campaignNumber.replace(/^\+49911/, '+49 911 ');
+    for (const link of document.querySelectorAll('[data-contact="phone"][href^="tel:"], [data-live-phone] a, [data-phone-link]')) {
+      link.href = 'tel:' + campaignNumber;
+      link.dataset.phoneDisplay = display;
+      if (!link.matches('[data-contact="phone"]')) (link.querySelector('span') || link).textContent = display;
+    }
+  } else if (config?.phone && /^\+?\d{7,15}$/.test(config.phone)) {
+    for (const link of document.querySelectorAll('[data-phone-link]')) {
+      link.href = 'tel:' + config.phone;
+      (link.querySelector('span') || link).textContent = config.phoneDisplay || config.phone;
+    }
+  }
+}
+applyContactLine();
 let mode = liveDocument ? 'unavailable' : 'preview';
 const needsConfiguration = form || document.querySelector('[data-phone-link]');
 const canConfigure = needsConfiguration && ['http:','https:'].includes(location.protocol);
@@ -373,13 +386,7 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
   .then(r => r.ok ? r.json() : null).then(c => {
     if (c?.mode !== 'live' || c.leadIntake !== true) return;
     mode = 'live';
-    if (c.phone && /^\+?\d{7,15}$/.test(c.phone)) {
-      const link = document.querySelector('[data-phone-link]');
-      if (link) {
-        link.href = 'tel:' + c.phone;
-        link.querySelector('span').textContent = c.phoneDisplay || c.phone;
-      }
-    }
+    applyContactLine(c);
   }).catch(() => {}) : Promise.resolve();
 
 function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessInquiry) {
