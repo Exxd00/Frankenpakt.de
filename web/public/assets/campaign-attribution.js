@@ -1,4 +1,5 @@
 import {publicPagePaths} from './search-routes.js';
+import {googleClickId} from './contact-channel.js';
 
 export const statisticsChoice = 'frankenpakt.statistik.v2';
 const visitKey = 'frankenpakt.kampagne.v2';
@@ -42,25 +43,28 @@ export function campaignVisit(location, win, referrer = '') {
   const internal = referring?.origin === location.origin;
   const external = referring && !internal;
   const google = external && ['google.de','www.google.de','google.com','www.google.com','google.at','www.google.at'].includes(referring.hostname);
-  const adClick = ['gclid','wbraid','gbraid'].some(key=>query.has(key));
-  const source = channels.has(channel) ? channel : google || adClick ? 'google' : external ? 'sonstige' : 'direkt';
+  const ambiguous = ['src','utm_source','utm_medium'].some(key=>query.getAll(key).length>1) ||
+    (one('src') && one('utm_source') && one('src')!==one('utm_source'));
+  const adClick = !ambiguous && ['gclid','wbraid','gbraid'].some(key=>googleClickId(query,key));
+  const source = ambiguous ? 'unbekannt' : channels.has(channel) ? channel : channel ? 'sonstige' :
+    google || adClick ? 'google' : external ? 'sonstige' : 'direkt';
   let previous;
   try { previous = JSON.parse(win.sessionStorage.getItem(visitKey)); } catch {}
   const tagged = adClick || ['utm_medium','utm_campaign','utm_term'].some(key=>query.has(key));
   const navigation = win.performance?.getEntriesByType?.('navigation')?.[0]?.type;
   const continuation = internal || navigation === 'reload' || navigation === 'back_forward';
   // Distinguish a fresh address-bar or external arrival in a reused tab from navigation within a visit.
-  if (!tagged && continuation && previous && (!channel || channel === previous.source)) {
+  if (!ambiguous && !tagged && continuation && previous && (!channel || channel === previous.source)) {
     const previousSource = channels.has(previous.source) ? previous.source : 'unbekannt';
     const attribution = cleanAttribution(previous.attribution,previousSource);
     if (attribution) return {source:previousSource,attribution};
   }
-  const rawMedium = one('utm_medium');
+  const rawMedium = ambiguous ? '' : one('utm_medium');
   let medium = rawMedium;
   if (paid.has(rawMedium) || (!rawMedium && source === 'google' && (campaignSlugs.has(one('anzeige')) || adClick))) medium='cpc';
   else if (!rawMedium && external) medium=google && referring.pathname === '/search' ? 'organic' : 'referral';
   const attribution = cleanAttribution({landing:location.pathname,medium,campaign:one('utm_campaign'),
-    gclid:query.getAll('gclid').length === 1 ? query.get('gclid') : null,
+    gclid:googleClickId(query,'gclid'),
     keyword:one('utm_term').normalize('NFC').replace(/\s+/g,' ')},source);
   const visit = {source,attribution};
   try { win.sessionStorage.setItem(visitKey,JSON.stringify(visit)); } catch {}

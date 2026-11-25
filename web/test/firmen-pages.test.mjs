@@ -71,7 +71,7 @@ test('each company search result has its own local metadata, service identity an
       assert.equal(entity.provider['@id'], page.publisher['@id']);
     }
     assert.equal(page.primaryImageOfPage.contentUrl, imageUrl);
-    assert(html.includes('property="og:image" content="' + imageUrl + '"'), path);
+    assert(html.includes('property="og:image" content="' + publicOrigin + '/assets/teilen/' + project + '.jpg"'), path);
     const img = html.match(/<picture class="firm-photo">\s*<img\b[^>]+>/)[0];
     assert.match(img, /\balt="[^"]{20,}"/);
     assert.match(img, /\bsizes="[^"]+"/);

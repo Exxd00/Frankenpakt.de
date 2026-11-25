@@ -55,6 +55,7 @@ async function body(req,maxBytes){
   try{return JSON.parse(bin.toString('utf8'));}catch{throw new InputError('Ungültige Anfrage.');}
 }
 const controlledPages=new Set([...searchPaths,'/anfrage/','/umzuege/','/entruempelung/','/leistungen/','/umzug-nuernberg/']);
+const automatedVisit = /bot|crawler|spider|lighthouse|headless|preview|WhatsApp\/|facebookexternalhit|meta-external(?:agent|fetcher)/i;
 export function startServer({env=process.env,publicDir=path.join(webRoot,'public'),port=Number(env.PORT||8787),host=env.HOST||'127.0.0.1',sendStaffMail=fetch,sendOfficeEvent=fetch}={}){
   const config=configuration(env);
   const officeFileToken=env.OPS_OFFICE_FILE_TOKEN;
@@ -176,7 +177,7 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
       if(receiptPage){res.setHeader('X-Robots-Tag','noindex, nofollow');res.setHeader('Referrer-Policy','no-referrer');}
       res.writeHead(200,{'Content-Type':types[path.extname(target)],'Content-Length':bin.length,'Cache-Control':receiptPage?'no-store':'no-cache'});
       res.end(req.method==='HEAD'?undefined:bin);
-      if(db&&req.method==='GET'&&controlledPages.has(page)&&!(req.headers['user-agent']||'').match(/bot|crawler|spider|lighthouse|headless|preview/i)){
+      if(db&&req.method==='GET'&&controlledPages.has(page)&&!automatedVisit.test(req.headers['user-agent']||'')){
         const tag=(url.searchParams.get('src')||url.searchParams.get('utm_source')||'').toLowerCase();
         db.landing(page,tag||'unbekannt');
       }

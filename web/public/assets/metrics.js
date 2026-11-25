@@ -10,6 +10,17 @@ const events = new Set(['service_chosen','estimate_viewed','upload_ready','conta
 const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf']);
 const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
 const pageServices = {...guideServices,...businessServices,'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
+const receiptsKey = 'frankenpakt.gezaehlte-anfragen.v1';
+
+function firstReceiptForTab(win,reference) {
+  try {
+    const saved=JSON.parse(win.sessionStorage.getItem(receiptsKey) || '[]');
+    const recent=Array.isArray(saved)?saved.filter(value=>typeof value==='string' && /^AN-[A-F0-9]{16}$/.test(value)):[];
+    if(recent.includes(reference))return false;
+    win.sessionStorage.setItem(receiptsKey,JSON.stringify([...recent.slice(-63),reference]));
+  } catch { /* History still excludes repeated views when session storage is unavailable. */ }
+  return true;
+}
 
 function metricCategories(explicitService,location) {
   const q = new URLSearchParams(location.search);
@@ -25,7 +36,7 @@ export function publicMetric(name, explicitService, location, uuid, visit) {
   return {id:uuid(),event:name,...categories,count:1,consent:true};
 }
 
-function analyticsFrame(id) {
+function analyticsFrame(id,traffic) {
   if (!/^G-[A-Z0-9]{6,14}$/.test(id)) return null;
   const frame = document.createElement('iframe');
   frame.hidden = true;
@@ -39,7 +50,7 @@ function analyticsFrame(id) {
   const listen = event => {
     if (event.source !== frame.contentWindow || event.origin !== location.origin || event.data !== 'fp-statistik-bereit' || ready) return;
     ready = true;
-    post({cmd:'start',id,client:crypto.randomUUID()});
+    post({cmd:'start',id,client:crypto.randomUUID(),...traffic});
     for (const data of pending.splice(0)) post(data);
   };
   window.addEventListener('message',listen);
@@ -57,7 +68,7 @@ function analyticsFrame(id) {
   };
 }
 
-export function mountMetrics({doc=document,win=window,location=win.location,storage,send=(...args)=>fetch(...args),uuid=()=>crypto.randomUUID(),frameFactory=()=>analyticsFrame(GA_MEASUREMENT_ID)}={}) {
+export function mountMetrics({doc=document,win=window,location=win.location,storage,send=(...args)=>fetch(...args),uuid=()=>crypto.randomUUID(),frameFactory=traffic=>analyticsFrame(GA_MEASUREMENT_ID,traffic)}={}) {
   const toggle = doc.querySelector('[data-statistics]');
   if (!toggle || !sites.has(location.hostname) || !pages.has(location.pathname)) return;
   const read = () => {try{return (storage || win.localStorage).getItem(choiceKey) === 'yes';}catch{return false;}};
@@ -74,8 +85,15 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   function set(value) {
     if (value !== enabled) {
       enabled = value;
-      if (enabled) {visit=campaignVisit(location,win,doc.referrer);frame=frameFactory();}
-      else {visit=null;forgetVisit(win);frame?.close();frame=null;clearCookies();}
+      if (enabled) {
+        visit=campaignVisit(location,win,doc.referrer);
+        frame=frameFactory({source:visit.source,medium:visit.attribution.medium});
+      }
+      else {
+        visit=null;forgetVisit(win);
+        try {win.sessionStorage.removeItem(receiptsKey);} catch {}
+        frame?.close();frame=null;clearCookies();
+      }
     }
     toggle.setAttribute('aria-pressed',String(enabled));
     toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
@@ -94,12 +112,12 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   doc.addEventListener('fp-inquiry-attribution',event=>{
     if(enabled && read() && visit && typeof event.detail?.accept==='function')event.detail.accept(visit);
   });
-  // A real submission owns a single history entry. Refreshes and shared thank-you links do not create leads.
+  // History covers refresh, sharing and Back. A retry can return the same receipt in a new history entry.
   const entry=win.history?.state;
   if(location.pathname==='/danke/' && entry?.frankenpacktMeasureLead===true) {
     win.history.replaceState({...entry,frankenpacktMeasureLead:false},'');
     const receipt=entry.frankenpacktReceipt;
-    if(enabled && receipt?.mode==='live' && /^AN-[A-F0-9]{16}$/.test(receipt.reference)) {
+    if(enabled && receipt?.mode==='live' && /^AN-[A-F0-9]{16}$/.test(receipt.reference) && firstReceiptForTab(win,receipt.reference)) {
       frame?.send({event:'generate_lead',...metricCategories(receipt.service,location),source:visit.source},location.pathname,
         {leadType:receipt.callback===true?'callback':'quote'});
     }
@@ -112,6 +130,29 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   win.addEventListener('storage',e=>{if(e.key===choiceKey||e.key===null)set(read());});
   win.addEventListener('pagehide',()=>{frame?.close();frame=null;enabled=false;});
   win.addEventListener('pageshow',e=>{if(e.persisted)set(read());});
+  // Count the first real edit on a working inquiry form. Field values never enter the message.
+  const inquiry = location.pathname === '/anfrage/' && doc.querySelector('#lead-form');
+  if (inquiry && doc.querySelector('#contact-dialog[data-contact-mode="live"]')) {
+    const measureForm = (name,callback,details={}) => {
+      if (!enabled) return;
+      const service = doc.querySelector('#service')?.value || (callback ? 'rueckruf' : '');
+      frame?.send({event:name,...metricCategories(service,location),source:visit.source},
+        location.pathname,{leadType:callback?'callback':'quote',...details});
+    };
+    const firstEdit = event => {
+      if (!event.isTrusted || !event.target.matches?.('input:not([type="hidden"]):not(#website),select,textarea') ||
+          doc.querySelector('#send-lead')?.disabled !== false) return;
+      inquiry.removeEventListener('input',firstEdit);
+      inquiry.removeEventListener('change',firstEdit);
+      measureForm('form_start',doc.querySelector('#callback-window')?.hidden === false);
+    };
+    inquiry.addEventListener('input',firstEdit);
+    inquiry.addEventListener('change',firstEdit);
+    doc.addEventListener('fp-submit-error',event=>{
+      const {reason,callback}=event.detail || {};
+      if (['attachment','rate_limit','unconfirmed'].includes(reason)) measureForm('form_submit_error',callback===true,{reason});
+    });
+  }
   doc.addEventListener('click',event=>{
     const chosen=event.target.closest?.('[data-guide-choice],a.service-card,a.firm-card');
     if(!chosen)return;
@@ -124,8 +165,9 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   });
   doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
   doc.addEventListener('fp-contact-handoff',e=>{
-    const channel=e.detail?.channel;
-    if(channel==='phone'||channel==='whatsapp')record('contact_intent',doc.querySelector('#service')?.value,{channel});
+    const {channel,placement} = e.detail || {};
+    if(channel==='phone'||channel==='whatsapp')record('contact_intent',doc.querySelector('#service')?.value,
+      {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});
   });
   doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));
 }

@@ -190,6 +190,11 @@ test('live and preview HTTP, canonical URL, restricted contact data, backup and 
     }
     const landing=await fetch(live.base+'/?src=google&gclid=do-not-keep');assert.equal(landing.status,200);
     assert.match(await landing.text(),/canonical/);
+    for(const agent of ['WhatsApp/2.25', 'facebookexternalhit/1.1', 'meta-externalfetcher/1.1']) {
+      const card=await fetch(live.base+'/?src=google',{headers:{'user-agent':agent}});
+      assert.equal(card.status,200);
+      await card.text();
+    }
     assert.equal((await live.post(data,{origin:'https://cross-site.invalid'})).status,403);
     assert.equal((await live.post(data,{'content-type':'text/plain'})).status,415);
     const res=await live.post(data,{origin:'https://example.invalid'});

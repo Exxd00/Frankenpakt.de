@@ -41,6 +41,19 @@ test('only bought keywords enter the sheet and a fresh arrival in a reused tab s
   assert.deepEqual(cleanAttribution({...ad.attribution,medium:'organic'},'google'),{landing:'/sofa-entsorgen/',medium:'organic'});
   assert.equal(cleanAttribution({landing:'/admin/?token=private'},'google'),null);
 });
+test('malformed Google IDs and contradictory channel tags do not create paid Google visits',()=>{
+  const visit = query => campaignVisit(new URL('/?'+query,url),{});
+  for (const query of ['gclid=', 'gclid=%2B12', 'gclid=A&gclid=B','gbraid=', 'wbraid=%40address']) {
+    assert.deepEqual(visit(query),{source:'direkt',attribution:{landing:'/'}},query);
+  }
+  for (const query of ['src=google&utm_source=kleinanzeigen','utm_medium=cpc&utm_medium=organic','src=google&src=google']) {
+    assert.deepEqual(visit(query+'&gclid=Valid_Id'),{source:'unbekannt',attribution:{landing:'/'}},query);
+  }
+  assert.deepEqual(visit('src=google&utm_source=google&utm_medium=cpc&gclid=Valid_Id'),
+    {source:'google',attribution:{landing:'/',medium:'cpc',gclid:'Valid_Id'}});
+  assert.deepEqual(visit('utm_source=bing&utm_medium=cpc&gclid=Other'),
+    {source:'sonstige',attribution:{landing:'/',medium:'cpc'}});
+});
 test('guide and commercial service pages record the correct category and exclude query text',()=>{
   assert.ok(Object.keys(guideServices).length>0);
   for(const [path,service] of Object.entries({...guideServices,...businessServices})){
@@ -93,7 +106,8 @@ test('only the first view of an opted-in live receipt measures a GA lead, withou
   for(const callback of [false,true]){
     const lead={mode:'live',reference:'AN-ABCDEF0123456789',service:'umzug',callback};
     const history={state:{frankenpacktReceipt:lead,frankenpacktMeasureLead:true},replaceState(next){this.state=next;}};
-    const win=Object.assign(new EventTarget(),{history});
+    const remembered=new Map();
+    const win=Object.assign(new EventTarget(),{history,sessionStorage:{getItem:key=>remembered.get(key),setItem:(key,value)=>remembered.set(key,value)}});
     const doc=new EventTarget(),toggle=new EventTarget();
     toggle.setAttribute=()=>{};
     doc.querySelector=()=>toggle;
@@ -102,10 +116,61 @@ test('only the first view of an opted-in live receipt measures a GA lead, withou
       send:()=>assert.fail('Saved leads are already logged by the server.'),
       frameFactory:()=>({send:(...args)=>sent.push(args)})});
     mount(); mount();
+    history.state={frankenpacktMeasureLead:true,frankenpacktReceipt:lead};mount();
     assert.deepEqual(sent,[[{event:'generate_lead',service:'umzug',source:'google'},'/danke/',{leadType:callback?'callback':'quote'}]]);
     assert.equal(history.state.frankenpacktReceipt,lead);
     history.state.frankenpacktMeasureLead=true;mount(false);mount();
     history.state={frankenpacktMeasureLead:true,frankenpacktReceipt:{...lead,mode:'preview'}};mount();
     assert.equal(sent.length,1);
+    history.state={frankenpacktMeasureLead:true,frankenpacktReceipt:{...lead,reference:'AN-ABCDEF0123456780'}};mount();
+    assert.equal(sent.length,2);
+    assert(!JSON.stringify(sent).includes('AN-'));
+  }
+});
+
+test('the analytics frame receives consented traffic categories only',()=>{
+  const doc=new EventTarget(), win=new EventTarget(), toggle=new EventTarget(), started=[];
+  toggle.setAttribute=()=>{};
+  doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;
+  const location=new URL('https://frankenpakt.de/sofa-entsorgen/?src=google&utm_medium=cpc&utm_campaign=12345&utm_term=sofa+entsorgen+n%C3%BCrnberg&gclid=Private');
+  mountMetrics({doc,win,location,storage:{getItem:()=>'yes'},frameFactory:traffic=>{started.push(traffic);return {};}});
+  assert.deepEqual(started,[{source:'google',medium:'cpc'}]);
+});
+
+test('first actual inquiry edit counts once by form kind and contact placement is an enumerated GA dimension',()=>{
+  for (const callback of [true,false]) {
+    const controls = new Map(), doc = new EventTarget(), win = new EventTarget(), toggle = new EventTarget();
+    const inquiry = {
+      addEventListener:(kind,fn)=>controls.set(kind,fn),
+      removeEventListener:kind=>controls.delete(kind)
+    };
+    toggle.setAttribute=()=>{};
+    const submit={disabled:true};
+    const nodes={'[data-statistics]':toggle,'#lead-form':inquiry,'#contact-dialog[data-contact-mode="live"]':{},
+      '#send-lead':submit,'#callback-window':{hidden:!callback},'#service':{value:callback?'':'entsorgung'}};
+    doc.querySelector=selector=>nodes[selector];
+    const sent=[],rows=[];
+    mountMetrics({doc,win,location:new URL('https://frankenpakt.de/anfrage/'),storage:{getItem:()=>'yes'},uuid,
+      send:async (_url,init)=>rows.push(JSON.parse(init.body)),frameFactory:()=>({send:(...args)=>sent.push(args)})});
+    const target={matches:()=>true,get value(){throw Error('Private field read');}};
+    const edit=isTrusted=>controls.get('input')?.({isTrusted,target});
+    edit(true);submit.disabled=false;edit(false);
+    assert.equal(sent.length,0);
+    edit(true);edit(true);
+    assert.equal(controls.size,0);
+    assert.deepEqual(sent,[[{event:'form_start',service:callback?'rueckruf':'entsorgung',source:'direkt'},'/anfrage/',{leadType:callback?'callback':'quote'}]]);
+    doc.dispatchEvent(new CustomEvent('fp-submit-error',{detail:{callback,reason:'PRIVATE'}}));
+    assert.equal(sent.length,1);
+    doc.dispatchEvent(new CustomEvent('fp-submit-error',{detail:{callback,reason:'rate_limit',rawError:'PRIVATE'}}));
+    assert.deepEqual(sent[1],[{event:'form_submit_error',service:callback?'rueckruf':'entsorgung',source:'direkt'},'/anfrage/',{leadType:callback?'callback':'quote',reason:'rate_limit'}]);
+    assert.equal(rows.length,0);
+    for (const placement of ['floating','footer','PRIVATE']) {
+      doc.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel:'whatsapp',placement,text:'PRIVATE'}}));
+      assert.deepEqual(sent.at(-1)[2],{channel:'whatsapp',placement:placement==='PRIVATE'?'page':placement});
+      assert.equal(rows.at(-1).contactChannel,'whatsapp');
+      assert.equal(rows.at(-1).event,'contact_intent');
+      assert(!JSON.stringify(rows.at(-1)).includes('placement'));
+    }
+    assert(!JSON.stringify(sent).includes('PRIVATE'));
   }
 });

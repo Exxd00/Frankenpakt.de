@@ -54,7 +54,7 @@ const descriptions = Array.from({length: 3}, (_, i) => 'Description ' + (i + 1))
 const ads = [['Campaign','Ad group','Ad type','Status',...titles,...descriptions,'Path 1','Path 2',landingColumn]];
 const keywords = [['Campaign','Ad group','Keyword','Match type','Status']];
 const groups = [['Campaign','Ad group','Ad group status','Final URL suffix']];
-const searchUrlSuffix = 'utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}';
+const searchUrlSuffix = 'utm_source=google&utm_medium=cpc&utm_campaign={campaignid}&utm_term={keyword}';
 const negatives = [['Campaign','Keyword','Type']];
 const links = [['Campaign','Ad group','Link text',landingColumn]];
 const release = [['Startstufe','Kampagne','Anzeigengruppe','Keyword','Zielseite']];

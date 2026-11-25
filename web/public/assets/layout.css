@@ -986,13 +986,59 @@ header{border-bottom:0}
 .endcta .contact-choice:hover { background-color: #52624d; }
 .endcta .button:not(.secondary):hover { color: var(--tomato-ink); }
 .footer-main .contact-choices { margin-top: .65rem; }
+.floating-contacts {
+  position: fixed;
+  z-index: 8;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(.7rem, env(safe-area-inset-bottom));
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .3rem;
+  padding: .3rem;
+  max-width: calc(100% - 1rem);
+  border: 1px solid #87977d;
+  border-radius: .95rem;
+  background: #f7f5eff5;
+  box-shadow: 0 3px 16px #25372630;
+}
+.floating-contacts .contact-choice {
+  min-height: 44px;
+  background: linear-gradient(145deg, #f7f5ef, #dde6d6);
+}
+.floating-contacts [data-contact="phone"] {
+  background: #304536;
+  color: #fff;
+  border-color: #304536;
+}
+html:has(.floating-contacts) { scroll-padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+body:has(dialog[open], .menutoggle[aria-expanded="true"], main form:focus-within, main [contenteditable="true"]:focus, main input:focus, main textarea:focus, main select:focus) .floating-contacts {
+  display: none;
+}
+@media screen and (max-width: 780px) {
+  .floating-contacts {
+    inset-inline: 0;
+    margin-inline: auto;
+    width: max-content;
+    max-width: calc(100% - max(1rem, env(safe-area-inset-left) + env(safe-area-inset-right)));
+  }
+  .floating-contacts .contact-choice { min-width: 0; flex: 1 1 auto; padding-inline: .65rem; }
+}
+@media (max-height: 360px) {
+  .floating-contacts { display: none; }
+}
+@media (max-width: 360px) {
+  .floating-contacts .contact-choice { padding-inline: .45rem; }
+  .floating-contacts .contact-choice > svg { display: none; }
+}
 .contact-dialog {
   background: var(--cream);
   color: var(--ink);
   border: 1px solid #a4b19a;
   padding: 1.55rem;
   width: min(28rem, calc(100% - 2rem));
-  max-height: calc(100dvh - 2rem);
+  max-height: calc(min(100dvh, var(--contact-viewport, 100dvh)) - 2rem);
+  overflow-y: auto;
   border-radius: 1.15rem;
   box-shadow: 0 1rem 5rem #18221a40;
 }
@@ -1000,6 +1046,13 @@ header{border-bottom:0}
 .contact-dialog h2 { font-size: clamp(1.6rem, 4.6vw, 2rem); padding-right: 2rem; }
 .contact-dialog p { margin-top: .7rem; line-height: 1.45; font-size: 1rem; }
 .contact-dialog .handoff-number { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
+.handoff-draft { margin-top: .8rem; }
+.handoff-draft label { display: block; font-weight: 650; margin-bottom: .3rem; }
+.handoff-draft textarea {
+  box-sizing: border-box; width: 100%; resize: vertical; min-height: 5rem;
+  max-height: 24dvh; padding: .55rem; font: inherit; font-size: max(1rem, 16px);
+  color: var(--ink); background: #fff; border: 1px solid #62765b; border-radius: .5rem;
+}
 .contact-dialog .handoff-preview { color: var(--muted); font-size: .93rem; }
 .dialog-close {
   display: grid; place-items: center; position: absolute; right: .55rem; top: .55rem;
@@ -1040,5 +1093,5 @@ header{border-bottom:0}
   :is(.contact-choice, .button)::before { display: none; }
 }
 @media print {
-  .contact-dialog, .contact-choices { display: none !important; }
+  .contact-dialog, .contact-choices, .floating-contacts { display: none !important; }
 }

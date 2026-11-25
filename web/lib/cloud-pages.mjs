@@ -1,5 +1,5 @@
 import {liveHtml} from './render-live.mjs';
-import {phoneLines} from '../public/assets/phone-lines.js';
+import {businessWhatsApp,phoneLines} from '../public/assets/phone-lines.js';
 
 const cloudPrivacyHtml = '<h2>Wer Ihre Anfrage bearbeitet</h2><p>Mohamad Alzaim und die für den Auftrag berechtigten Mitarbeitenden können Ihre Anfrage und die zugehörigen Dateien einsehen. Kontaktdaten, Angaben zum Auftrag und Anlagen werden im Auftragsbereich bei Supabase in der EU gespeichert. Vercel stellt die Website bereit. Für interne Benachrichtigungen nutzen wir Resend und das betriebliche Postfach bei Hostinger. Anlagen können der Benachrichtigung beigefügt sein.</p>'+
   '<p>Zur Bearbeitung führen wir ein zugriffsbeschränktes Anfragenregister in Google Sheets. Darin stehen Ihre Vorgangsnummer, Ihr Name, Ihre angegebenen Kontaktdaten und der gewünschte Kontaktweg sowie Angaben zu Leistung, Einsatzort, Termin und Bearbeitungsstand. Bei Firmenanfragen können auch Firma, Ansprechpartner und Angebotsfrist enthalten sein. Zu Anlagen erscheint nur die Anzahl. Zugriff haben die für die Bearbeitung berechtigten Personen.</p>'+
@@ -10,6 +10,7 @@ export const operator = {
   operatorName:'Mohamad Alzaim', legalAddress:'Einsteinring 12\n90453 Nürnberg',
   email:'info@frankenpakt.de', privacyContact:'info@frankenpakt.de',
   ...phoneLines.main,
+  whatsapp: businessWhatsApp,
   cloudPrivacyHtml
 };
 

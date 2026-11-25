@@ -1,5 +1,6 @@
 import {taskPages} from './task-pages.mjs';
 import {firmPages} from './firmen-pages.mjs';
+import {shareCards, shareHeight, shareWidth} from './share-cards.mjs';
 
 export const publicOrigin = 'https://frankenpakt.de';
 export const guideServices = Object.fromEntries(taskPages.map(page => [page.path, page.service]));
@@ -50,27 +51,39 @@ function escapeAttribute(value) {
   return String(value).replaceAll('&','&amp;').replaceAll('"','&quot;').replaceAll('<','&lt;').replaceAll('>','&gt;');
 }
 
-export function searchHead(html,settings,canonical) {
-  const {origin,pathname}=new URL(canonical);
+export function searchHead(html,settings,pageUrl) {
+  const {origin,pathname}=new URL(pageUrl);
+  const canonical=origin+pathname;
   const canonicalTag='<link rel="canonical" href="'+escapeAttribute(canonical)+'">';
-  if(!searchPaths.includes(pathname))return canonicalTag;
+  const card=shareCards[pathname];
+  if(!card)return canonicalTag;
   // These values are already escaped in the template. The JSON graph below uses plain strings.
   const title=html.match(/<title>([^<]*)<\/title>/)?.[1];
   const description=html.match(/<meta name="description" content="([^"]*)">/)?.[1];
   if(!title||!description)return canonicalTag;
-  const imageTag=html.match(/<img\b[^>]*\bsrc="\/assets\/[^"]+\.webp"[^>]*>/)?.[0];
-  const photo=imageTag?.match(/\bsrc="([^"]+)"/)?.[1];
-  const photoAlt=imageTag?.match(/\balt="([^"]+)"/)?.[1];
+  const shareImage=escapeAttribute(origin+card.image);
+  const shareAlt=escapeAttribute(card.alt);
   const tags=[canonicalTag,
     '<meta property="og:type" content="website">',
     '<meta property="og:locale" content="de_DE">',
     '<meta property="og:site_name" content="FrankenPackt">',
     '<meta property="og:title" content="'+title+'">',
     '<meta property="og:description" content="'+description+'">',
-    '<meta property="og:url" content="'+escapeAttribute(canonical)+'">'
+    '<meta property="og:url" content="'+escapeAttribute(canonical)+'">',
+    '<meta property="og:image" content="'+shareImage+'">',
+    '<meta property="og:image:type" content="image/jpeg">',
+    '<meta property="og:image:width" content="'+shareWidth+'">',
+    '<meta property="og:image:height" content="'+shareHeight+'">',
+    '<meta property="og:image:alt" content="'+shareAlt+'">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:title" content="'+title+'">',
+    '<meta name="twitter:description" content="'+description+'">',
+    '<meta name="twitter:image" content="'+shareImage+'">',
+    '<meta name="twitter:image:alt" content="'+shareAlt+'">'
   ];
-  if(photo)tags.push('<meta property="og:image" content="'+escapeAttribute(origin+photo)+'">');
-  if(photoAlt)tags.push('<meta property="og:image:alt" content="'+photoAlt+'">');
+  if(!searchPaths.includes(pathname))return tags.join('');
+  const imageTag=html.match(/<img\b[^>]*\bsrc="\/assets\/[^"]+\.webp"[^>]*>/)?.[0];
+  const photo=imageTag?.match(/\bsrc="([^"]+)"/)?.[1];
   const businessId=origin+'/#betrieb', siteId=origin+'/#website';
   const graph=[];
   const unescape=value=>value.replaceAll('&quot;','"').replaceAll('&#39;',"'").replaceAll('&lt;','<').replaceAll('&gt;','>').replaceAll('&amp;','&');

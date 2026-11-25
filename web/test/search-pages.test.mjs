@@ -30,7 +30,8 @@ test('each guide serves its own responsive illustration and a substantive answer
       assert.equal(bytes.toString('ascii',8,12),'WEBP');
     }
     const full=publicOrigin+base+'-960.webp';
-    assert.ok(html.includes('<meta property="og:image" content="'+full+'">'));
+    const preview=publicOrigin+'/assets/teilen/'+guide.path.slice(1,-1)+'.jpg';
+    assert.ok(html.includes('<meta property="og:image" content="'+preview+'">'));
     assert.equal(graph(html).find(n=>n['@type']==='WebPage').primaryImageOfPage.contentUrl,full);
     sources.add(full);
   }

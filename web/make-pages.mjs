@@ -54,20 +54,31 @@ const formatEuro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',
 const startingPrice = amount => 'ab ' + formatEuro.format(amount);
 const btn=(text,url,alt=false)=>'<a class="button'+(alt?' secondary':'')+'" href="'+url+'">'+text+'</a>';
 const phoneChoice = '<a class="contact-choice" data-contact="phone" hidden href="/anfrage/?kontakt=telefon">'+ic('phone',18)+'Anrufen</a>';
+const whatsappChoice = '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('chat',18)+'WhatsApp</a>';
+const callbackIcon='<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m20 3-6 6m0-5v5h5M6 3l3 5-2 2a15 15 0 0 0 7 7l2-2 5 3c-1 4-3 4-6 3A25 25 0 0 1 3 9C2 6 3 3 6 3Z"/></svg>';
+function callbackChoice(href) {
+  return '<a class="contact-choice" data-contact="callback" href="'+href+'">'+callbackIcon+'Rückruf</a>';
+}
+function contactGroup(callback){
+  return '<div class="contact-choices" role="group" aria-label="Kontaktwege">'+
+    phoneChoice + whatsappChoice + callbackChoice(callback) + '</div>';
+}
+function callbackHref(request) {
+  return request + (request.includes('?') ? '&amp;' : '?') + 'kontakt=telefon';
+}
 function contactChoices(service='',pack=''){
   const serviceParam=['entruempelung','entsorgung'].includes(service)?'leistung':'service';
   const callback='/anfrage/?kontakt=telefon'+(service?'&amp;'+serviceParam+'='+service:'')+(pack?'&amp;paket='+pack:'');
-  const callbackIcon='<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m20 3-6 6m0-5v5h5M6 3l3 5-2 2a15 15 0 0 0 7 7l2-2 5 3c-1 4-3 4-6 3A25 25 0 0 1 3 9C2 6 3 3 6 3Z"/></svg>';
-  return '<div class="contact-choices" role="group" aria-label="Kontaktwege">'+
-    phoneChoice+
-    '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('chat',18)+'WhatsApp</a>'+
-    '<a class="contact-choice" data-contact="callback" href="'+callback+'">'+callbackIcon+'Rückruf</a></div>';
+  return contactGroup(callback);
 }
-function contactDialog(request){
-  const callback = request + (request.includes('?') ? '&amp;' : '?') + 'kontakt=telefon';
-  return '<dialog id="contact-dialog" class="contact-dialog" data-contact-mode="preview" aria-labelledby="handoff-title" aria-describedby="handoff-explanation">'+
+function contactDialog(request, pathname){
+  const callback = callbackHref(request);
+  const floating = searchPaths.includes(pathname) ? '<nav class="floating-contacts" data-floating-contact aria-label="Schneller Kontakt" hidden>'+
+    phoneChoice + callbackChoice(callback) + whatsappChoice + '</nav>' : '';
+  return floating + '<dialog id="contact-dialog" class="contact-dialog" data-contact-mode="preview" aria-labelledby="handoff-title" aria-describedby="handoff-explanation">'+
     '<button type="button" class="dialog-close" aria-label="Schließen">'+ic('close',22)+'</button>'+
     '<h2 id="handoff-title" tabindex="-1"></h2><p id="handoff-explanation"></p><p class="handoff-number" hidden></p>'+
+    '<div class="handoff-draft" hidden><label for="whatsapp-draft">Ihre Nachricht</label><textarea id="whatsapp-draft" rows="3" maxlength="700" autocomplete="off"></textarea></div>'+
     '<p class="handoff-preview" hidden></p><label class="handoff-consent" hidden><input type="checkbox"> Diesen Klick für die interne Statistik mitzählen (freiwillig).</label>'+
     '<div class="dialog-actions">'+
     '<a class="button secondary" data-handoff-callback href="'+callback+'">Rückruf anfragen</a></div>'+
@@ -83,9 +94,8 @@ function header(pathname,request,firm){
   const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/firmenkunden/','Für Firmen'],['/preise/','Preise']];
   return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':firm && p==='/firmenkunden/'?' aria-current="location"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>'+(firm?'Firmenanfrage':'Anfrage stellen')+'</a></div></header>';
 }
-function footer(pathname,showPhone){
-  const includeContacts=['/anfrage/','/danke/','/datenschutz/','/impressum/','/404/'].includes(pathname);
-  const contacts=includeContacts ? contactChoices() : showPhone ? phoneChoice : '';
+function footer(request){
+  const contacts=contactGroup(callbackHref(request));
   return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+contacts+'</div><div class="footlinks"><a href="/firmenkunden/">Für Firmen und Hausverwaltungen</a><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Statistik mit Google Analytics. Bei Anzeigenklicks speichern wir die Google-Klick-ID (GCLID) im Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
 function shell(pathname,title,desc,body){
   const guide=taskPages.find(page=>page.path===pathname);
@@ -93,7 +103,7 @@ function shell(pathname,title,desc,body){
   const request=pageRequest(pathname,guide,firm);
   const firmStyles=firm?'<link rel="stylesheet" href="/assets/firmen.css">':'';
   const priceAssets=pathname==='/preise/' ? '<link rel="stylesheet" href="/assets/estimator.css"><script type="module" src="/assets/clearance-calculator.js"></script><script type="module" src="/assets/price-comparison.js"></script><script type="module" src="/assets/price-guide.js"></script>' : '';
-  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/layout.css">'+firmStyles+(pathname==='/anfrage/'?'<link rel="stylesheet" href="/assets/request.css">':pathname==='/danke/'?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script type="module" src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname,request,firm)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(pathname,Boolean(guide || firm))+contactDialog(request)+'</body></html>';}
+  return '<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="referrer" content="strict-origin"><meta name="theme-color" content="#F7F5EF"><meta name="robots" content="noindex,follow"><meta name="description" content="'+desc+'"><title>'+title+' · '+brand+'</title><link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" sizes="any"><link rel="preload" href="/assets/bricolage.woff2" as="font" type="font/woff2" crossorigin><link rel="stylesheet" href="/assets/layout.css">'+firmStyles+(pathname==='/anfrage/'?'<link rel="stylesheet" href="/assets/request.css">':pathname==='/danke/'?'<link rel="stylesheet" href="/assets/inquiry.css">':'')+priceAssets+'<script type="module" src="/assets/site.js"></script><script defer src="/assets/contact.js"></script><script type="module" src="/assets/metrics.js"></script></head><body>'+header(pathname,request,firm)+'<main id="inhalt" tabindex="-1">'+body+'</main>'+footer(request)+contactDialog(request,pathname)+'</body></html>';}
 function crumb(text){return '<nav class="crumb" aria-label="Brotkrumennavigation"><a href="/">Startseite</a><span aria-hidden="true">/</span><span>'+text+'</span></nav>';}
 function text(value){return value.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');}
 function topicList(title,pages){

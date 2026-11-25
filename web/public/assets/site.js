@@ -60,7 +60,7 @@ function writeInterest(url, interest, pack, units) {
 }
 
 function updateProjectLinks(interest,pack,units,writeContext) {
-  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-handoff-callback]';
+  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-floating-contact] [data-contact="callback"], [data-handoff-callback]';
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);
@@ -637,6 +637,9 @@ function enableInquiry(form, contexts, draftTools, fileBox, mountBusinessInquiry
       lastId = '';
       finish({mode:'live', reference:answer.reference, callback, service:body.requestedService || body.service, contactMethod:body.contactMethod},jobScope||facts);
     } catch (error) {
+      if (mode === 'live') document.dispatchEvent(new CustomEvent('fp-submit-error',{detail:{
+        callback,reason:error.fileIssue?'attachment':error.message==='429'?'rate_limit':'unconfirmed'
+      }}));
       summary.textContent = error.fileIssue ? error.message : error.message === '429' ? 'Bitte warten Sie einen Moment und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.' : 'Der Eingang konnte nicht bestätigt werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut. Ihre Eingaben bleiben erhalten.';
     } finally {
       fileBox?.unlock();
