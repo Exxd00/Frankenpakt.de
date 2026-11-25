@@ -40,5 +40,5 @@ export function mountBusinessInquiry(form,params,callback) {
     }
     return business;
   }
-  return {toggle,initialService,update,writeContext,value};
+  return {toggle,initialService,update,writeContext,value,get project(){return toggle.checked ? project : null;}};
 }

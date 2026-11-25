@@ -389,10 +389,9 @@ const configure = canConfigure ? fetch('/api/config', {headers: {Accept: 'applic
     applyContactLine(c);
   }).catch(() => {}) : Promise.resolve();
 
-function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessInquiry) {
+function enableInquiry(form, contexts, draftTools, fileBox, mountBusinessInquiry, callback) {
   const service = form.elements.service;
   const requestedTopic = params.get('vorhaben') || params.get('vergleich');
-  const callback = params.get('kontakt') === 'telefon' || pageInterest === 'rueckruf';
   const business = mountBusinessInquiry(form,params,callback);
   const initialService = pageInterest || business.initialService || ({sofa:'entsorgung',keller:'entruempelung',kleinumzug:'umzug',entsorgung:'entsorgung',entruempelung:'entruempelung',umzug:'umzug'})[requestedTopic];
   const pack = contexts.length || Object.hasOwn(clearance,initialService) ? null : params.get('paket');
@@ -400,7 +399,6 @@ function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessI
   const serviceOption = Array.from(service.options).find(o => o.value === requestedService);
   if (serviceOption) service.value = requestedService;
   business.update();
-  const fileBox = callback ? null : preparedFiles;
   const phone = form.elements.phone;
   const email = form.elements.email;
   const summary = document.querySelector('#form-result');
@@ -418,6 +416,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessI
     const topic = Object.hasOwn(clearance,service.value) ? clearance[service.value] : null;
     scope.textContent = [guideNote(), topic?.scope].filter(Boolean).join(' ');
     scope.hidden = !scope.textContent;
+    fileBox?.showGuidance?.(service.value,guide?.slug || business.project);
   }
   showServiceFields();
   const estimate = contexts.find(context => context.params.has('hilfe'));
@@ -498,6 +497,7 @@ function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessI
   updateFormLinks(serviceOption?.value);
   business.toggle.addEventListener('change',()=>{
     business.update();
+    showServiceFields();
     const url=new URL(location.href);
     business.writeContext(url);
     history.replaceState(history.state,'',url);
@@ -653,10 +653,12 @@ if (form) {
     contexts.push(import('/assets/clearance-calculator.js').then(({inquiryEstimate}) => inquiryEstimate(params)));
   }
   const submit = form.querySelector('#send-lead');
-  const preparedFiles = import('/assets/inquiry-files.js').then(({mountInquiryFiles}) => mountInquiryFiles(form.querySelector('#inquiry-files')));
+  const callback = params.get('kontakt') === 'telefon' || pageInterest === 'rueckruf';
+  const preparedFiles = callback ? null : import('/assets/inquiry-files.js')
+    .then(({mountInquiryFiles}) => mountInquiryFiles(form.querySelector('#inquiry-files')));
   Promise.all([import('/assets/scope-flow.js'),Promise.allSettled(contexts),preparedFiles,import('/assets/business-inquiry.js')]).then(([draftTools,results,fileBox,{mountBusinessInquiry}]) => {
     const valid = results.filter(result => result.status === 'fulfilled' && result.value?.service === pageInterest);
-    enableInquiry(form,valid.map(result => result.value),draftTools,fileBox,mountBusinessInquiry);
+    enableInquiry(form,valid.map(result => result.value),draftTools,fileBox,mountBusinessInquiry,callback);
   }).catch(() => {
     submit.disabled = true;
     document.querySelector('#form-mode').textContent = 'Die Auftragsfelder konnten nicht geladen werden. Bitte laden Sie die Seite neu.';

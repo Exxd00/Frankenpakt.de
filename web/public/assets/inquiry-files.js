@@ -4,6 +4,24 @@ const amount=new Intl.NumberFormat('de-DE',{maximumFractionDigits:1});
 const size=n=>n<1048576 ? amount.format(n/1024)+' KB' : amount.format(n/1048576)+' MB';
 const make=(tag,value)=>{const el=document.createElement(tag);el.textContent=value;return el;};
 const invalid=message=>Object.assign(new Error(message),{fileIssue:true});
+const servicePhotoHints = new Map([
+  ['entsorgung','Zeigen Sie den ganzen Gegenstand und den engsten Durchgang auf dem Weg nach draußen.'],
+  ['entruempelung','Eine Übersicht je Raum hilft uns am meisten. Geben Sie in den Hinweisen an, welche Dinge auf dem Bild bleiben sollen.'],
+  ['umzug','Zeigen Sie das größte Möbelstück und eine enge Stelle am Start oder Ziel, etwa eine Treppenkurve.'],
+  ['seniorenumzug','Zeigen Sie die größeren Möbel, die mitkommen, und bei wenig Platz den Zugang am Ziel.'],
+  ['moebeltaxi','Zeigen Sie das Möbelstück im Ganzen. Ein Foto vom schmalsten Durchgang bei Abholung oder Lieferung hilft beim Planen.'],
+  ['transport','Zeigen Sie die Stücke, die zur neuen Adresse sollen. Bei sperrigen Möbeln hilft ein Bild vom engsten Durchgang.']
+]);
+const topicPhotoHints = new Map([
+  ['kueche-abbauen','Zeigen Sie die Küchenzeile im Ganzen und die Geräte, die bleiben sollen. Lassen Sie Leitungen und Anschlüsse für das Foto unberührt.'],
+  ['elektrogeraete-entsorgen','Zeigen Sie das Gerät am Stellplatz und den Weg zur Tür. Lassen Sie es für das Foto an seinem Platz.'],
+  ['sofa-entsorgen','Zeigen Sie das ganze Sofa mit Armlehnen und den engsten Durchgang, etwa die Tür oder eine Treppenkurve.'],
+  ['schrank-abbauen','Zeigen Sie den ganzen Schrank mit den Seitenwänden und wie viel Platz zwischen Schrank und Decke bleibt.'],
+  ['bueromoebel','Bei mehreren gleichen Büromöbeln genügt ein Foto eines Stücks. Nennen Sie die Stückzahl im Inventar.'],
+  ['hausverwaltung','Zeigen Sie die zur Räumung freigegebene Fläche und den Weg zum Ladeplatz. Lassen Sie Namen an Türen und Briefkästen aus dem Bild.'],
+  ['bueroaufloesung','Zeigen Sie einen typischen Büroraum und Einbauten, die bei der Übergabe bleiben sollen.'],
+  ['bueroumzug','Zeigen Sie das größte Möbelstück und den Zugang zum Ladeplatz oder Lastenaufzug.']
+]);
 const encoded=(canvas,quality)=>new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(invalid('Das Foto lässt sich nicht verkleinern.')),'image/jpeg',quality));
 function safeName(value,ext) {
   return (value.normalize('NFC').replace(/\.[^.]*$/u,'').replace(/[\x00-\x1f\x7f\\/:<>|"?*\u202a-\u202e\u2066-\u2069]/gu,'_')
@@ -55,6 +73,8 @@ async function prepare(file) {
 export function mountInquiryFiles(host) {
   const input=host.querySelector('input'),list=host.querySelector('ul'),status=host.querySelector('[role=status]'),progress=host.querySelector('progress');
   const clock=host.querySelector('[data-file-time]');
+  const guide=host.querySelector('#job-photo-guide');
+  const defaultGuide=guide?.textContent;
   const entries=[];
   let queue=Promise.resolve(),locked=false,generation=0,rejectedCount=0,wasReady=false;
   function meter(label,value) {
@@ -126,6 +146,9 @@ export function mountInquiryFiles(host) {
   input.addEventListener('change',acceptSelection);
   if(input.files?.length)acceptSelection();
   return {
+    showGuidance(service,topic) {
+      if (guide) guide.textContent=topicPhotoHints.get(topic) || servicePhotoHints.get(service) || defaultGuide;
+    },
     async ready(){
       locked=input.disabled=true;render();await queue;
       const issue=selectionIssue();

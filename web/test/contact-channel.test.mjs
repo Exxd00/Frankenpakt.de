@@ -1,6 +1,29 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import {contactCampaign,carryContactCampaign} from '../public/assets/contact-channel.js';
+import {phoneLines} from '../public/assets/phone-lines.js';
+import {taskPages} from '../task-pages.mjs';
+import {firmPages} from '../firmen-pages.mjs';
+
+test('guide and business pages expose a working telephone link and keep the project on callback', () => {
+  for (const page of [...taskPages,...firmPages]) {
+    const html=readFileSync(new URL('../public/betrieb'+page.path+'index.html',import.meta.url),'utf8');
+    const footer=html.match(/<footer>([\s\S]*?)<\/footer>/)[1];
+    assert(footer.includes('data-contact="phone" href="tel:'+phoneLines.main.phone+'"'),page.path);
+    const callbackPath=html.match(/data-handoff-callback href="([^"]+)"/)[1].replaceAll('&amp;', '&');
+    const callback=new URL(callbackPath,'https://frankenpakt.de');
+    assert.equal(callback.pathname,'/anfrage/',page.path);
+    assert.equal(callback.searchParams.get('kontakt'),'telefon',page.path);
+    if (page.project) {
+      assert.equal(callback.searchParams.get('kundentyp'),'firma',page.path);
+      assert.equal(callback.searchParams.get('projekt'),page.project,page.path);
+    } else {
+      assert.equal(callback.searchParams.get('thema'),page.path.split('/')[1],page.path);
+    }
+    assert.equal(callback.searchParams.get('leistung') || callback.searchParams.get('service') || '',page.service || '',page.path);
+  }
+});
 
 test('public contact routes select a line only for the corresponding channel', () => {
   for (const [query,channel] of [

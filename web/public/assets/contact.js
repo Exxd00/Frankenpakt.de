@@ -41,8 +41,8 @@
   }
   function callbackPath(link) {
     const nearby = link.closest('.contact-choices')?.querySelector('[data-contact="callback"]');
-    const pageCallback = nearby || document.querySelector('.footer-main [data-contact="callback"], .endcta [data-contact="callback"]');
-    return pageCallback?.getAttribute('href') || '/anfrage/?kontakt=telefon';
+    const pageCallback = nearby || document.querySelector('.guide-callback, .firm-hero [data-contact="callback"], .endcta [data-contact="callback"], .footer-main [data-contact="callback"]');
+    return (pageCallback || callback).getAttribute('href');
   }
   document.addEventListener('click', event => {
     const link = event.target.closest?.('a');

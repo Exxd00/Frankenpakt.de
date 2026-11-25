@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mountInquiryFiles} from '../public/assets/inquiry-files.js';
 
-function picker(t,initialFiles=[]){
+function picker(t,initialFiles=[],legacyMarkup=false){
   class Control extends EventTarget {
     hidden=false;
     textContent='';
@@ -12,7 +12,10 @@ function picker(t,initialFiles=[]){
     setAttribute(){}
     removeAttribute(){}
   }
-  const controls=new Map(['input','ul','[role=status]','progress','[data-file-time]'].map(key=>[key,new Control()]));
+  const controls=new Map(['input','ul','[role=status]','progress','[data-file-time]','#job-photo-guide'].map(key=>[key,new Control()]));
+  const guide=controls.get('#job-photo-guide');
+  guide.textContent='Übersicht und Zugang';
+  if(legacyMarkup)controls.delete('#job-photo-guide');
   const input=controls.get('input');
   let files=initialFiles;
   Object.defineProperty(input,'files',{get:()=>files});
@@ -26,9 +29,29 @@ function picker(t,initialFiles=[]){
   const select=chosen=>{files=chosen;input.dispatchEvent(new Event('change'));};
   const status=()=>controls.get('[role=status]').textContent;
   const button=(row)=>controls.get('ul').children[row].children.at(-1);
-  return {input,mounted,select,status,button,events:()=>events};
+  return {input,mounted,select,status,button,guide,events:()=>events};
 }
 const documentFile=(name,body='Test')=>new File([body],name,{type:'text/plain'});
+
+test('photo guidance follows the current project and service without requiring a file', async t=>{
+  const {mounted,guide,events}=picker(t);
+  mounted.showGuidance('entruempelung','kueche-abbauen');
+  assert.match(guide.textContent,/Küchenzeile/);
+  mounted.showGuidance('entruempelung','hausverwaltung');
+  assert.match(guide.textContent,/freigegebene Fläche/);
+  mounted.showGuidance('umzug');
+  assert.match(guide.textContent,/Start oder Ziel/);
+  mounted.showGuidance('','unknown-topic');
+  assert.equal(guide.textContent,'Übersicht und Zugang');
+  assert.deepEqual(await mounted.ready(),[]);
+  assert.equal(events(),0);
+});
+
+test('cached offer forms still prepare attachments without the photo guidance element',async t=>{
+  const {mounted}=picker(t,[documentFile('Alt.txt')],true);
+  mounted.showGuidance('entsorgung','sofa-entsorgen');
+  assert.equal((await mounted.ready())[0].name,'Alt.txt');
+});
 
 test('files selected before the inquiry module loads are prepared exactly once and kept for submission',async t=>{
   const {input,mounted,status,events}=picker(t,[documentFile('Packliste.txt','Früh ausgewählt')]);

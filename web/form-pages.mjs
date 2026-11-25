@@ -42,8 +42,10 @@ export function inquiry(crumb, ic) {
         <textarea name="details" id="details" rows="2" maxlength="1400" placeholder="Was möchten Sie uns zusätzlich mitteilen?"></textarea>
         <details id="inquiry-files" class="inquiry-files">
           <summary>Fotos oder Dateien hinzufügen <small>(optional)</small></summary>
+          <p id="job-photo-guide">Hilfreich sind eine Gesamtansicht und ein Foto vom engsten Durchgang auf dem Weg nach draußen.</p>
+          <p id="job-photo-privacy" class="fine">Bitte lassen Sie Personen, persönliche Unterlagen und Bildschirme aus dem Bild.</p>
           <label for="job-files">Dateien auswählen</label>
-          <input id="job-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif,.pdf,.txt" aria-describedby="job-file-hint">
+          <input id="job-files" type="file" multiple accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif,.heic,.heif,.pdf,.txt" aria-describedby="job-photo-guide job-photo-privacy job-file-hint">
           <p id="job-file-hint" class="fine">Bis zu fünf Fotos, PDFs oder Textdateien. Fotos werden auf Ihrem Gerät verkleinert. Die Dateien werden erst mit der Anfrage gesendet. Gesamtgröße für den Versand: bis zu 3 MB.</p>
           <ul></ul><progress max="1" hidden></progress><p role="status" aria-live="polite"></p><small data-file-time aria-hidden="true" hidden></small>
         </details>
