@@ -100,6 +100,8 @@ export function renderLeadMail(record) {
     const lines = values.filter(value => typeof value === 'string' && value.trim());
     if (lines.length) fields.push({label,lines});
   }
+  if (person.contactMethod === 'phone') add('Zusätzliche E-Mail-Adresse',brief(person.email,254));
+  if (person.contactMethod === 'email') add('Zusätzliche Telefonnummer',brief(person.phone,55));
   if (callback) {
     add('Rückrufzeit',brief(person.timeframe));
     add('Anliegen',serviceLabel);

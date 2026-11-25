@@ -10,6 +10,25 @@ import { openStore, validate } from '../lib/leads.mjs';
 
 const callback=()=>({requestId:randomUUID(),service:'rueckruf',contactMethod:'phone',name:'Probe',phone:'0911 1234567',source:'google'});
 
+test('inquiries keep both supplied contact details and require only the preferred route',t=>{
+  const store=openStore(':memory:');t.after(()=>store.close());
+  const input={...callback(),email:' PROBE@EXAMPLE.INVALID '};
+  const byPhone=validate(input);
+  const savedPhone=store.get(store.submit(byPhone).reference).person;
+  assert.equal(savedPhone.contact,'+499111234567');
+  assert.equal(savedPhone.email,'probe@example.invalid');
+  const byEmail={...input,requestId:randomUUID(),service:'umzug',zipFrom:'90453',contactMethod:'email'};
+  const savedEmail=store.get(store.submit(validate(byEmail)).reference).person;
+  assert.equal(savedEmail.contact,'probe@example.invalid');
+  assert.equal(savedEmail.phone,'+499111234567');
+  assert.equal(validate({...byEmail,phone:''}).phone,undefined);
+  assert.equal(validate({...input,email:''}).email,undefined);
+  assert.throws(()=>validate({...input,phone:''}));
+  assert.throws(()=>validate({...byEmail,email:''}));
+  assert.throws(()=>validate({...input,email:'invalid'}));
+  assert.throws(()=>validate({...byEmail,phone:'invalid'}));
+});
+
 test('short callback, receipt and verified contact events are distinct and replay-safe',t=>{
   const store=openStore(':memory:');t.after(()=>store.close());
   const input=callback();

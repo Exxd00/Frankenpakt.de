@@ -68,12 +68,17 @@ export function validate(body){
   const zipTo=string(jobScope?.fields.toZip??body.zipTo,5,'Ziel-PLZ');
   if((zipFrom&&!/^\d{5}$/.test(zipFrom))||(zipTo&&!/^\d{5}$/.test(zipTo)))throw new InputError('Bitte eine fünfstellige PLZ angeben.');
   const name=string(body.name,120,'Name',{required:true});
-  const contact=contactMethod==='email'?string(body.email,254,'E-Mail',{required:true}).toLowerCase():mobileNumber(string(body.phone,55,'Telefon',{required:true}));
-  if(!contact||(contactMethod==='email'&&!emailPattern.test(contact)))throw new InputError('Kontaktangabe bitte prüfen.');
+  const phoneInput=string(body.phone,55,'Telefon',{required:contactMethod==='phone'});
+  const phone=phoneInput?mobileNumber(phoneInput):'';
+  const email=string(body.email,254,'E-Mail',{required:contactMethod==='email'}).toLowerCase();
+  if((phoneInput&&!phone)||(email&&!emailPattern.test(email)))throw new InputError('Kontaktangabe bitte prüfen.');
+  const contact=contactMethod==='phone'?phone:email;
   const details=string(body.details,2000,'Nachricht');
   const timeframe=jobScope && service!=='rueckruf' ? summarizeJobTiming(jobScope) : string(body.timeframe,120,'Zeitraum');
   const source=sources.has(body.source)?body.source:'unbekannt';
   const lead={requestId:requestId.toLowerCase(),service,name,contactMethod,contact,zipFrom,zipTo,details,timeframe,source};
+  if(contactMethod==='phone'&&email)lead.email=email;
+  if(contactMethod==='email'&&phone)lead.phone=phone;
   const attribution=body.statisticsConsent===true && cleanAttribution(body.attribution,source);
   if(attribution)lead.attribution=attribution;
   if(jobScope){

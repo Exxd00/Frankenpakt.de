@@ -59,8 +59,10 @@ export function inquiry(crumb, ic) {
             <label><input type="radio" name="contactMethod" value="email"> E-Mail</label>
           </div>
         </div>
-        <div id="phone-field"><label for="phone">Ihre Telefonnummer <span>*</span></label><input name="phone" id="phone" type="tel" required minlength="6" maxlength="40" autocomplete="tel"></div>
-        <div id="email-field" hidden><label for="email">Ihre E-Mail-Adresse <span>*</span></label><input name="email" id="email" type="email" maxlength="200" autocomplete="email"></div>
+        <div class="fields">
+          <div><label for="phone">Ihre Telefonnummer <span id="phone-rule">*</span></label><input name="phone" id="phone" type="tel" required minlength="6" maxlength="40" autocomplete="tel"></div>
+          <div><label for="email">Ihre E-Mail-Adresse <span id="email-rule">(optional)</span></label><input name="email" id="email" type="email" maxlength="200" autocomplete="email"></div>
+        </div>
         <div id="callback-window" hidden><label for="callback-time">Wann erreichen wir Sie gut? (optional)</label>
           <input name="callbackTime" id="callback-time" maxlength="80" placeholder="Zum Beispiel werktags ab 14 Uhr" disabled>
         </div>

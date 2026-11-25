@@ -525,12 +525,10 @@ function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessI
   });
   function selectContact() {
     const telephone = form.elements.contactMethod.value === 'phone';
-    document.querySelector('#phone-field').hidden = !telephone;
-    document.querySelector('#email-field').hidden = telephone;
     phone.required = telephone;
     email.required = !telephone;
-    phone.disabled = !telephone;
-    email.disabled = telephone;
+    document.querySelector('#phone-rule').textContent = telephone ? '*' : '(optional)';
+    document.querySelector('#email-rule').textContent = telephone ? '(optional)' : '*';
     phone.setCustomValidity('');
     email.setCustomValidity('');
   }
@@ -579,8 +577,8 @@ function enableInquiry(form, contexts, draftTools, preparedFiles, mountBusinessI
     if (submit.disabled) return;
     if (business.toggle.checked && !form.querySelector('#business-company').reportValidity()) return;
     if (!callback && (!service.reportValidity() || !editor.validate())) return;
-    if (phone.required && !telephoneLooksValid(phone.value)) phone.setCustomValidity('Bitte geben Sie eine erreichbare Telefonnummer mit Vorwahl ein.');
-    if (email.required && !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.value)) email.setCustomValidity('Bitte prüfen Sie Ihre E-Mail-Adresse.');
+    if ((phone.required || phone.value.trim()) && !telephoneLooksValid(phone.value)) phone.setCustomValidity('Bitte geben Sie eine erreichbare Telefonnummer mit Vorwahl ein.');
+    if ((email.required || email.value.trim()) && !/^[^\s@]+@[^\s@.]+(?:\.[^\s@.]+)+$/.test(email.value.trim())) email.setCustomValidity('Bitte prüfen Sie Ihre E-Mail-Adresse.');
     if (!form.reportValidity()) return;
     summary.textContent = '';
     submit.disabled = true;

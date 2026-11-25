@@ -63,7 +63,7 @@ test('required fields, spam trap and minimum disclosure',()=>{
     assert.equal(callback.requestedService,service);
     assert.equal(callback.adVariant,adVariant);
   }
-  const lead=validate({...data,irrelevant:'ignore',phone:'do not store',gclid:'example',source:'untrusted'});
+  const lead=validate({...data,irrelevant:'ignore',phone:'',gclid:'example',source:'untrusted'});
   assert.equal(lead.source,'unbekannt');
   assert.equal(lead.phone,undefined);assert.equal(lead.gclid,undefined);
   assert.equal(validate({...data,contactMethod:'phone',phone:'0911 1234567'}).contact,'+499111234567');

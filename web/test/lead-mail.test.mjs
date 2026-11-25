@@ -6,6 +6,17 @@ import {exampleJobScope} from '../test-support/job-scope.mjs';
 const ref = 'AN-0123456789ABCDEF';
 const received = '2026-11-21T18:00:00.000Z';
 
+test('the office notification shows extra contact details without adding them to the inbox preview',()=>{
+  for(const [method,primary,secondaryKey,secondary,label] of [
+    ['email','first@example.invalid','phone','+499111234567','Zusätzliche Telefonnummer'],
+    ['phone','+499111234567','email','second@example.invalid','Zusätzliche E-Mail-Adresse']
+  ]){
+    const mail=renderLeadMail({ref,created:received,service:'umzug',person:{contactMethod:method,contact:primary,[secondaryKey]:secondary}});
+    for(const part of [mail.html,mail.text]){assert.ok(part.includes(label));assert.ok(part.includes(secondary));}
+    assert.ok(!(mail.subject+mail.preheader).includes(secondary));
+  }
+});
+
 test('colored accessible headings and escaped attachment names appear in the office copies',()=>{
   const mail=renderLeadMail({ref,created:received,service:'entsorgung',attachments:[{name:'Grundriss <A>.pdf',size:23340},{name:'Foto.webp',size:1024000}]});
   assert.match(mail.html,/<h1[^>]*color:#943529/);

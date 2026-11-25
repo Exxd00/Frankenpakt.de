@@ -37,6 +37,8 @@ export function mountOfficeCases({api,action,editor,onQuote,download}){
       review.append(reasons);panel.append(review);
     }
     addField('Kontakt',[lead.name,lead.contact].filter(Boolean).join('\n'));
+    if(lead.contactMethod==='phone')addField('Zusätzliche E-Mail-Adresse',lead.email);
+    if(lead.contactMethod==='email')addField('Zusätzliche Telefonnummer',lead.phone);
     for(const [label,value] of businessLines(lead.business))addField(label,value);
     if(lead.contactMethod==='phone'&&/^\+?[0-9 ()/.-]{7,24}$/.test(lead.contact)){
       const phone=el('a','Anrufen');phone.href='tel:'+lead.contact.replace(/[ ()/.-]/g,'');panel.append(phone);

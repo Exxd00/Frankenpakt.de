@@ -37,11 +37,13 @@ const guidance=[
 
 export function officeHandbook(role){
   const editor=role==='editor';
+  const registerStep=['Kundenanfragen bearbeiten','Im Blatt „Kundenanfragen“ den Vorgang anhand der Vorgangsnummer finden. Nach dem gewünschten Kontaktweg antworten. Status und interne Notiz in den letzten beiden Spalten pflegen. Die übrigen Angaben werden beim Abgleich aus dem Auftragssystem aktualisiert. Fotos und Dateien sind im geschützten Vorgang zugänglich.'];
+  const registerLink=['Kundenanfragen · Kontaktdaten und Bearbeitung',projectSheet+'#gid=115202611'];
   return {
-    steps:editor ? guidance : [guidance[0],['Ab-Preis und Bürokalkulation','Die Website gibt eine Orientierung ab einem Startpreis. Im Büro lassen sich die aktuellen Bruttopreise mit den benötigten Mengen zusammenstellen. IXA prüft den Umfang und erstellt das Angebot.'],guidance[4]],
+    steps:editor ? [registerStep,...guidance] : [guidance[0],['Ab-Preis und Bürokalkulation','Die Website gibt eine Orientierung ab einem Startpreis. Im Büro lassen sich die aktuellen Bruttopreise mit den benötigten Mengen zusammenstellen. IXA prüft den Umfang und erstellt das Angebot.'],guidance[4]],
     groups:[
       ['Kundenseite und technische Prüfung',publicLinks],
-      ['Projekt und Messung',officeLinks],
+      ['Projekt und Messung',editor ? [registerLink,...officeLinks] : officeLinks],
       ['Google-Suche',searchLinks],
       ['Marke und Technik',[
         ['Öffentliche Markenbilder auf ImgBB','https://franken-pakt.imgbb.com/'],
