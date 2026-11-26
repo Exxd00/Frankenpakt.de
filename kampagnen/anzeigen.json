@@ -1,13 +1,16 @@
 {
-  "campaigns": {
-    "raeumen": {
-      "name": "FrankenPackt | Suche | Nürnberg | Entrümpelung und Entsorgung",
-      "negativeExact": ["umzugsunternehmen nürnberg", "seniorenumzug nürnberg", "sperrmüll abholung nürnberg", "sperrmüll kostenlos nürnberg"]
-    },
-    "umziehen": {
-      "name": "FrankenPackt | Suche | Nürnberg | Umzüge",
-      "negativeExact": ["entrümpelung nürnberg", "wohnungsauflösung nürnberg", "haushaltsauflösung nürnberg", "sperrmüll abholung nürnberg", "möbel entsorgen nürnberg"]
-    }
+  "campaign": {
+    "name": "frankenpakt.de",
+    "dailyBudgetEur": 30,
+    "maxCpcEur": 4,
+    "language": "de",
+    "locationId": 1004246,
+    "location": "Nuremberg,Bavaria,Germany",
+    "negativeExact": ["sperrmüll abholung nürnberg"]
+  },
+  "familyNegativeExact": {
+    "raeumen": ["umzugsunternehmen nürnberg", "seniorenumzug nürnberg", "sperrmüll kostenlos nürnberg"],
+    "umziehen": ["entrümpelung nürnberg", "wohnungsauflösung nürnberg", "haushaltsauflösung nürnberg", "möbel entsorgen nürnberg"]
   },
   "openingKeywords": [
     "entrümpelung nürnberg",
@@ -16,7 +19,7 @@
   "groups": [
     {
       "name": "Entrümpelung planen",
-      "campaign": "raeumen",
+      "family": "raeumen",
       "landing": "/raeumung/",
       "adVariant": "entruempelung-nuernberg",
       "sitelinks": [
@@ -50,7 +53,7 @@
     },
     {
       "name": "Möbel entsorgen",
-      "campaign": "raeumen",
+      "family": "raeumen",
       "hold": "Zurückgestellt: Entsorgungsangebot und Annahmekosten prüfen",
       "landing": "/entsorgung/",
       "adVariant": "entsorgung-nuernberg",
@@ -83,7 +86,7 @@
     },
     {
       "name": "Privatumzug",
-      "campaign": "umziehen",
+      "family": "umziehen",
       "landing": "/umzug/",
       "adVariant": "privatumzug-team",
       "sitelinks": [
@@ -117,7 +120,7 @@
     },
     {
       "name": "Seniorenumzug",
-      "campaign": "umziehen",
+      "family": "umziehen",
       "landing": "/seniorenumzug/",
       "adVariant": "seniorenumzug-team",
       "sitelinks": [
