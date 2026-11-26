@@ -60,7 +60,7 @@ function writeInterest(url, interest, pack, units) {
 }
 
 function updateProjectLinks(interest,pack,units,writeContext) {
-  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-floating-contact] [data-contact="callback"], [data-handoff-callback]';
+  const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-handoff-callback]';
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
     writeInterest(url,interest,pack,units);

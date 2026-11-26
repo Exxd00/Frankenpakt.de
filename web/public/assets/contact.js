@@ -14,7 +14,7 @@
       }
       if (!usingFloating()) updateFloating();
     });
-    for (const section of document.querySelectorAll('header, main .contact-choices, main .guide-callback, .firm-hero .actions, .endcta, footer')) {
+    for (const section of document.querySelectorAll('main form, #preisfinder, footer')) {
       observer.observe(section);
     }
     floating.addEventListener('focusout', () => {
@@ -69,13 +69,13 @@
     }).catch(() => {});
   }
   function callbackPath(link) {
-    const nearby = link.closest('.contact-choices, [data-floating-contact]')?.querySelector('[data-contact="callback"]');
+    const nearby = link.closest('.contact-choices')?.querySelector('[data-contact="callback"]');
     const pageCallback = nearby || document.querySelector('.guide-callback, .firm-hero [data-contact="callback"], .endcta [data-contact="callback"], .footer-main [data-contact="callback"]');
     return (pageCallback || callback).getAttribute('href');
   }
   document.addEventListener('click', event => {
     const link = event.target.closest?.('a');
-    if (!link || event.defaultPrevented || dialog.contains(link) || link.hidden) return;
+    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || dialog.contains(link) || link.hidden) return;
     const href = link.getAttribute('href') || '';
     const phone = link.dataset.contact === 'phone' || href.startsWith('tel:');
     const chat = link.dataset.contact === 'whatsapp' || /^https:\/\/wa\.me\/\d+(?:$|[/?])/.test(href);
@@ -125,7 +125,7 @@
     confirm.removeAttribute('href');
     // A temporarily hidden dock cannot receive the browser's automatic focus restoration.
     const previous = opener;
-    if (!handedOff && previous?.isConnected) requestAnimationFrame(() => {
+    if (!handedOff && previous?.isConnected && previous !== document.activeElement) requestAnimationFrame(() => {
       if (dialog.open || !(document.activeElement===document.body || dialog.contains(document.activeElement))) return;
       if (floating?.contains(previous)) floating.hidden = false;
       previous.focus({preventScroll:true});

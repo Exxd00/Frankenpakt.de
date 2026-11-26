@@ -53,8 +53,8 @@ const prices=[
 const formatEuro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',maximumFractionDigits:0,minimumFractionDigits:0});
 const startingPrice = amount => 'ab ' + formatEuro.format(amount);
 const btn=(text,url,alt=false)=>'<a class="button'+(alt?' secondary':'')+'" href="'+url+'">'+text+'</a>';
-const phoneChoice = '<a class="contact-choice" data-contact="phone" hidden href="/anfrage/?kontakt=telefon">'+ic('phone',18)+'Anrufen</a>';
-const whatsappChoice = '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('chat',18)+'WhatsApp</a>';
+const phoneChoice = '<a class="contact-choice" data-contact="phone" hidden href="/anfrage/?kontakt=telefon">'+ic('phone',18)+'<span>Anrufen</span></a>';
+const whatsappChoice = '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('chat',18)+'<span>WhatsApp</span></a>';
 const callbackIcon='<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m20 3-6 6m0-5v5h5M6 3l3 5-2 2a15 15 0 0 0 7 7l2-2 5 3c-1 4-3 4-6 3A25 25 0 0 1 3 9C2 6 3 3 6 3Z"/></svg>';
 function callbackChoice(href) {
   return '<a class="contact-choice" data-contact="callback" href="'+href+'">'+callbackIcon+'Rückruf</a>';
@@ -73,8 +73,8 @@ function contactChoices(service='',pack=''){
 }
 function contactDialog(request, pathname){
   const callback = callbackHref(request);
-  const floating = searchPaths.includes(pathname) ? '<nav class="floating-contacts" data-floating-contact aria-label="Schneller Kontakt" hidden>'+
-    phoneChoice + callbackChoice(callback) + whatsappChoice + '</nav>' : '';
+  const floating = searchPaths.includes(pathname) ? '<nav class="floating-contacts" data-floating-contact aria-label="Schnellkontakt">'+
+    phoneChoice + whatsappChoice + '</nav>' : '';
   return floating + '<dialog id="contact-dialog" class="contact-dialog" data-contact-mode="preview" aria-labelledby="handoff-title" aria-describedby="handoff-explanation">'+
     '<button type="button" class="dialog-close" aria-label="Schließen">'+ic('close',22)+'</button>'+
     '<h2 id="handoff-title" tabindex="-1"></h2><p id="handoff-explanation"></p><p class="handoff-number" hidden></p>'+

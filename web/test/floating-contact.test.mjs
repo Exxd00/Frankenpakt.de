@@ -9,14 +9,18 @@ const page = pathname => readFile(new URL('../public/'+pathname.slice(1)+'index.
 const render = (html,path,whatsapp) => liveHtml(html,{...operator,whatsapp},new URL(path,'https://example.invalid').href);
 const chatHrefs = html => [...html.matchAll(/data-contact="whatsapp" rel="noreferrer" href="([^"]+)"/g)].map(m=>new URL(m[1]));
 
-test('every marketing page offers its own callback in the floating group; forms and utility pages stay clear',async()=>{
+test('the live contact dock has phone and WhatsApp, with a contextual callback in the dialog',async()=>{
+  assert.equal(operator.whatsapp,'+4917620126149');
   for(const path of [...searchPaths,...utilityPaths]){
-    const html=await page(path);
+    const html=render(await page(path),path,operator.whatsapp);
     const bar=html.match(/<nav [^>]*data-floating-contact[^>]*>([\s\S]*?)<\/nav>/)?.[1];
     if(utilityPaths.includes(path)){assert.equal(bar,undefined,path);continue;}
     assert.ok(bar,path);
-    const callback=bar.match(/data-contact="callback" href="([^"]+)"/)?.[1];
-    assert.equal(callback,html.match(/data-handoff-callback href="([^"]+)"/)?.[1],path);
+    assert.deepEqual([...bar.matchAll(/data-contact="([^"]+)"/g)].map(match=>match[1]),['phone','whatsapp'],path);
+    assert.ok(bar.includes('href="tel:'+operator.phone+'"'),path);
+    assert.deepEqual([...bar.matchAll(/<span>([^<]+)<\/span>/g)].map(match=>match[1]),['Anrufen','WhatsApp'],path);
+    assert.equal(chatHrefs(bar)[0].pathname,'/4917620126149',path);
+    const callback=html.match(/data-handoff-callback href="([^"]+)"/)?.[1];
     assert.equal(new URL(callback.replaceAll('&amp;','&'),'https://example.invalid').searchParams.get('kontakt'),'telefon',path);
   }
 });
