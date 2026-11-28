@@ -45,8 +45,7 @@
       background:var(--shine); opacity:0; pointer-events:none; offset-path:inset(0 round .55rem);
     }
     :is(.button,.contact-choice):focus-visible::after,
-    .hero .button:not(.secondary)::after,
-    .contact-dialog[open] .button:not(.secondary)::after {
+    .hero .button:not(.secondary)::after {
       content:""; animation:light-around-edge 3.8s ease-in-out 1;
     }
     @media (hover:hover) {
@@ -120,6 +119,9 @@ body:has(dialog[open], .menutoggle[aria-expanded="true"], main form:focus-within
 }
 @media screen and (max-width: 780px) {
   .floating-contacts { right: max(.65rem, env(safe-area-inset-right)); }
+  body:has([data-cookie-prompt]:not([hidden])) .floating-contacts {
+    bottom: calc(var(--fp-cookie-prompt-height, 4.3rem) + 1rem + env(safe-area-inset-bottom));
+  }
   .floating-contacts .contact-choice { width: 48px; height: 48px; padding: 0; }
   .floating-contacts span {
     position: absolute;
@@ -137,39 +139,38 @@ body:has(dialog[open], .menutoggle[aria-expanded="true"], main form:focus-within
   .floating-contacts { position: static; display: flex; justify-content: center; width: auto; }
 }
 .contact-dialog {
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background: var(--cream);
   color: var(--ink);
-  border: 1px solid #a4b19a;
-  padding: 1.55rem;
-  width: min(28rem, calc(100% - 2rem));
+  font-size: 1rem;
+  line-height: 1.5;
+  border: 1px solid var(--line);
+  padding: 1.5rem;
+  max-width: min(25rem, calc(100% - 2rem));
   max-height: calc(min(100dvh, var(--contact-viewport, 100dvh)) - 2rem);
   overflow-y: auto;
-  border-radius: 1.15rem;
-  box-shadow: 0 1rem 5rem #18221a40;
+  border-radius: 1rem;
 }
-.contact-dialog::backdrop { background: rgb(25 36 29 / 58%); }
-.contact-dialog h2 { font-size: clamp(1.6rem, 4.6vw, 2rem); padding-right: 2rem; }
-.contact-dialog p { margin-top: .7rem; line-height: 1.45; font-size: 1rem; }
-.contact-dialog .handoff-number { font-size: 1.25rem; font-weight: 700; overflow-wrap: anywhere; }
-.handoff-draft { margin-top: .8rem; }
-.handoff-draft label { display: block; font-weight: 650; margin-bottom: .3rem; }
-.handoff-draft textarea {
-  box-sizing: border-box; width: 100%; resize: vertical; min-height: 5rem;
-  max-height: 24dvh; padding: .55rem; font: inherit; font-size: max(1rem, 16px);
-  color: var(--ink); background: #fff; border: 1px solid #62765b; border-radius: .5rem;
+.contact-dialog::backdrop { background: rgb(14 19 14 / 65%); }
+.contact-dialog h2 { margin: 0; font-size: 1.55rem; font-weight: 650; line-height: 1.1; letter-spacing: -.025em; color: var(--heading-green); }
+.contact-dialog p { margin-block: 1rem; font-size: 1rem; }
+.handoff-draft {
+  margin: 0 0 1rem; padding: .75rem; border-left: 3px solid var(--sage);
+  background: var(--pale); overflow-wrap: anywhere;
 }
 .contact-dialog .handoff-preview { color: var(--muted); font-size: .93rem; }
-.dialog-close {
-  display: grid; place-items: center; position: absolute; right: .55rem; top: .55rem;
-  width: 44px; height: 44px; border: none; background: transparent; color: var(--ink);
-  border-radius: 50%;
+.dialog-actions { display: flex; flex-wrap: wrap; gap: .65rem; }
+.dialog-actions a, .dialog-actions button {
+  display: inline-flex; align-items: center; min-height: 44px; padding: .6rem 1rem;
+  font: inherit; font-weight: 650; border-radius: 9px; cursor: pointer;
 }
-.dialog-close:hover { background: var(--pale); }
-.dialog-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1.2rem; }
-.dialog-actions a { min-height: 44px; padding: .55rem .8rem; }
-.handoff-consent { display: flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .91rem; line-height: 1.4; margin-top: .75rem; cursor: pointer; }
-.contact-dialog .handoff-consent input[type=checkbox] {
-  min-height: 0; width: 1.15rem; height: 1.15rem; padding: 0; flex: none; accent-color: var(--ink);
+.dialog-actions a { color: var(--tomato-ink); background: var(--tomato); text-decoration: underline; }
+.dialog-actions button { color: inherit; background: transparent; border: 1px solid var(--line); }
+.handoff-callback {
+  display: inline-flex; align-items: center; min-height: 44px; margin-top: .35rem;
+  color: var(--heading-green); text-decoration: underline;
 }
 .handoff-demo-result { border-left: 3px solid var(--sage); padding-left: .75rem; }
 @media screen and (max-width: 780px) {
@@ -182,14 +183,11 @@ body:has(dialog[open], .menutoggle[aria-expanded="true"], main form:focus-within
   .contact-choice { padding: .4rem .52rem; gap: .24rem; }
   .contact-choice > svg { width: 16px; height: 16px; }
   .end-inner .actions { gap: .6rem; }
-  .dialog-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
-  .dialog-actions .button { min-width: 0; padding: .5rem .3rem; }
 }
 @media screen and (max-width: 360px) {
   .hero-copy .contact-choices { margin-inline: .75rem; gap: .28rem; }
   .hero-copy .contact-choice { padding-inline: .3rem; }
   .hero-copy .contact-choice > svg, .detail-hero .contact-choice > svg { display: none; }
-  .contact-dialog { padding: 1.1rem; }
 }
 @media (prefers-contrast: more), (forced-colors: active) {
   .contact-choice, .button, .hero .button.secondary, .endcta .contact-choice, .floating-contacts .contact-choice {

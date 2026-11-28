@@ -20,6 +20,11 @@ test('the live contact dock has phone and WhatsApp, with a contextual callback i
     assert.ok(bar.includes('href="tel:'+operator.phone+'"'),path);
     assert.deepEqual([...bar.matchAll(/<span>([^<]+)<\/span>/g)].map(match=>match[1]),['Anrufen','WhatsApp'],path);
     assert.equal(chatHrefs(bar)[0].pathname,'/4917620126149',path);
+    const dialog = html.match(/<dialog id="contact-dialog"[^>]*>([\s\S]*?)<\/dialog>/)?.[1];
+    assert.match(dialog,/<blockquote [^>]*id="whatsapp-draft"/,path);
+    assert.match(dialog,/data-handoff-cancel autofocus>Abbrechen<\/button>\s*<a data-handoff-confirm/,path);
+    assert.match(dialog,/<\/div><a [^>]*data-handoff-callback [^>]*>Lieber zurückrufen lassen<\/a>/,path);
+    assert.doesNotMatch(dialog,/textarea|checkbox|data-handoff-uncounted|data-handoff-stat-note/i,path);
     const callback=html.match(/data-handoff-callback href="([^"]+)"/)?.[1];
     assert.equal(new URL(callback.replaceAll('&amp;','&'),'https://example.invalid').searchParams.get('kontakt'),'telefon',path);
   }

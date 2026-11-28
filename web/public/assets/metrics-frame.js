@@ -4,7 +4,8 @@ import {publicPagePaths} from './search-routes.js';
   'use strict';
   if (window.parent === window) return;
   const owner = new URL(location.href).origin;
-  const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent','form_start','form_submit_error','generate_lead']);
+  const contactEvents = new Set(['phone_click','phone_confirmed','phone_cancelled','whatsapp_click','whatsapp_confirmed','whatsapp_cancelled']);
+  const events = new Set(['service_chosen','estimate_viewed','upload_ready',...contactEvents,'form_start','form_submit_error','generate_lead']);
   const categories = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf','unbekannt']);
   const channels = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt']);
   const paths = new Set(publicPagePaths);
@@ -37,8 +38,8 @@ import {publicPagePaths} from './search-routes.js';
       document.head.append(script);
     } else if (d.cmd === 'event' && id && events.has(d.name) && categories.has(d.service) && channels.has(d.source) && paths.has(d.path)) {
       const parameters={};
-      if(d.name==='contact_intent'){
-        if(!['phone','whatsapp'].includes(d.channel))return;
+      if(contactEvents.has(d.name)){
+        if(!['phone','whatsapp'].includes(d.channel) || !d.name.startsWith(d.channel+'_'))return;
         parameters.contact_channel=d.channel;
         if(['floating','footer','hero','page'].includes(d.placement))parameters.contact_placement=d.placement;
       }

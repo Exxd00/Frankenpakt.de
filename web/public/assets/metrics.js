@@ -1,5 +1,6 @@
 import {businessServices, guideServices, publicPagePaths} from './search-routes.js';
-import {campaignVisit,forgetVisit,statisticsChoice as choiceKey} from './campaign-attribution.js';
+import {campaignVisit,forgetVisit} from './campaign-attribution.js';
+import {statisticsPreference} from './statistics-preference.js';
 
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
 export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
@@ -71,7 +72,6 @@ function analyticsFrame(id,traffic) {
 export function mountMetrics({doc=document,win=window,location=win.location,storage,send=(...args)=>fetch(...args),uuid=()=>crypto.randomUUID(),frameFactory=traffic=>analyticsFrame(GA_MEASUREMENT_ID,traffic)}={}) {
   const toggle = doc.querySelector('[data-statistics]');
   if (!toggle || !sites.has(location.hostname) || !pages.has(location.pathname)) return;
-  const read = () => {try{return (storage || win.localStorage).getItem(choiceKey) === 'yes';}catch{return false;}};
   let frame = null;
   let enabled = false;
   let visit = null;
@@ -83,7 +83,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     }
   }
   function set(value) {
-    if (value !== enabled) {
+    if (value !== enabled || (!value && visit)) {
       enabled = value;
       if (enabled) {
         visit=campaignVisit(location,win,doc.referrer);
@@ -95,14 +95,12 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
         frame?.close();frame=null;clearCookies();
       }
     }
-    toggle.setAttribute('aria-pressed',String(enabled));
-    toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
   }
   function postMetric(metric,contentType) {
     return send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
       headers:{'Content-Type':contentType},body:JSON.stringify(metric)});
   }
-  async function deliverHandoff(metric,oneTime) {
+  async function deliverHandoff(metric) {
     // A CORS-safelisted body avoids an OPTIONS round trip as the browser hands off to the app.
     const post = () => postMetric(metric,'text/plain;charset=UTF-8');
     try {
@@ -110,7 +108,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
       if (!response || (response.status < 500 && response.status !== 408)) return;
     } catch { /* The initial response may have been lost after acceptance. */ }
     // One immediate retry with the same ID; the event store deduplicates it.
-    if (oneTime || enabled) await post().catch(()=>{});
+    if (preference.accepted()) await post().catch(()=>{});
   }
   function record(name, service, parameters) {
     if (!enabled) return;
@@ -119,10 +117,9 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     postMetric(metric,'application/json').catch(()=>{});
     frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,parameters);
   }
-  toggle.hidden=false;
-  set(read());
+  const preference = statisticsPreference({doc,win,storage,settingsButton:toggle,onChange:set});
   doc.addEventListener('fp-inquiry-attribution',event=>{
-    if(enabled && read() && visit && typeof event.detail?.accept==='function')event.detail.accept(visit);
+    if(enabled && preference.accepted() && visit && typeof event.detail?.accept==='function')event.detail.accept(visit);
   });
   // History covers refresh, sharing and Back. A retry can return the same receipt in a new history entry.
   const entry=win.history?.state;
@@ -134,14 +131,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
         {leadType:receipt.callback===true?'callback':'quote'});
     }
   }
-  toggle.addEventListener('click',()=>{
-    const value=!enabled;
-    try{(storage || win.localStorage).setItem(choiceKey,value?'yes':'no');}catch{}
-    set(value);
-  });
-  win.addEventListener('storage',e=>{if(e.key===choiceKey||e.key===null)set(read());});
   win.addEventListener('pagehide',()=>{frame?.close();frame=null;enabled=false;});
-  win.addEventListener('pageshow',e=>{if(e.persisted)set(read());});
   // Count the first real edit on a working inquiry form. Field values never enter the message.
   const inquiry = location.pathname === '/anfrage/' && doc.querySelector('#lead-form');
   if (inquiry && doc.querySelector('#contact-dialog[data-contact-mode="live"]')) {
@@ -176,19 +166,21 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     if(event.isTrusted && event.target.matches?.('#service,#comparison-topic') && services.has(event.target.value)) record('service_chosen',event.target.value);
   });
   doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
-  doc.addEventListener('fp-contact-handoff',e=>{
-    const {channel,placement,oneTimeConsent} = e.detail || {};
-    const oneTime = oneTimeConsent === true;
-    if (!['phone','whatsapp'].includes(channel) || (!enabled && !oneTime)) return;
-    const metric = oneTime
-      ? {id:uuid(),event:'contact_intent',service:'unbekannt',source:'unbekannt',count:1,consent:true}
-      : publicMetric('contact_intent',doc.querySelector('#service')?.value,location,uuid,visit);
-    if (!metric) return;
-    metric.contactChannel = channel;
-    void deliverHandoff(metric,oneTime);
-    if (!oneTime) frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,
+  function measureContact(action,detail={}) {
+    const {channel,placement} = detail;
+    if (!enabled || !preference.accepted() || !['phone','whatsapp'].includes(channel)) return;
+    const service = metricCategories(doc.querySelector('#service')?.value,location).service;
+    if (action === 'confirmed') {
+      const metric = publicMetric('contact_intent',service,location,uuid,visit);
+      metric.contactChannel = channel;
+      void deliverHandoff(metric);
+    }
+    frame?.send({event:channel+'_'+action,service,source:visit.source},location.pathname,
       {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});
-  });
+  }
+  doc.addEventListener('fp-contact-intent',event=>measureContact('click',event.detail));
+  doc.addEventListener('fp-contact-cancel',event=>measureContact('cancelled',event.detail));
+  doc.addEventListener('fp-contact-handoff',event=>measureContact('confirmed',event.detail));
   doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));
 }
 

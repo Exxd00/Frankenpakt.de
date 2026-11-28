@@ -2,6 +2,12 @@ const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'so
 const adLabels = new Set(['privatumzug-team', 'seniorenumzug-team', 'entruempelung-nuernberg', 'entsorgung-nuernberg']);
 const paidMedia = new Set(['cpc', 'ppc', 'paidsearch', 'paid_search']);
 
+export function whatsappDraft(topic) {
+  return topic
+    ? 'Guten Tag FrankenPackt, ich interessiere mich für „'+topic+'“ im Raum Nürnberg. Können Sie mir dazu ein Angebot erstellen?'
+    : 'Guten Tag FrankenPackt, ich möchte ein Angebot für mein Vorhaben im Raum Nürnberg anfragen. Welche Angaben benötigen Sie?';
+}
+
 export function googleClickId(params, key) {
   const candidates = params.getAll(key);
   const value = candidates[0];

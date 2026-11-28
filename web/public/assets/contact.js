@@ -25,32 +25,18 @@
   }
   if (!dialog || typeof dialog.showModal !== 'function') return;
   const preview = dialog.dataset.contactMode === 'preview';
-  const metricsEnabled = !preview && dialog.dataset.metrics === '1';
   const title = dialog.querySelector('#handoff-title');
   const message = dialog.querySelector('#handoff-explanation');
-  const number = dialog.querySelector('.handoff-number');
   const draft = dialog.querySelector('#whatsapp-draft');
   const previewNote = dialog.querySelector('.handoff-preview');
-  const countingNote = dialog.querySelector('[data-handoff-stat-note]');
-  const consentLabel = dialog.querySelector('.handoff-consent');
-  const consent = consentLabel.querySelector('input');
-  const confirm = document.createElement('a');
-  confirm.className = 'button';
-  confirm.dataset.handoffConfirm = '';
-  confirm.rel = 'noreferrer';
-  const uncounted = document.createElement('a');
-  uncounted.className = confirm.className;
-  uncounted.dataset.handoffUncounted = '';
-  uncounted.rel = confirm.rel;
+  const cancel = dialog.querySelector('[data-handoff-cancel]');
+  const confirm = dialog.querySelector('[data-handoff-confirm]');
   const callback = dialog.querySelector('[data-handoff-callback]');
   const demoResult = dialog.querySelector('.handoff-demo-result');
   const query = new URLSearchParams(location.search);
   let channel;
-  let chatUrl;
   let placement;
   let handedOff = false;
-  let sheetAvailable = false;
-  let offerSingleCount = false;
   const viewport = window.visualViewport;
   function sizeDialog() {
     if (viewport) dialog.style.setProperty('--contact-viewport',viewport.height+'px');
@@ -65,8 +51,14 @@
       .forEach(link => link.setAttribute('aria-haspopup', 'dialog'));
   }
 
-  function record(eventName) {
-    if (!metricsEnabled || !consent.checked || !globalThis.crypto?.randomUUID) return;
+  const localConsent = document.querySelector('[data-local-contact-consent]');
+  if (!preview && localConsent) {
+    window.addEventListener('load', () => {
+      localConsent.parentElement.hidden = document.querySelector('[data-statistics]')?.hidden === false;
+    }, {once:true});
+  }
+  function recordLocal(eventName) {
+    if (!localConsent?.checked || localConsent.parentElement.hidden || !globalThis.crypto?.randomUUID) return;
     const raw = (query.get('src') || query.get('utm_source') || '').toLowerCase();
     const source = ['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige'].includes(raw) ? raw : 'unbekannt';
     fetch('/api/contact-events', {
@@ -80,13 +72,16 @@
     const pageCallback = nearby || document.querySelector('.guide-callback, .firm-hero [data-contact="callback"], .endcta [data-contact="callback"], .footer-main [data-contact="callback"]');
     return (pageCallback || callback).getAttribute('href');
   }
+  function emit(name) {
+    if (!preview) document.dispatchEvent(new CustomEvent(name,{detail:{channel,placement}}));
+  }
   document.addEventListener('click', event => {
     const link = event.target.closest?.('a');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || dialog.contains(link) || link.hidden) return;
     const href = link.getAttribute('href') || '';
     const phone = link.dataset.contact === 'phone' || href.startsWith('tel:');
     const chat = link.dataset.contact === 'whatsapp' || /^https:\/\/wa\.me\/\d+(?:$|[/?])/.test(href);
-    if (!phone && !chat) return;
+    if ((!phone && !chat) || dialog.open) return;
     if (!preview && !(phone ? /^tel:\+?\d[\d ()./-]*$/ : /^https:\/\/wa\.me\/[1-9]\d{6,14}(?:\?text=[^&#]*)?$/).test(href)) return;
     event.preventDefault();
     opener = link;
@@ -94,67 +89,43 @@
     placement = link.closest('[data-floating-contact]') ? 'floating' : link.closest('footer') ? 'footer' :
       link.closest('.hero, .firm-hero, .subhead, .detail-hero') ? 'hero' : 'page';
     handedOff = false;
-    title.textContent = phone ? 'FrankenPackt anrufen?' : 'Zu WhatsApp wechseln?';
+    title.textContent = phone ? 'Anruf starten?' : 'WhatsApp öffnen?';
+    const phoneDisplay = link.dataset.phoneDisplay || href.slice(4).replace(/^\+49911/, '+49 911 ');
     message.textContent = phone
-      ? 'Ihre Telefon-App öffnet sich. Sie können auch einen Rückruf anfragen.'
-      : 'Passen Sie den Text bei Bedarf an. Mit „WhatsApp öffnen“ übergeben Sie den Text an WhatsApp. Dort senden Sie ihn selbst ab.';
-    chatUrl = chat && !preview ? new URL(href) : null;
-    if (draft) {
-      draft.parentElement.hidden = !chat;
-      draft.value = chat ? (chatUrl?.searchParams.get('text') || 'Guten Tag FrankenPackt, ich möchte ein Angebot für mein Vorhaben anfragen.') : '';
-    }
-    number.hidden = !phone || preview;
-    number.textContent = !number.hidden ? (link.dataset.phoneDisplay || href.slice(4).replace(/^\+49911/, '+49 911 ')) : '';
+      ? (preview ? 'So bestätigen Sie den Wechsel zur Telefon-App.' : 'Sie erreichen FrankenPackt unter '+phoneDisplay+'.')
+      : 'In WhatsApp können Sie diesen Entwurf bearbeiten und selbst senden.';
+    draft.hidden = !chat;
+    draft.textContent = chat ? (!preview && new URL(href).searchParams.get('text') || 'Guten Tag FrankenPackt, ich möchte ein Angebot für mein Vorhaben anfragen.') : '';
     previewNote.hidden = !preview;
-    previewNote.textContent = preview ? 'Vorschau. Sie können den Ablauf ohne Verbindung testen.' : '';
     demoResult.hidden = true;
     demoResult.textContent = '';
-    consent.checked = false;
-    const stats = document.querySelector('[data-statistics]');
-    sheetAvailable = !preview && stats?.hidden === false;
-    offerSingleCount = sheetAvailable && stats.getAttribute('aria-pressed') !== 'true';
-    consentLabel.hidden = sheetAvailable || !metricsEnabled;
-    if (countingNote) countingNote.hidden = !offerSingleCount;
     confirm.href = preview ? '#kontaktvorschau' : href;
-    const action = phone ? 'Anrufen' : 'WhatsApp öffnen';
-    confirm.textContent = preview ? (phone ? 'Anruf testen' : 'WhatsApp testen') :
-      offerSingleCount ? action+' und Klick zählen' : (phone ? 'Jetzt anrufen' : action);
-    uncounted.hidden = !offerSingleCount;
-    if (offerSingleCount) {
-      uncounted.href = href;
-      uncounted.textContent = action+' ohne Zählung';
-    } else uncounted.removeAttribute('href');
-    if (!confirm.isConnected) callback.before(confirm,uncounted);
-    callback.setAttribute('href', callbackPath(link));
+    confirm.textContent = phone ? 'Jetzt anrufen' : 'WhatsApp öffnen';
+    callback.hidden = !phone || (location.pathname === '/anfrage/' && query.get('kontakt') === 'telefon');
+    if (!callback.hidden) callback.setAttribute('href', callbackPath(link));
     sizeDialog();
     viewport?.addEventListener('resize',sizeDialog);
     dialog.showModal();
-    title.focus({preventScroll: true});
-  });
-  draft?.addEventListener('input', () => {
-    if (!chatUrl) return;
-    chatUrl.searchParams.set('text',draft.value.trim());
-    confirm.href = chatUrl.href;
-    if (offerSingleCount) uncounted.href = chatUrl.href;
+    cancel.focus({preventScroll:true});
+    emit('fp-contact-intent');
   });
   dialog.addEventListener('close', () => {
+    if (dialog.open) return;
     viewport?.removeEventListener('resize',sizeDialog);
-    if (draft) draft.value = '';
-    chatUrl = null;
+    draft.textContent = '';
     confirm.removeAttribute('href');
-    uncounted.removeAttribute('href');
     // A temporarily hidden dock cannot receive the browser's automatic focus restoration.
     const previous = opener;
-    if (!handedOff && previous?.isConnected && previous !== document.activeElement) requestAnimationFrame(() => {
+    if (previous?.isConnected && previous !== document.activeElement) requestAnimationFrame(() => {
       if (dialog.open || !(document.activeElement===document.body || dialog.contains(document.activeElement))) return;
       if (floating?.contains(previous)) floating.hidden = false;
       previous.focus({preventScroll:true});
     });
     opener = null;
   });
-  function handoff(event) {
-    if (preview || handedOff) event.preventDefault();
-    if (handedOff) return;
+  confirm.addEventListener('click',event => {
+    event.preventDefault();
+    if (handedOff || !dialog.open) return;
     handedOff = true;
     if (preview) {
       demoResult.hidden = false;
@@ -163,14 +134,21 @@
         : 'Vorschau abgeschlossen. Mit dem Geschäftskonto öffnet sich hier der WhatsApp-Chat.';
       return;
     }
-    if (event.currentTarget === confirm) {
-      document.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel,placement,oneTimeConsent:offerSingleCount}}));
-      if (!sheetAvailable) record(channel + '_click');
-    }
+    const destination = confirm.href;
+    emit('fp-contact-handoff');
+    recordLocal(channel + '_click');
+    dialog.close();
+    window.location.assign(destination);
+  });
+  function dismiss() {
+    if (!dialog.open) return;
+    emit('fp-contact-cancel');
     dialog.close();
   }
-  confirm.addEventListener('click',handoff);
-  uncounted.addEventListener('click',handoff);
-  callback.addEventListener('click', () => record('callback_click'));
-  dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
+  callback.addEventListener('click', () => recordLocal('callback_click'));
+  cancel.addEventListener('click',dismiss);
+  dialog.addEventListener('cancel',event => {
+    event.preventDefault();
+    dismiss();
+  });
 })();

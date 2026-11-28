@@ -40,5 +40,8 @@ export function mountBusinessInquiry(form,params,callback) {
     }
     return business;
   }
-  return {toggle,initialService,update,writeContext,value,get project(){return toggle.checked ? project : null;}};
+  return {toggle,initialService,update,writeContext,value,
+    get project(){return toggle.checked ? project : null;},
+    get projectLabel(){return toggle.checked && project !== 'firmenkunden' ? businessProjects[project].label : ''; }
+  };
 }

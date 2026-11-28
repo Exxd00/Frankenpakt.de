@@ -1,4 +1,5 @@
-import {carryContactCampaign, contactCampaign} from './contact-channel.js';
+import {carryContactCampaign, contactCampaign, whatsappDraft} from './contact-channel.js';
+import {guideLabels, guideServices} from './search-routes.js';
 
 document.documentElement.classList.add('js');
 const pageUrl = new URL(location.href);
@@ -59,7 +60,8 @@ function writeInterest(url, interest, pack, units) {
   if (['drei','sieben'].includes(pack) && /^[1-4]$/.test(units)) url.searchParams.set('zusatz',units);
 }
 
-function updateProjectLinks(interest,pack,units,writeContext) {
+const contactTopics = {entruempelung:'Entrümpelung',entsorgung:'Entsorgung',umzug:'Umzug',seniorenumzug:'Seniorenumzug',moebeltaxi:'Möbeltaxi',transport:'Möbeltransport'};
+function updateProjectLinks(interest,pack,units,writeContext,firmTopic) {
   const selector = '.head-cta, .mast a[href^="/preise/"], .footlinks a[href^="/preise/"], .endcta a.button, .endcta [data-contact="callback"], .guide-callback, .footer-main [data-contact="callback"], [data-handoff-callback]';
   for (const link of document.querySelectorAll(selector)) {
     const url = new URL(link.getAttribute('href'), location.href);
@@ -74,6 +76,16 @@ function updateProjectLinks(interest,pack,units,writeContext) {
     }
     link.setAttribute('href',url.pathname + url.search + url.hash);
     updateLink(link);
+  }
+  if (location.pathname === '/preise/' || location.pathname === '/anfrage/') {
+    const topicPath = '/'+new URL(location.href).searchParams.get('thema')+'/';
+    const topic = firmTopic || (guideServices[topicPath] === interest && guideLabels[topicPath]) ||
+      (Object.hasOwn(contactTopics,interest) ? contactTopics[interest] : '');
+    for (const link of document.querySelectorAll('a[data-contact="whatsapp"][href^="https://wa.me/"]')) {
+      const url = new URL(link.href);
+      url.searchParams.set('text',whatsappDraft(topic));
+      link.href = url.href;
+    }
   }
 }
 
@@ -309,7 +321,7 @@ function goToReceipt(receipt) {
   const target = new URL('/danke/', location.href);
   carryContactCampaign(target.searchParams, campaign);
   if (largeType) target.searchParams.set('schrift', 'gross');
-  const measureLead = receipt.mode === 'live' && document.querySelector('[data-statistics]')?.getAttribute('aria-pressed') === 'true';
+  const measureLead = receipt.mode === 'live' && document.querySelector('[data-statistics]')?.getAttribute('data-statistics-enabled') === 'true';
   history.pushState({frankenpacktReceipt: receipt, frankenpacktMeasureLead:measureLead}, '', target);
   location.reload();
 }
@@ -492,7 +504,7 @@ function enableInquiry(form, contexts, draftTools, fileBox, mountBusinessInquiry
     switchLink.setAttribute('href',switchTarget.pathname + switchTarget.search);
     updateLink(switchLink);
     switchLink.hidden = false;
-    updateProjectLinks(interest,currentPack,params.get('zusatz'),writeContext);
+    updateProjectLinks(interest,currentPack,params.get('zusatz'),writeContext,business.projectLabel);
   }
   updateFormLinks(serviceOption?.value);
   business.toggle.addEventListener('change',()=>{

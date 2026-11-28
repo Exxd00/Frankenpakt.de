@@ -76,13 +76,12 @@ function contactDialog(request, pathname){
   const floating = searchPaths.includes(pathname) ? '<nav class="floating-contacts" data-floating-contact aria-label="Schnellkontakt">'+
     phoneChoice + whatsappChoice + '</nav>' : '';
   return floating + '<dialog id="contact-dialog" class="contact-dialog" data-contact-mode="preview" aria-labelledby="handoff-title" aria-describedby="handoff-explanation">'+
-    '<button type="button" class="dialog-close" aria-label="Schließen">'+ic('close',22)+'</button>'+
-    '<h2 id="handoff-title" tabindex="-1"></h2><p id="handoff-explanation"></p><p class="handoff-number" hidden></p>'+
-    '<div class="handoff-draft" hidden><label for="whatsapp-draft">Ihre Nachricht</label><textarea id="whatsapp-draft" rows="3" maxlength="700" autocomplete="off"></textarea></div>'+
-    '<p class="handoff-preview" hidden></p><label class="handoff-consent" hidden><input type="checkbox"> Diesen Klick für die interne Statistik mitzählen (freiwillig).</label>'+
-    '<p id="handoff-stat-note" data-handoff-stat-note hidden>Wenn Sie diesen Klick mitzählen lassen, speichern wir den Kontaktweg und die Uhrzeit mit einer zufälligen Ereignisnummer in unserem internen Ereignisblatt.</p>'+
-    '<div class="dialog-actions">'+
-    '<a class="button secondary" data-handoff-callback href="'+callback+'">Rückruf anfragen</a></div>'+
+    '<h2 id="handoff-title"></h2><p id="handoff-explanation"></p>'+
+    '<blockquote class="handoff-draft" id="whatsapp-draft" hidden></blockquote>'+
+    '<p class="handoff-preview" hidden>Vorschau. Sie können den Ablauf ohne Verbindung testen.</p>'+
+    '<div class="dialog-actions"><button type="button" data-handoff-cancel autofocus>Abbrechen</button>'+
+    '<a data-handoff-confirm rel="noreferrer"></a></div>'+
+    '<a class="handoff-callback" data-handoff-callback href="'+callback+'">Lieber zurückrufen lassen</a>'+
     '<p class="handoff-demo-result" role="status" hidden></p></dialog>';
 }
 function pageRequest(pathname,guide,firm){
@@ -95,9 +94,18 @@ function header(pathname,request,firm){
   const nav=[['/raeumung/','Entrümpelung'],['/entsorgung/','Entsorgung'],['/umzug/','Umzüge'],['/firmenkunden/','Für Firmen'],['/preise/','Preise']];
   return '<a class="skip" href="#inhalt">Zum Inhalt springen</a><header><div class="wrap mast"><a class="wordmark" href="/" aria-label="FrankenPackt, zur Startseite"><img src="/assets/marke.svg" alt="FrankenPackt" width="175" height="27"></a><button type="button" class="menutoggle js-only" aria-controls="primary" aria-expanded="false">'+ic('menu')+' Menü</button><nav aria-label="Hauptnavigation" id="primary">'+nav.map(([p,t])=>'<a href="'+p+'"'+(p===pathname?' aria-current="page"':firm && p==='/firmenkunden/'?' aria-current="location"':'')+'>'+t+'</a>').join('')+'</nav><a class="button head-cta" href="'+request+'"'+(pathname==='/anfrage/'?' aria-current="page"':'')+'>'+(firm?'Firmenanfrage':'Anfrage stellen')+'</a></div></header>';
 }
+function statisticsSettings() {
+  return '<aside class="statistics-prompt" aria-label="Statistik-Einstellungen" data-cookie-prompt hidden>'+
+    '<button type="button" data-statistics-details aria-haspopup="dialog" aria-controls="statistics-settings" aria-label="Mehr über optionale Statistik erfahren">Optionale Statistik</button>'+
+    '<div class="statistics-choices"><button type="button" data-statistics-choice="no">Ablehnen</button><button type="button" data-statistics-choice="yes">Erlauben</button></div></aside>'+
+    '<dialog class="statistics-settings" id="statistics-settings" aria-labelledby="statistics-title" aria-describedby="statistics-description">'+
+    '<h2 id="statistics-title">Cookie-Einstellungen</h2><p id="statistics-description">Mit Ihrer Zustimmung messen wir mit Google Analytics die Nutzung unserer Website und Kontaktaktionen. Bestätigte Wechsel zur Telefon-App oder zu WhatsApp erscheinen auch in unserem internen Ereignisblatt. Bei Anzeigenklicks kann es die Google-Klick-ID (GCLID) enthalten.</p>'+
+    '<p>Statistik ist <span data-statistics-status>ausgeschaltet</span>. <a href="/datenschutz/#statistik">Datenschutzerklärung</a></p>'+
+    '<div class="statistics-choices"><button type="button" data-statistics-choice="no">Ablehnen</button><button type="button" data-statistics-choice="yes">Statistik erlauben</button><button type="button" data-statistics-close>Schließen</button></div></dialog>';
+}
 function footer(request){
   const contacts=contactGroup(callbackHref(request));
-  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+contacts+'</div><div class="footlinks"><a href="/firmenkunden/">Für Firmen und Hausverwaltungen</a><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-describedby="stat-details" aria-pressed="false" hidden>Statistik einschalten</button><small id="stat-details">Optionale Statistik mit Google Analytics. Bei Anzeigenklicks speichern wir die Google-Klick-ID (GCLID) im Ereignisblatt. <a href="/datenschutz/#statistik">Details</a></small></div></div></div></footer>';}
+  return '<footer><div class="wrap footer-main"><div><a class="wordmark" aria-label="FrankenPackt, zur Startseite" href="/"><img src="/assets/marke.svg" width="175" height="27" alt="FrankenPackt"></a><p>Entrümpelung planen und Möbel transportieren in Nürnberg.</p>'+contacts+'</div><div class="footlinks"><a href="/firmenkunden/">Für Firmen und Hausverwaltungen</a><a href="/moebeltaxi/">Möbeltaxi</a><a href="/seniorenumzug/">Seniorenumzug</a><a href="/preise/">Preisübersicht</a><a href="/impressum/">Impressum</a><a href="/datenschutz/">Datenschutz</a><button class="text-toggle js-only" aria-pressed="false" type="button">Größere Schrift</button><div class="stat-choice"><button type="button" class="stat-toggle" data-statistics aria-haspopup="dialog" aria-controls="statistics-settings" hidden>Cookie-Einstellungen</button></div></div></div></footer>'+statisticsSettings();}
 function shell(pathname,title,desc,body){
   const guide=taskPages.find(page=>page.path===pathname);
   const firm=firmPages.find(page=>page.path===pathname);

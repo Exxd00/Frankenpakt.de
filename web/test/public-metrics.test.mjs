@@ -74,63 +74,127 @@ test('only allowlisted website routing, category and event fields can reach the 
   assert.equal(unknown.source,'unbekannt');assert.equal(unknown.service,'unbekannt');
 });
 
-test('no outgoing requests before opt-in or after revocation, including persisted denials and another tab',()=>{
-  const doc=new EventTarget();
-  const win=new EventTarget();
-  const toggle=new EventTarget();toggle.setAttribute=(name,value)=>{toggle[name]=value;};
-  doc.querySelector=selector=>selector==='[data-statistics]'?toggle:selector==='#service'?{value:'entsorgung'}:null;
-  const storage=new Map();
-  const pref={getItem:key=>storage.get(key),setItem:(key,v)=>storage.set(key,v)};
+function statisticsControls(doc) {
+  const button = () => new EventTarget();
+  const settings=button(), details=button(), dialog=button(), prompt={}, status={};
+  const accept=button(), decline=button(), close=button();
+  settings.setAttribute=(name,value)=>{settings[name]=value;};
+  dialog.showModal=()=>{dialog.open=true;};
+  dialog.close=()=>{dialog.open=false;};
+  accept.dataset={statisticsChoice:'yes'};
+  decline.dataset={statisticsChoice:'no'};
+  const nodes={'[data-statistics]':settings,'[data-cookie-prompt]':prompt,'#statistics-settings':dialog,
+    '[data-statistics-details]':details,'[data-statistics-close]':close,'[data-statistics-status]':status};
+  doc.querySelector=selector=>nodes[selector];
+  doc.querySelectorAll=selector=>selector==='[data-statistics-choice]'?[accept,decline]:[];
+  return {accept,decline,settings,details,dialog,prompt,status,close,nodes};
+}
+const click=button=>button.dispatchEvent(new Event('click'));
+
+test('independent statistics prompt respects refusal, settings changes, and revocation from another tab',()=>{
+  const doc=new EventTarget(), win=new EventTarget();
+  const controls=statisticsControls(doc);
+  controls.nodes['#service']={value:'entsorgung'};
+  const storage=new Map(), pref={getItem:key=>storage.get(key),setItem:(key,v)=>storage.set(key,v)};
   const requests=[],frames=[],sent=[];
   const send=async(url,init)=>{requests.push({url,init});};
   const frameFactory=()=>{const entry={send:(m,p)=>sent.push([m,p]),close:()=>entry.closed=true};frames.push(entry);return entry;};
-  storage.set('frankenpakt.statistik.v2','no');
   mountMetrics({doc,win,location:url,storage:pref,send,uuid,frameFactory});
   const file=()=>doc.dispatchEvent(new CustomEvent('fp-upload-ready',{detail:{filename:'PRIVATE-TEST.pdf',email:'PRIVATE-TEST'}}));
-  file();assert.equal(requests.length,0);assert.equal(frames.length,0);
-  toggle.dispatchEvent(new Event('click'));assert.equal(frames.length,1);
+  file();assert.equal(controls.prompt.hidden,false);assert.equal(requests.length,0);assert.equal(frames.length,0);
+  click(controls.details); assert.equal(controls.dialog.open,true);
+  click(controls.close); assert.equal(controls.dialog.open,false); assert.equal(controls.prompt.hidden,false);
+  click(controls.decline);file();assert.equal(controls.prompt.hidden,true);assert.equal(requests.length,0);
+  click(controls.settings);assert.equal(controls.dialog.open,true);assert.equal(frames.length,0);
+  click(controls.accept);assert.equal(controls.dialog.open,false);assert.equal(frames.length,1);
   file();
   assert.equal(requests.length,1);const {init}=requests[0];const data=JSON.parse(init.body);
   assert.deepEqual(data,{id:uuid(),event:'upload_ready',service:'entsorgung',source:'google',attribution:{landing:'/anfrage/'},count:1,consent:true});
   assert.equal(init.credentials,'omit');assert.equal(init.referrerPolicy,'no-referrer');
   assert.deepEqual(sent,[[{event:data.event,source:data.source,service:data.service},'/anfrage/']]);assert.equal(JSON.stringify(requests).includes('PRIVATE-TEST'),false);
-  toggle.dispatchEvent(new Event('click'));file();assert.equal(frames[0].closed,true);assert.equal(requests.length,1);
-  toggle.dispatchEvent(new Event('click'));assert.equal(frames.length,2);
+  click(controls.settings);click(controls.decline);file();assert.equal(frames[0].closed,true);assert.equal(requests.length,1);
+  click(controls.settings);click(controls.accept);assert.equal(frames.length,2);
   storage.set('frankenpakt.statistik.v2','no');
   const otherTab=new Event('storage');otherTab.key='frankenpakt.statistik.v2';win.dispatchEvent(otherTab);
-  doc.dispatchEvent(new Event('fp-contact-handoff'));assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
+  file();assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
 });
 
-test('single confirmed handoff reaches the sheet without site analytics, identification or campaign data',async()=>{
+test('only consented confirmations go to Sheets, with a deduplicable retry; clicks and cancellations are GA only',async()=>{
   for (const channel of ['phone','whatsapp']) {
-    const doc=new EventTarget(), win=new EventTarget(), toggle=new EventTarget();
-    const requests=[];
-    toggle.setAttribute=()=>{};
-    doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;
+    const doc=new EventTarget(), win=new EventTarget(), rows=[], ga=[];
+    const controls=statisticsControls(doc);
+    const choices=new Map(), storage={getItem:k=>choices.get(k),setItem:(k,v)=>choices.set(k,v)};
     const send=async (destination,options)=>{
-      requests.push({destination,options});
-      return {status:requests.length===1?503:204};
+      rows.push({destination,options});
+      return {status:rows.length===1?503:204};
     };
-    mountMetrics({doc,win,location:url,storage:{getItem:()=>'no'},send,uuid,
-      frameFactory:()=>assert.fail('single-action permission must not start GA')});
-    const handoff=oneTimeConsent=>doc.dispatchEvent(new CustomEvent('fp-contact-handoff',
-      {detail:{channel,oneTimeConsent,placement:'footer',text:'PRIVATE-TEST'}}));
-    handoff(false);
-    assert.equal(requests.length,0);
-    handoff(true);
+    mountMetrics({doc,win,location:url,storage,send,uuid,frameFactory:()=>({send:(...args)=>ga.push(args),close(){}})});
+    function action(type,detail={}) {
+      doc.dispatchEvent(new CustomEvent('fp-contact-'+type,{detail:{channel,placement:'footer',text:'PRIVATE-TEST',...detail}}));
+    }
+    action('handoff');
+    click(controls.decline);
+    action('handoff',{oneTimeConsent:true}); // Old markup cannot grant contact-only consent.
+    assert.equal(rows.length,0);assert.equal(ga.length,0);
+    click(controls.settings);click(controls.accept);
+    action('intent');action('cancel');
+    assert.deepEqual(ga.map(([metric])=>metric.event),[channel+'_click',channel+'_cancelled']);
+    assert.equal(rows.length,0);
+    action('handoff');
     await new Promise(resolve=>setImmediate(resolve));
-    assert.equal(requests.length,2);
-    const [{options}]=requests;
-    assert.deepEqual(requests[0],requests[1]);
-    assert.deepEqual(JSON.parse(options.body),{id:uuid(),event:'contact_intent',service:'unbekannt',source:'unbekannt',
-      count:1,consent:true,contactChannel:channel});
-    assert.equal(options.credentials,'omit');
-    assert.equal(options.keepalive,true);
-    assert.equal(options.referrerPolicy,'no-referrer');
+    assert.equal(rows.length,2);
+    assert.deepEqual(rows[0],rows[1]);
+    const {options}=rows[0];
+    assert.deepEqual(JSON.parse(options.body),{id:uuid(),event:'contact_intent',service:'umzug',source:'google',
+      attribution:{landing:'/anfrage/'},count:1,consent:true,contactChannel:channel});
+    assert.equal(options.credentials,'omit');assert.equal(options.keepalive,true);assert.equal(options.referrerPolicy,'no-referrer');
     assert.equal(options.headers['Content-Type'],'text/plain;charset=UTF-8');
-    handoff(false);
-    assert.equal(requests.length,2);
+    assert.deepEqual(ga.map(([metric])=>metric.event),[channel+'_click',channel+'_cancelled',channel+'_confirmed']);
+    click(controls.settings);click(controls.decline);action('handoff');
+    assert.equal(rows.length,2);assert.equal(ga.length,3);
+    assert(!JSON.stringify({rows,ga}).includes('PRIVATE-TEST'));
   }
+});
+
+test('restoring a page from the back-forward cache restores exactly one consented contact handler',()=>{
+  const doc=new EventTarget(), win=new EventTarget(), controls=statisticsControls(doc), rows=[], frames=[];
+  const session=new Map();
+  win.sessionStorage={getItem:key=>session.get(key),setItem:(key,value)=>session.set(key,value),removeItem:key=>session.delete(key)};
+  const choices=new Map(), storage={getItem:k=>choices.get(k),setItem:(k,v)=>choices.set(k,v)};
+  mountMetrics({doc,win,location:url,storage,uuid,
+    send:async(_url,options)=>{rows.push(options);return {status:204};},
+    frameFactory:()=>{const frame={send(){},close:()=>frame.closed=true};frames.push(frame);return frame;}});
+  click(controls.accept);
+  win.dispatchEvent(new Event('pagehide'));
+  assert.equal(frames[0].closed,true);
+  win.dispatchEvent(Object.assign(new Event('pageshow'),{persisted:true}));
+  assert.equal(controls.prompt.hidden,true);assert.equal(frames.length,2);
+  assert.equal(session.size,1);
+  doc.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel:'whatsapp'}}));
+  assert.equal(rows.length,1);
+  win.dispatchEvent(new Event('pagehide'));
+  choices.set('frankenpakt.statistik.v2','no');
+  win.dispatchEvent(Object.assign(new Event('pageshow'),{persisted:true}));
+  doc.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel:'phone'}}));
+  assert.equal(frames.length,2);assert.equal(rows.length,1);
+  assert.equal(session.size,0);
+});
+
+test('a choice applies for the page when browser storage is disabled, and refusal cancels a pending retry',async()=>{
+  const doc=new EventTarget(), win=new EventTarget(), controls=statisticsControls(doc);
+  const denied=()=>{throw new Error('storage disabled');};
+  const recorded=[];
+  let serviceResponse;
+  mountMetrics({doc,win,location:url,storage:{getItem:denied,setItem:denied},uuid,
+    send:(_url,options)=>{recorded.push(options);return new Promise(resolve=>{serviceResponse=resolve;});},
+    frameFactory:()=>({send(){},close(){}})});
+  click(controls.accept);
+  doc.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel:'phone'}}));
+  assert.equal(recorded.length,1);
+  click(controls.settings);click(controls.decline);
+  serviceResponse({status:503});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(recorded.length,1);
 });
 
 test('only the first view of an opted-in live receipt measures a GA lead, without sending another event to Sheets',()=>{
@@ -142,7 +206,7 @@ test('only the first view of an opted-in live receipt measures a GA lead, withou
     const win=Object.assign(new EventTarget(),{history,sessionStorage:{getItem:key=>remembered.get(key),setItem:(key,value)=>remembered.set(key,value)}});
     const doc=new EventTarget(),toggle=new EventTarget();
     toggle.setAttribute=()=>{};
-    doc.querySelector=()=>toggle;
+    doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;doc.querySelectorAll=()=>[];
     const sent=[];
     const mount=(optIn=true)=>mountMetrics({doc,win,location,storage:{getItem:()=>optIn?'yes':'no'},
       send:()=>assert.fail('Saved leads are already logged by the server.'),
@@ -163,7 +227,7 @@ test('only the first view of an opted-in live receipt measures a GA lead, withou
 test('the analytics frame receives consented traffic categories only',()=>{
   const doc=new EventTarget(), win=new EventTarget(), toggle=new EventTarget(), started=[];
   toggle.setAttribute=()=>{};
-  doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;
+  doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;doc.querySelectorAll=()=>[];
   const location=new URL('https://frankenpakt.de/sofa-entsorgen/?src=google&utm_medium=cpc&utm_campaign=12345&utm_term=sofa+entsorgen+n%C3%BCrnberg&gclid=Private');
   mountMetrics({doc,win,location,storage:{getItem:()=>'yes'},frameFactory:traffic=>{started.push(traffic);return {};}});
   assert.deepEqual(started,[{source:'google',medium:'cpc'}]);
@@ -180,7 +244,7 @@ test('first actual inquiry edit counts once by form kind and contact placement i
     const submit={disabled:true};
     const nodes={'[data-statistics]':toggle,'#lead-form':inquiry,'#contact-dialog[data-contact-mode="live"]':{},
       '#send-lead':submit,'#callback-window':{hidden:!callback},'#service':{value:callback?'':'entsorgung'}};
-    doc.querySelector=selector=>nodes[selector];
+    doc.querySelector=selector=>nodes[selector];doc.querySelectorAll=()=>[];
     const sent=[],rows=[];
     mountMetrics({doc,win,location:new URL('https://frankenpakt.de/anfrage/'),storage:{getItem:()=>'yes'},uuid,
       send:async (_url,init)=>rows.push(JSON.parse(init.body)),frameFactory:()=>({send:(...args)=>sent.push(args)})});
