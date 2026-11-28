@@ -1,6 +1,7 @@
 import {businessServices, guideServices, publicPagePaths} from './search-routes.js';
 import {campaignVisit,forgetVisit} from './campaign-attribution.js';
 import {statisticsPreference} from './statistics-preference.js';
+import {contactDelivery} from './contact-delivery.js';
 
 // Public GA4 web-stream ID. This is a routing identifier, never an API secret.
 export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
@@ -75,6 +76,9 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   let frame = null;
   let enabled = false;
   let visit = null;
+  let preference;
+  const handoffs = contactDelivery({session:()=>win.sessionStorage,accepted:()=>preference?.accepted()===true,
+    send,collector:endpoint,services,sources});
   function clearCookies() {
     // These session cookies are confined to the empty tag document's path.
     const suffix=GA_MEASUREMENT_ID.slice(2);
@@ -83,6 +87,8 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     }
   }
   function set(value) {
+    if (!value) handoffs.clear();
+    else if (preference) handoffs.resume();
     if (value !== enabled || (!value && visit)) {
       enabled = value;
       if (enabled) {
@@ -100,16 +106,6 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     return send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
       headers:{'Content-Type':contentType},body:JSON.stringify(metric)});
   }
-  async function deliverHandoff(metric) {
-    // A CORS-safelisted body avoids an OPTIONS round trip as the browser hands off to the app.
-    const post = () => postMetric(metric,'text/plain;charset=UTF-8');
-    try {
-      const response = await post();
-      if (!response || (response.status < 500 && response.status !== 408)) return;
-    } catch { /* The initial response may have been lost after acceptance. */ }
-    // One immediate retry with the same ID; the event store deduplicates it.
-    if (preference.accepted()) await post().catch(()=>{});
-  }
   function record(name, service, parameters) {
     if (!enabled) return;
     const metric = publicMetric(name,service,location,uuid,visit);
@@ -117,7 +113,9 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     postMetric(metric,'application/json').catch(()=>{});
     frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,parameters);
   }
-  const preference = statisticsPreference({doc,win,storage,settingsButton:toggle,onChange:set});
+  preference = statisticsPreference({doc,win,storage,settingsButton:toggle,onChange:set});
+  handoffs.resume();
+  win.addEventListener('online',()=>handoffs.resume());
   doc.addEventListener('fp-inquiry-attribution',event=>{
     if(enabled && preference.accepted() && visit && typeof event.detail?.accept==='function')event.detail.accept(visit);
   });
@@ -173,7 +171,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     if (action === 'confirmed') {
       const metric = publicMetric('contact_intent',service,location,uuid,visit);
       metric.contactChannel = channel;
-      void deliverHandoff(metric);
+      handoffs.record(metric);
     }
     frame?.send({event:channel+'_'+action,service,source:visit.source},location.pathname,
       {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});

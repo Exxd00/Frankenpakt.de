@@ -48,6 +48,11 @@ function intakeRoutes(value: string) {
 export const config = {
   routes: [
     ...canonicalRoutes,
+    ...(configuredOrigin || cloudEnabled ? [{
+      src:'^/api/contact-confirmation$', methods:['POST'],
+      dest:'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events',
+      headers:{'Cache-Control':'private, no-store'}
+    }] : []),
     {src:'^/betrieb(?:/.*)?$',methods:read,status:404,dest:'/404.html',headers:{'X-Robots-Tag':'noindex, nofollow'}},
     {
       src: '^/api/office/([A-Za-z0-9_/-]+)$', methods: ['GET', 'POST'],

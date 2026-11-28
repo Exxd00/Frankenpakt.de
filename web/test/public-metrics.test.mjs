@@ -143,11 +143,14 @@ test('only consented confirmations go to Sheets, with a deduplicable retry; clic
     action('handoff');
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(rows.length,2);
-    assert.deepEqual(rows[0],rows[1]);
+    assert.equal(rows[0].destination,'/api/contact-confirmation');
+    assert.match(rows[1].destination,/^https:\/\/[^/]+\.supabase\.co\/functions\/v1\/office-events$/);
+    assert.equal(rows[1].options.body,rows[0].options.body);
+    assert.equal(rows[1].options.referrerPolicy,'no-referrer');
     const {options}=rows[0];
     assert.deepEqual(JSON.parse(options.body),{id:uuid(),event:'contact_intent',service:'umzug',source:'google',
       attribution:{landing:'/anfrage/'},count:1,consent:true,contactChannel:channel});
-    assert.equal(options.credentials,'omit');assert.equal(options.keepalive,true);assert.equal(options.referrerPolicy,'no-referrer');
+    assert.equal(options.credentials,'omit');assert.equal(options.keepalive,true);assert.equal(options.referrerPolicy,'origin');
     assert.equal(options.headers['Content-Type'],'text/plain;charset=UTF-8');
     assert.deepEqual(ga.map(([metric])=>metric.event),[channel+'_click',channel+'_cancelled',channel+'_confirmed']);
     click(controls.settings);click(controls.decline);action('handoff');

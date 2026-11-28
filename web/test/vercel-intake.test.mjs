@@ -27,6 +27,7 @@ test('static production and preview builds publish their preview status without 
     const settings = JSON.parse(readFileSync(new URL('../public' + entry,import.meta.url),'utf8'));
     assert.deepEqual(settings, {mode:'preview',leadIntake:false});
     assert.equal(destination(routes, 'POST', '/api/leads'), null);
+    assert.equal(destination(routes, 'POST', '/api/contact-confirmation'), null);
     assert.equal(destination(routes, 'GET', '/anfrage/'), null);
   }
 });
@@ -81,6 +82,8 @@ test('published page aliases redirect to canonical URLs while static previews an
 test('cloud production serves operator pages and sends submissions only to the private intake backend', () => {
   const routes=routesFor('production','','1');
   const read=(path)=>readFileSync(new URL('../public'+destination(routes,'GET',path),import.meta.url),'utf8');
+  assert.equal(destination(routes,'POST','/api/contact-confirmation'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events');
+  assert.equal(destination(routes,'GET','/api/contact-confirmation'),null);
   const legal=read('/impressum/');
   for(const value of ['Mohamad Alzaim','Einsteinring 12','90453 Nürnberg','mailto:info@frankenpakt.de','tel:+4991181672879']){
     assert.ok(legal.includes(value));
