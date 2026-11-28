@@ -101,6 +101,38 @@ test('no outgoing requests before opt-in or after revocation, including persiste
   doc.dispatchEvent(new Event('fp-contact-handoff'));assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
 });
 
+test('single confirmed handoff reaches the sheet without site analytics, identification or campaign data',async()=>{
+  for (const channel of ['phone','whatsapp']) {
+    const doc=new EventTarget(), win=new EventTarget(), toggle=new EventTarget();
+    const requests=[];
+    toggle.setAttribute=()=>{};
+    doc.querySelector=selector=>selector==='[data-statistics]'?toggle:null;
+    const send=async (destination,options)=>{
+      requests.push({destination,options});
+      return {status:requests.length===1?503:204};
+    };
+    mountMetrics({doc,win,location:url,storage:{getItem:()=>'no'},send,uuid,
+      frameFactory:()=>assert.fail('single-action permission must not start GA')});
+    const handoff=oneTimeConsent=>doc.dispatchEvent(new CustomEvent('fp-contact-handoff',
+      {detail:{channel,oneTimeConsent,placement:'footer',text:'PRIVATE-TEST'}}));
+    handoff(false);
+    assert.equal(requests.length,0);
+    handoff(true);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(requests.length,2);
+    const [{options}]=requests;
+    assert.deepEqual(requests[0],requests[1]);
+    assert.deepEqual(JSON.parse(options.body),{id:uuid(),event:'contact_intent',service:'unbekannt',source:'unbekannt',
+      count:1,consent:true,contactChannel:channel});
+    assert.equal(options.credentials,'omit');
+    assert.equal(options.keepalive,true);
+    assert.equal(options.referrerPolicy,'no-referrer');
+    assert.equal(options.headers['Content-Type'],'text/plain;charset=UTF-8');
+    handoff(false);
+    assert.equal(requests.length,2);
+  }
+});
+
 test('only the first view of an opted-in live receipt measures a GA lead, without sending another event to Sheets',()=>{
   const location=new URL('https://frankenpakt.de/danke/?src=google&name=PRIVATE');
   for(const callback of [false,true]){

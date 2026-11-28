@@ -45,12 +45,17 @@ Deno.serve(async req=>{
       headers['Content-Type']='text/csv; charset=utf-8';return result(200,output);
     }
     if(req.method!=='POST')return result(405);
-    if(!req.headers.get('Content-Type')?.startsWith('application/json'))return result(415);
+    const mediaType=(req.headers.get('Content-Type')||'').split(';',1)[0].trim().toLowerCase();
+    // A safelisted contact confirmation can leave the browser as the phone/chat app opens.
+    const handoff=mediaType==='text/plain';
+    if(!handoff && mediaType!=='application/json')return result(415);
+    if(handoff && !origins.has(origin))return result(403);
     const e=await payload(req);
     if(!e||Array.isArray(e)||typeof e!=='object'||Object.keys(e).some(k=>!['id','event','service','source','count','consent','attribution','contactChannel'].includes(k))||
       (e.contactChannel!==undefined && (e.event!=='contact_intent'||!['phone','whatsapp'].includes(e.contactChannel)))||
       !uuid.test(e.id)||typeof e.id!=='string'||!services.has(e.service)||!sources.has(e.source)||e.count!==1)return result(400);
     const internal=internalEvents.has(e.event);const bearer=req.headers.get('Authorization')?.replace(/^Bearer /,'')||'';
+    if(handoff && (e.event!=='contact_intent'||!e.contactChannel))return result(400);
     if(internal){if(!/^[a-f0-9]{64}$/.test(bearer))return result(403);}
     else if(!clientEvents.has(e.event)||!origins.has(origin)||e.consent!==true)return result(403);
     const peer=(req.headers.get('x-forwarded-for')||'shared').split(',')[0].slice(0,64);

@@ -80,6 +80,7 @@ function contactDialog(request, pathname){
     '<h2 id="handoff-title" tabindex="-1"></h2><p id="handoff-explanation"></p><p class="handoff-number" hidden></p>'+
     '<div class="handoff-draft" hidden><label for="whatsapp-draft">Ihre Nachricht</label><textarea id="whatsapp-draft" rows="3" maxlength="700" autocomplete="off"></textarea></div>'+
     '<p class="handoff-preview" hidden></p><label class="handoff-consent" hidden><input type="checkbox"> Diesen Klick für die interne Statistik mitzählen (freiwillig).</label>'+
+    '<p id="handoff-stat-note" data-handoff-stat-note hidden>Wenn Sie diesen Klick mitzählen lassen, speichern wir den Kontaktweg und die Uhrzeit mit einer zufälligen Ereignisnummer in unserem internen Ereignisblatt.</p>'+
     '<div class="dialog-actions">'+
     '<a class="button secondary" data-handoff-callback href="'+callback+'">Rückruf anfragen</a></div>'+
     '<p class="handoff-demo-result" role="status" hidden></p></dialog>';

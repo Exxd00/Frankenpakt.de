@@ -98,13 +98,25 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     toggle.setAttribute('aria-pressed',String(enabled));
     toggle.textContent = enabled ? 'Statistik ausschalten' : 'Statistik einschalten';
   }
+  function postMetric(metric,contentType) {
+    return send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
+      headers:{'Content-Type':contentType},body:JSON.stringify(metric)});
+  }
+  async function deliverHandoff(metric,oneTime) {
+    // A CORS-safelisted body avoids an OPTIONS round trip as the browser hands off to the app.
+    const post = () => postMetric(metric,'text/plain;charset=UTF-8');
+    try {
+      const response = await post();
+      if (!response || (response.status < 500 && response.status !== 408)) return;
+    } catch { /* The initial response may have been lost after acceptance. */ }
+    // One immediate retry with the same ID; the event store deduplicates it.
+    if (oneTime || enabled) await post().catch(()=>{});
+  }
   function record(name, service, parameters) {
     if (!enabled) return;
     const metric = publicMetric(name,service,location,uuid,visit);
     if (!metric) return;
-    if (name === 'contact_intent' && ['phone','whatsapp'].includes(parameters.channel)) metric.contactChannel = parameters.channel;
-    send(endpoint,{method:'POST',mode:'cors',credentials:'omit',redirect:'error',referrerPolicy:'no-referrer',keepalive:true,
-      headers:{'Content-Type':'application/json'},body:JSON.stringify(metric)}).catch(()=>{});
+    postMetric(metric,'application/json').catch(()=>{});
     frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,parameters);
   }
   toggle.hidden=false;
@@ -165,8 +177,16 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   });
   doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
   doc.addEventListener('fp-contact-handoff',e=>{
-    const {channel,placement} = e.detail || {};
-    if(channel==='phone'||channel==='whatsapp')record('contact_intent',doc.querySelector('#service')?.value,
+    const {channel,placement,oneTimeConsent} = e.detail || {};
+    const oneTime = oneTimeConsent === true;
+    if (!['phone','whatsapp'].includes(channel) || (!enabled && !oneTime)) return;
+    const metric = oneTime
+      ? {id:uuid(),event:'contact_intent',service:'unbekannt',source:'unbekannt',count:1,consent:true}
+      : publicMetric('contact_intent',doc.querySelector('#service')?.value,location,uuid,visit);
+    if (!metric) return;
+    metric.contactChannel = channel;
+    void deliverHandoff(metric,oneTime);
+    if (!oneTime) frame?.send({event:metric.event,service:metric.service,source:metric.source},location.pathname,
       {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});
   });
   doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));

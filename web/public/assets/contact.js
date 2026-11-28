@@ -31,12 +31,17 @@
   const number = dialog.querySelector('.handoff-number');
   const draft = dialog.querySelector('#whatsapp-draft');
   const previewNote = dialog.querySelector('.handoff-preview');
+  const countingNote = dialog.querySelector('[data-handoff-stat-note]');
   const consentLabel = dialog.querySelector('.handoff-consent');
   const consent = consentLabel.querySelector('input');
   const confirm = document.createElement('a');
   confirm.className = 'button';
   confirm.dataset.handoffConfirm = '';
   confirm.rel = 'noreferrer';
+  const uncounted = document.createElement('a');
+  uncounted.className = confirm.className;
+  uncounted.dataset.handoffUncounted = '';
+  uncounted.rel = confirm.rel;
   const callback = dialog.querySelector('[data-handoff-callback]');
   const demoResult = dialog.querySelector('.handoff-demo-result');
   const query = new URLSearchParams(location.search);
@@ -44,6 +49,8 @@
   let chatUrl;
   let placement;
   let handedOff = false;
+  let sheetAvailable = false;
+  let offerSingleCount = false;
   const viewport = window.visualViewport;
   function sizeDialog() {
     if (viewport) dialog.style.setProperty('--contact-viewport',viewport.height+'px');
@@ -103,10 +110,21 @@
     demoResult.hidden = true;
     demoResult.textContent = '';
     consent.checked = false;
-    consentLabel.hidden = !metricsEnabled;
+    const stats = document.querySelector('[data-statistics]');
+    sheetAvailable = !preview && stats?.hidden === false;
+    offerSingleCount = sheetAvailable && stats.getAttribute('aria-pressed') !== 'true';
+    consentLabel.hidden = sheetAvailable || !metricsEnabled;
+    if (countingNote) countingNote.hidden = !offerSingleCount;
     confirm.href = preview ? '#kontaktvorschau' : href;
-    confirm.textContent = preview ? (phone ? 'Anruf testen' : 'WhatsApp testen') : (phone ? 'Jetzt anrufen' : 'WhatsApp öffnen');
-    if (!confirm.isConnected) callback.before(confirm);
+    const action = phone ? 'Anrufen' : 'WhatsApp öffnen';
+    confirm.textContent = preview ? (phone ? 'Anruf testen' : 'WhatsApp testen') :
+      offerSingleCount ? action+' und Klick zählen' : (phone ? 'Jetzt anrufen' : action);
+    uncounted.hidden = !offerSingleCount;
+    if (offerSingleCount) {
+      uncounted.href = href;
+      uncounted.textContent = action+' ohne Zählung';
+    } else uncounted.removeAttribute('href');
+    if (!confirm.isConnected) callback.before(confirm,uncounted);
     callback.setAttribute('href', callbackPath(link));
     sizeDialog();
     viewport?.addEventListener('resize',sizeDialog);
@@ -117,12 +135,14 @@
     if (!chatUrl) return;
     chatUrl.searchParams.set('text',draft.value.trim());
     confirm.href = chatUrl.href;
+    if (offerSingleCount) uncounted.href = chatUrl.href;
   });
   dialog.addEventListener('close', () => {
     viewport?.removeEventListener('resize',sizeDialog);
     if (draft) draft.value = '';
     chatUrl = null;
     confirm.removeAttribute('href');
+    uncounted.removeAttribute('href');
     // A temporarily hidden dock cannot receive the browser's automatic focus restoration.
     const previous = opener;
     if (!handedOff && previous?.isConnected && previous !== document.activeElement) requestAnimationFrame(() => {
@@ -132,7 +152,7 @@
     });
     opener = null;
   });
-  confirm.addEventListener('click', event => {
+  function handoff(event) {
     if (preview || handedOff) event.preventDefault();
     if (handedOff) return;
     handedOff = true;
@@ -143,10 +163,14 @@
         : 'Vorschau abgeschlossen. Mit dem Geschäftskonto öffnet sich hier der WhatsApp-Chat.';
       return;
     }
-    document.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel,placement}}));
-    record(channel + '_click');
+    if (event.currentTarget === confirm) {
+      document.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel,placement,oneTimeConsent:offerSingleCount}}));
+      if (!sheetAvailable) record(channel + '_click');
+    }
     dialog.close();
-  });
+  }
+  confirm.addEventListener('click',handoff);
+  uncounted.addEventListener('click',handoff);
   callback.addEventListener('click', () => record('callback_click'));
   dialog.querySelector('.dialog-close').addEventListener('click', () => dialog.close());
 })();
