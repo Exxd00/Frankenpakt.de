@@ -174,7 +174,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
       if (handoffs.record(metric)) confirmation?.preventDefault();
     }
     frame?.send({event:channel+'_'+action,service,source:visit.source},location.pathname,
-      {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});
+      {channel,placement:['floating','footer','hero','closing_cta','inquiry','page'].includes(placement)?placement:'page'});
   }
   doc.addEventListener('fp-contact-intent',event=>measureContact('click',event.detail));
   doc.addEventListener('fp-contact-cancel',event=>measureContact('cancelled',event.detail));

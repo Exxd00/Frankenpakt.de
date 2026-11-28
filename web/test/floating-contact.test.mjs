@@ -45,6 +45,10 @@ test('WhatsApp opens a prepared German message containing only the public topic'
   for (const invalid of ['', '+4915112345678?x', '4915112345678']) {
     assert.equal(chatHrefs(render(html,path,invalid)).length,0);
   }
+  const hub = '/firmenkunden/';
+  const drafts = chatHrefs(render(await page(hub),hub,operator.whatsapp));
+  assert.ok(drafts.length > 0);
+  for (const url of drafts) assert.match(url.searchParams.get('text'),/für unser Unternehmen ein Angebot/);
   const privacy=await page('/datenschutz/');
   assert.match(render(privacy,'/datenschutz/','+4915112345678'),/Kontakt über WhatsApp/);
 });

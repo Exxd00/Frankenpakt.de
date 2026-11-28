@@ -264,7 +264,7 @@ test('first actual inquiry edit counts once by form kind and contact placement i
     doc.dispatchEvent(new CustomEvent('fp-submit-error',{detail:{callback,reason:'rate_limit',rawError:'PRIVATE'}}));
     assert.deepEqual(sent[1],[{event:'form_submit_error',service:callback?'rueckruf':'entsorgung',source:'direkt'},'/anfrage/',{leadType:callback?'callback':'quote',reason:'rate_limit'}]);
     assert.equal(rows.length,0);
-    for (const placement of ['floating','footer','PRIVATE']) {
+    for (const placement of ['floating','footer','hero','closing_cta','inquiry','page','PRIVATE']) {
       doc.dispatchEvent(new CustomEvent('fp-contact-handoff',{detail:{channel:'whatsapp',placement,text:'PRIVATE'}}));
       assert.deepEqual(sent.at(-1)[2],{channel:'whatsapp',placement:placement==='PRIVATE'?'page':placement});
       assert.equal(rows.at(-1).contactChannel,'whatsapp');

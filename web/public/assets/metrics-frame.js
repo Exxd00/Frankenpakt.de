@@ -41,7 +41,7 @@ import {publicPagePaths} from './search-routes.js';
       if(contactEvents.has(d.name)){
         if(!['phone','whatsapp'].includes(d.channel) || !d.name.startsWith(d.channel+'_'))return;
         parameters.contact_channel=d.channel;
-        if(['floating','footer','hero','page'].includes(d.placement))parameters.contact_placement=d.placement;
+        if(['floating','footer','hero','closing_cta','inquiry','page'].includes(d.placement))parameters.contact_placement=d.placement;
       }
       if(d.name==='generate_lead' || d.name==='form_start' || d.name==='form_submit_error'){
         if(d.path!==(d.name==='generate_lead'?'/danke/':'/anfrage/') || !['callback','quote'].includes(d.leadType))return;

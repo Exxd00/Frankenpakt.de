@@ -1030,6 +1030,7 @@ header{border-bottom:0}
   width: max-content;
   gap: .45rem;
 }
+.floating-contacts[data-focus-overlap] { visibility: hidden; }
 .floating-contacts .contact-choice {
   min-height: 46px;
   padding: .42rem .8rem;
@@ -1040,12 +1041,18 @@ header{border-bottom:0}
 }
 .floating-contacts [data-contact="whatsapp"] { background: var(--pale); }
 .floating-contacts .contact-choice:hover { background: #d9e4ce; }
+.floating-contacts .contact-choice:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 7px var(--cream);
+}
 .floating-contacts .contact-choice::after { offset-path: inset(0 round 2rem); }
-.floating-contacts svg {
+.floating-contacts .contact-choice > svg {
   width: 22px;
   height: 22px;
   stroke-width: 1.9;
 }
+.floating-contacts [data-contact="whatsapp"] > svg { width: 23px; height: 23px; }
 body:has(dialog[open], .menutoggle[aria-expanded="true"], main form:focus-within, main [contenteditable="true"]:focus, main input:focus, main textarea:focus, main select:focus) .floating-contacts {
   display: none;
 }

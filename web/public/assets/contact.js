@@ -5,8 +5,24 @@
   let opener;
   if (floating && 'IntersectionObserver' in window) {
     const nearbyActions = new Set();
+    let focusedAction;
+    function protectFocusedAction() {
+      if (!focusedAction || floating.hidden) {
+        floating.removeAttribute('data-focus-overlap');
+        return;
+      }
+      const target = focusedAction.getBoundingClientRect();
+      const dock = floating.getBoundingClientRect();
+      const gap = 4;
+      floating.toggleAttribute('data-focus-overlap',
+        target.left < dock.right + gap && target.right > dock.left - gap &&
+        target.top < dock.bottom + gap && target.bottom > dock.top - gap);
+    }
     const usingFloating = () => floating.contains(document.activeElement) || (dialog?.open && floating.contains(opener));
-    const updateFloating = () => { floating.hidden = nearbyActions.size > 0; };
+    const updateFloating = () => {
+      floating.hidden = nearbyActions.size > 0;
+      protectFocusedAction();
+    };
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) {
         if (entry.isIntersecting) nearbyActions.add(entry.target);
@@ -17,6 +33,17 @@
     for (const section of document.querySelectorAll('main form, #preisfinder, footer')) {
       observer.observe(section);
     }
+    document.addEventListener('focusin',event => {
+      focusedAction = event.target.matches('main :is(a, button, summary):focus-visible') ? event.target : null;
+      protectFocusedAction();
+    });
+    document.addEventListener('focusout',() => {
+      focusedAction = null;
+      floating.removeAttribute('data-focus-overlap');
+    });
+    const updateOnMove = () => { if (focusedAction) protectFocusedAction(); };
+    window.addEventListener('scroll',updateOnMove,{passive:true});
+    window.addEventListener('resize',updateOnMove);
     floating.addEventListener('focusout', () => {
       queueMicrotask(() => {
         if (!usingFloating()) updateFloating();
@@ -46,11 +73,14 @@
   if (preview) {
     document.querySelectorAll('[data-contact="phone"], [data-contact="whatsapp"]').forEach(link => {
       link.hidden = false;
-      link.setAttribute('aria-haspopup', 'dialog');
     });
-  } else {
-    document.querySelectorAll('[data-contact="phone"]:not([hidden]), [data-contact="whatsapp"]:not([hidden])')
-      .forEach(link => link.setAttribute('aria-haspopup', 'dialog'));
+  }
+  const triggers = 'a[data-contact="phone"], a[data-contact="whatsapp"], a[href^="tel:"], a[href^="https://wa.me/"]';
+  for (const link of document.querySelectorAll(triggers)) {
+    if (link.hidden || dialog.contains(link)) continue;
+    link.setAttribute('aria-haspopup', 'dialog');
+    link.setAttribute('aria-controls', dialog.id);
+    if (floating?.contains(link)) link.title = link.dataset.contact === 'phone' ? 'Anrufen' : 'Auf WhatsApp schreiben';
   }
 
   const localConsent = document.querySelector('[data-local-contact-consent]');
@@ -119,8 +149,12 @@
     event.preventDefault();
     opener = link;
     channel = phone ? 'phone' : 'whatsapp';
-    placement = link.closest('[data-floating-contact]') ? 'floating' : link.closest('footer') ? 'footer' :
-      link.closest('.hero, .firm-hero, .subhead, .detail-hero') ? 'hero' : 'page';
+    if (floating?.contains(link)) placement = 'floating';
+    else if (link.closest('footer')) placement = 'footer';
+    else if (link.closest('.endcta')) placement = 'closing_cta';
+    else if (location.pathname === '/anfrage/') placement = 'inquiry';
+    else if (link.closest('.hero, .firm-hero, .subhead, .detail-hero')) placement = 'hero';
+    else placement = 'page';
     handedOff = false;
     requestToken = null;
     directLinkReady = false;

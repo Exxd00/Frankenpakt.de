@@ -32,6 +32,7 @@ const iconpaths={
  list:'<path d="M8 5h13M8 12h13M8 19h13"/><path d="m2 5 1 1 2-3m-3 9 1 1 2-3m-3 9 1 1 2-3"/>',
  layers:'<path d="m2 8 10-5 10 5-10 5L2 8Zm0 5 10 5 10-5M2 18l10 5 10-5"/>',
  chat:'<path d="M21 11a8 8 0 0 1-8 8H7l-4 3V7a4 4 0 0 1 4-4h6a8 8 0 0 1 8 8Z"/><path d="M7 9h10M7 13h6"/>',
+ whatsapp:'<path d="M21.3 11.6a9.2 9.2 0 0 1-13.6 8.1L3 21l1.3-4.6A9.2 9.2 0 1 1 21.3 11.6Z"/><path d="M8.2 6.9c-.7 0-1.2.8-1.2 1.7 0 3.4 4.3 7.6 7.7 7.6 1.2 0 2.2-.8 2.2-1.8v-.6l-2.6-1.3-1.1 1.2a9 9 0 0 1-3.4-3.2l.9-1.2-1.2-2.4Z" fill="currentColor" stroke="none"/>',
  check:'<path d="m4 12 5 5L20 6"/>', phone:'<path d="m7 3 2 5-2 2c1.5 3.2 3.5 5.2 7 7l2-2 5 2c-.3 3-1.3 5-4 4C9 19 5 15 3 7c-.7-3 1-4 4-4Z"/>',
  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',chev:'<path d="m9 5 7 7-7 7"/>',menu:'<path d="M3 6h18M3 12h18M3 18h18"/>',close:'<path d="m4 4 16 16M20 4 4 20"/>',
  tag:'<path d="M2 3h9l11 10-9 9L2 12z"/><circle cx="7.4" cy="8" r="1.5"/>',
@@ -54,7 +55,7 @@ const formatEuro=new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR',
 const startingPrice = amount => 'ab ' + formatEuro.format(amount);
 const btn=(text,url,alt=false)=>'<a class="button'+(alt?' secondary':'')+'" href="'+url+'">'+text+'</a>';
 const phoneChoice = '<a class="contact-choice" data-contact="phone" hidden href="/anfrage/?kontakt=telefon">'+ic('phone',18)+'<span>Anrufen</span></a>';
-const whatsappChoice = '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('chat',18)+'<span>WhatsApp</span></a>';
+const whatsappChoice = '<a class="contact-choice" data-contact="whatsapp" hidden href="/anfrage/">'+ic('whatsapp',18)+'<span>WhatsApp</span></a>';
 const callbackIcon='<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m20 3-6 6m0-5v5h5M6 3l3 5-2 2a15 15 0 0 0 7 7l2-2 5 3c-1 4-3 4-6 3A25 25 0 0 1 3 9C2 6 3 3 6 3Z"/></svg>';
 function callbackChoice(href) {
   return '<a class="contact-choice" data-contact="callback" href="'+href+'">'+callbackIcon+'Rückruf</a>';
