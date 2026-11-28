@@ -9,6 +9,7 @@ import { deliverDue, notificationSettings } from './lib/notify.mjs';
 import { deliverStaffMail, staffMailSettings } from './lib/mail-delivery.mjs';
 import { liveHtml } from './lib/render-live.mjs';
 import {publicPagePaths,robots,searchPaths,sitemap} from './search-site.mjs';
+import {whatsAppEntries} from './public/assets/whatsapp-entries.js';
 import { maxLeadBodyBytes } from './lib/inputs.mjs';
 import { parseFileRequest, maxMultipartBytes, serveAttachment } from './lib/attachments.mjs';
 import {deliverOfficeEvents} from './lib/office-events.mjs';
@@ -102,6 +103,12 @@ export function startServer({env=process.env,publicDir=path.join(webRoot,'public
     if(!config.live)res.setHeader('X-Robots-Tag','noindex, nofollow');
     try{
       const url=new URL(req.url,'http://localhost');
+      const entry = whatsAppEntries.get(url.pathname.replace(/\/$/, ''));
+      if (entry && ['GET','HEAD'].includes(req.method)) {
+        res.writeHead(307, {Location:entry,'Cache-Control':'no-store'});
+        res.end();
+        return;
+      }
       if(url.pathname==='/assets/statistik.html'){
         res.setHeader('X-Frame-Options','SAMEORIGIN');
         res.setHeader('Content-Security-Policy',"frame-ancestors 'self'");

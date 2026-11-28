@@ -1,13 +1,14 @@
 import {publicPagePaths} from './search-routes.js';
+import {trafficSources, whatsappPlacements} from './contact-channel.js';
 
 (() => {
   'use strict';
   if (window.parent === window) return;
   const owner = new URL(location.href).origin;
   const contactEvents = new Set(['phone_click','phone_confirmed','phone_cancelled','whatsapp_click','whatsapp_confirmed','whatsapp_cancelled']);
-  const events = new Set(['service_chosen','estimate_viewed','upload_ready',...contactEvents,'form_start','form_submit_error','generate_lead']);
+  const events = new Set(['whatsapp_visit','service_chosen','estimate_viewed','upload_ready',...contactEvents,'form_start','form_submit_error','generate_lead']);
   const categories = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf','unbekannt']);
-  const channels = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt']);
+  const channels = new Set([...trafficSources,'unbekannt']);
   const paths = new Set(publicPagePaths);
   let id = '';
   const tag = function(){(window.dataLayer ||= []).push(arguments);};
@@ -28,6 +29,11 @@ import {publicPagePaths} from './search-routes.js';
       const campaign = ['google','kleinanzeigen','empfehlung','sonstige'].includes(d.source) &&
         ['cpc','organic','referral','social','email'].includes(d.medium)
         ? {campaign_source:d.source,campaign_medium:d.medium} : {};
+      if (d.source === 'whatsapp' && d.medium === 'messenger') {
+        campaign.campaign_source = 'whatsapp';
+        campaign.campaign_medium = 'messenger';
+        if (whatsappPlacements.has(d.campaign)) campaign.campaign_name = d.campaign;
+      }
       tag('config',id,{send_page_view:false,allow_google_signals:false,allow_ad_personalization_signals:false,
         ...campaign,ignore_referrer:true,cookie_domain:'none',cookie_prefix:'fpstat',cookie_path:'/assets',cookie_expires:0,cookie_update:false,
         cookie_flags:'SameSite=Strict;Secure',client_id:d.client,page_location:'https://frankenpakt.de/',page_referrer:'',page_title:'FrankenPackt'});
@@ -38,6 +44,7 @@ import {publicPagePaths} from './search-routes.js';
       document.head.append(script);
     } else if (d.cmd === 'event' && id && events.has(d.name) && categories.has(d.service) && channels.has(d.source) && paths.has(d.path)) {
       const parameters={};
+      if (d.name === 'whatsapp_visit' && d.source !== 'whatsapp') return;
       if(contactEvents.has(d.name)){
         if(!['phone','whatsapp'].includes(d.channel) || !d.name.startsWith(d.channel+'_'))return;
         parameters.contact_channel=d.channel;

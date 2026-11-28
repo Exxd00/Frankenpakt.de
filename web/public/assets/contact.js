@@ -92,7 +92,7 @@
   function recordLocal(eventName) {
     if (!localConsent?.checked || localConsent.parentElement.hidden || !globalThis.crypto?.randomUUID) return;
     const raw = (query.get('src') || query.get('utm_source') || '').toLowerCase();
-    const source = ['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige'].includes(raw) ? raw : 'unbekannt';
+    const source = ['google', 'kleinanzeigen', 'empfehlung', 'whatsapp', 'direkt', 'sonstige'].includes(raw) ? raw : 'unbekannt';
     fetch('/api/contact-events', {
       method: 'POST', credentials: 'same-origin', keepalive: true,
       headers: {'Content-Type': 'application/json'},

@@ -43,6 +43,28 @@ test('contact confirmations support a preflight-free POST while retaining the ex
   assert.equal((await post({...body,contactChannel:'phone'},'application/x-www-form-urlencoded')).status,415);
   assert.equal(writes.length,accepted);
 
+  await t.test('a consented WhatsApp website visit is stored with its entry placement and never counted as an inquiry', async ()=>{
+    const attribution={landing:'/entsorgung/',medium:'messenger',campaign:'katalog'};
+    const visit={...body,id:randomUUID(),event:'whatsapp_visit',source:'whatsapp',attribution};
+    for (const campaign of ['profil','chat','katalog','status']) {
+      const tagged={...attribution,campaign};
+      assert.equal((await post({...visit,attribution:tagged},'application/json')).status,204);
+      const saved=writes.at(-1);
+      assert.equal(saved.kind,'whatsapp_visit');
+      assert.equal(saved.channel,'whatsapp');
+      assert.deepEqual(saved.attribution,tagged);
+    }
+    const seen=writes.length;
+    for(const patch of [{source:'direkt'},{attribution:null},{attribution:{...attribution,medium:'cpc'}},
+        {attribution:{...attribution,campaign:'unknown'}},{attribution:{...attribution,landing:'/internal/'}},
+        {attribution:{...attribution,gclid:'not-allowed'}},{contactChannel:'whatsapp'}]) {
+      assert.equal((await post({...visit,...patch},'application/json')).status,400);
+    }
+    assert.equal((await post({...visit,consent:false},'application/json')).status,403);
+    assert.equal((await post(visit,plain)).status,400);
+    assert.equal(writes.length,seen);
+  });
+
   await t.test('resolving a contact destination records only the requested channel and a server-generated ID', async ()=>{
     const endpoint='https://events.invalid/office-events/handoff';
     const invoke=(action,headers={},url=endpoint)=>handle(new Request(url,{

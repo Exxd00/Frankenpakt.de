@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {publicMetric,mountMetrics} from '../public/assets/metrics.js';
 import {businessServices,guideServices} from '../public/assets/search-routes.js';
 import {adKeywords,campaignVisit,cleanAttribution} from '../public/assets/campaign-attribution.js';
+import {carryContactCampaign,contactCampaign} from '../public/assets/contact-channel.js';
 import {readFileSync} from 'node:fs';
 
 const url = new URL('https://frankenpakt.de/anfrage/?src=google&person=PRIVATE-TEST&service=umzug#PRIVATE-TEST');
@@ -90,6 +91,53 @@ function statisticsControls(doc) {
   return {accept,decline,settings,details,dialog,prompt,status,close,nodes};
 }
 const click=button=>button.dispatchEvent(new Event('click'));
+
+test('an approved WhatsApp entry keeps its placement through calculator and inquiry without propagating private tags',()=>{
+  for (const placement of ['profil','chat','katalog','status']) {
+    const data=new Map(),win={sessionStorage:{getItem:k=>data.get(k),setItem:(k,v)=>data.set(k,v)}};
+    const landing=new URL('/sofa-entsorgen/?utm_source=WhatsApp&utm_medium=messenger&utm_campaign='+placement+'&gclid=Hide&utm_term=Private',url);
+    const visit=campaignVisit(landing,win);
+    assert.deepEqual(visit,{source:'whatsapp',attribution:{landing:'/sofa-entsorgen/',medium:'messenger',campaign:placement}});
+    let previous=landing;
+    for(const path of ['/preise/','/anfrage/']){
+      const next=new URL(path,url);
+      carryContactCampaign(next.searchParams,contactCampaign(previous.searchParams));
+      assert.equal(next.search,'?src=whatsapp');
+      assert.equal(contactCampaign(next.searchParams).phoneChannel,'main');
+      assert.deepEqual(campaignVisit(next,win,previous.href),visit);
+      previous=next;
+    }
+    assert.equal(campaignVisit(new URL('/',url),win,'').source,'direkt');
+  }
+});
+
+test('only an explicitly tagged, consented WhatsApp landing counts, once across refresh and renewed consent',()=>{
+  for(const [query,placement] of [
+    ['utm_source=whatsapp&utm_medium=messenger&utm_campaign=profil','profil'],
+    ['src=whatsapp',''], ['utm_source=whatsapp&utm_campaign=chat',''],
+    ['utm_source=whatsapp&utm_medium=messenger&utm_campaign=arbitrary',''],
+    ['utm_source=whatsapp&utm_source=google&utm_medium=messenger&utm_campaign=status',''],
+    ['utm_source=whatsapp&utm_medium=messenger&utm_campaign=chat&utm_campaign=profil','']
+  ]){
+    const loc=new URL('/?'+query,url),doc=new EventTarget(), win=new EventTarget(),history={state:{sentinel:1},replaceState(next){this.state=next;}};
+    win.history=history;
+    const controls=statisticsControls(doc),received=[],ga=[],starts=[],choices=new Map();
+    const mount=()=>mountMetrics({doc,win,location:loc,storage:{getItem:k=>choices.get(k),setItem:(k,v)=>choices.set(k,v)},uuid,
+      send:async (_target,init)=>{received.push(JSON.parse(init.body));return {status:204};},
+      frameFactory:traffic=>{starts.push(traffic);return {send:metric=>ga.push(metric),close(){}};}});
+    mount();click(controls.decline);assert.equal(received.length,0);
+    click(controls.accept);click(controls.decline);click(controls.accept);mount();
+    assert.equal(history.state.sentinel,1);
+    assert.equal(received.length,placement?1:0,query);
+    assert.equal(ga.length,received.length);
+    if(placement){
+      assert.deepEqual(starts[0],{source:'whatsapp',medium:'messenger',campaign:placement});
+      assert.deepEqual(received[0],{id:uuid(),event:'whatsapp_visit',source:'whatsapp',service:'unbekannt',
+        attribution:{landing:'/',medium:'messenger',campaign:placement},count:1,consent:true});
+      assert.equal(ga[0].event,'whatsapp_visit');
+    }
+  }
+});
 
 test('independent statistics prompt respects refusal, settings changes, and revocation from another tab',()=>{
   const doc=new EventTarget(), win=new EventTarget();

@@ -21,6 +21,20 @@ function request(data,path='leads') {
     method:'POST',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify(data)
   });
 }
+test('WhatsApp-tagged quotes and callbacks keep their source; placement requires statistics consent',async()=>{
+  const {api,submitted}=endpoint();
+  const clean={landing:'/entsorgung/',medium:'messenger',campaign:'katalog'};
+  for (const service of ['entsorgung','rueckruf']) {
+    for (const consent of [false,true]) {
+      const lead={requestId:randomUUID(),service,source:'whatsapp',name:'Test',contactMethod:'phone',phone:'09110000001',
+        statisticsConsent:consent,attribution:{...clean,keyword:'privat',gclid:'Private_123'}};
+      if (service==='entsorgung') lead.jobScope=exampleJobScope(service);
+      assert.equal((await api(request(lead))).status,201);
+      assert.equal(submitted.at(-1).p_lead.source,'whatsapp');
+      assert.deepEqual(submitted.at(-1).p_lead.attribution,consent?clean:undefined);
+    }
+  }
+});
 function endpoint(active=true){
   const submitted=[];
   const api=createCloudIntake({SUPABASE_URL:'https://db.invalid',SUPABASE_SERVICE_ROLE_KEY:'local-only'},async(url,init)=>{

@@ -1,4 +1,5 @@
 import {publicOrigin, publicPagePaths} from './assets/search-routes.js';
+import {whatsAppEntries} from './assets/whatsapp-entries.js';
 
 // The production origin runs web/server.mjs with the operator's persistent lead store.
 // Keep preview deployments on the static site, including their contact settings.
@@ -48,6 +49,10 @@ function intakeRoutes(value: string) {
 
 export const config = {
   routes: [
+    ...Array.from(whatsAppEntries, ([path,location]) => ({
+      src:'^'+path+'/?$', methods:read, status:307,
+      headers:{Location:location,'Cache-Control':'no-store'}
+    })),
     ...canonicalRoutes,
     ...(configuredOrigin || cloudEnabled ? [{
       src:'^/api/contact-confirmation$', methods:['POST'],

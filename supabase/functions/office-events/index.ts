@@ -2,10 +2,10 @@ import {cleanAttribution} from '../../../web/public/assets/campaign-attribution.
 import {businessWhatsApp,phoneLines} from '../../../web/public/assets/phone-lines.js';
 
 const origins = new Set(['https://frankenpakt.vercel.app','https://frankenpakt.de','https://www.frankenpakt.de']);
-const clientEvents = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
+const clientEvents = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent','whatsapp_visit']);
 const internalEvents = new Set(['inquiry_received','callback_requested','integration_test']);
 const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf','unbekannt']);
-const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt']);
+const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige','unbekannt','whatsapp']);
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const url = Deno.env.get('SUPABASE_URL')!;
 const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}').default;
@@ -80,8 +80,12 @@ Deno.serve(async req=>{
     if(handoff && (e.event!=='contact_intent'||!e.contactChannel))return result(400);
     if(internal){if(!/^[a-f0-9]{64}$/.test(bearer))return result(403);}
     else if(!clientEvents.has(e.event)||!origins.has(origin)||e.consent!==true)return result(403);
+    const attribution=cleanAttribution(e.attribution,e.source);
+    if (e.event==='whatsapp_visit' &&
+        (e.source!=='whatsapp' || attribution?.medium!=='messenger' || !attribution.campaign ||
+          Object.keys(e.attribution).some(field=>!['landing','medium','campaign'].includes(field)))) return result(400);
     const peer=(req.headers.get('x-forwarded-for')||'shared').split(',')[0].slice(0,64);
-    const status=await rpc('fp_record_event_detail',{eid:e.id,kind:e.event,category:e.service,channel:e.source,attribution:cleanAttribution(e.attribution,e.source),contact_method:e.contactChannel||null,
+    const status=await rpc('fp_record_event_detail',{eid:e.id,kind:e.event,category:e.service,channel:e.source,attribution,contact_method:e.contactChannel||null,
       rate_bucket:internal?null:await hash(key+'|'+new Date().toISOString().slice(0,10)+'|'+peer),access_digest:internal?await hash(bearer):null});
     return result(status==='ok'?204:status==='limited'?429:403);
   }catch{return result(503);}

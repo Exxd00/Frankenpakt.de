@@ -21,6 +21,18 @@ function destination(routes, method, pathname) {
   return route?.dest ? pathname.replace(new RegExp(route.src),route.dest) : null;
 }
 
+test('WhatsApp profile, chat and status links land on the tagged service site', () => {
+  const routes = routesFor('production','','1');
+  for (const [entry,landing,campaign] of [['/wa','/','profil'],['/wa/chat','/anfrage/','chat'],['/wa/status','/','status']]) {
+    for (const path of [entry,entry+'/']) {
+      const route = matchRoute(routes,'GET',path);
+      assert.equal(route.status,307);
+      assert.equal(route.headers.Location,landing+'?utm_source=whatsapp&utm_medium=messenger&utm_campaign='+campaign);
+      assert.equal(matchRoute(routes,'POST',path),undefined);
+    }
+  }
+});
+
 test('static production and preview builds publish their preview status without routing customer input', () => {
   for (const routes of [routesFor('production'), routesFor('preview','https://betrieb.example','1')]) {
     const entry = destination(routes, 'GET', '/api/config');

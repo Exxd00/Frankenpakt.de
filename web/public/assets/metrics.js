@@ -1,5 +1,6 @@
 import {businessServices, guideServices, publicPagePaths} from './search-routes.js';
 import {campaignVisit,forgetVisit} from './campaign-attribution.js';
+import {trafficSources} from './contact-channel.js';
 import {statisticsPreference} from './statistics-preference.js';
 import {contactDelivery} from './contact-delivery.js';
 
@@ -8,9 +9,8 @@ export const GA_MEASUREMENT_ID = 'G-QCK6H10Z49';
 const endpoint = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
 const sites = new Set(['frankenpakt.vercel.app','frankenpakt.de','www.frankenpakt.de']);
 const pages = new Set(publicPagePaths);
-const events = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
+const events = new Set(['whatsapp_visit','service_chosen','estimate_viewed','upload_ready','contact_intent']);
 const services = new Set(['entruempelung','entsorgung','umzug','seniorenumzug','moebeltaxi','transport','rueckruf']);
-const sources = new Set(['google','kleinanzeigen','empfehlung','direkt','sonstige']);
 const pageServices = {...guideServices,...businessServices,'/raeumung/':'entruempelung','/entsorgung/':'entsorgung','/umzug/':'umzug','/seniorenumzug/':'seniorenumzug','/moebeltaxi/':'moebeltaxi'};
 const receiptsKey = 'frankenpakt.gezaehlte-anfragen.v1';
 
@@ -28,7 +28,7 @@ function metricCategories(explicitService,location) {
   const q = new URLSearchParams(location.search);
   const category = [explicitService,q.get('leistung'),q.get('service'),q.get('vorhaben'),pageServices[location.pathname]].find(value => services.has(value)) || 'unbekannt';
   const src = (q.get('src') || q.get('utm_source') || '').toLowerCase();
-  return {service:category,source:sources.has(src) ? src : 'unbekannt'};
+  return {service:category,source:trafficSources.has(src) ? src : 'unbekannt'};
 }
 
 export function publicMetric(name, explicitService, location, uuid, visit) {
@@ -76,9 +76,10 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   let frame = null;
   let enabled = false;
   let visit = null;
+  let entryCounted = false;
   let preference;
   const handoffs = contactDelivery({session:()=>win.sessionStorage,accepted:()=>preference?.accepted()===true,
-    send,collector:endpoint,services,sources});
+    send,collector:endpoint,services,sources:trafficSources});
   function clearCookies() {
     // These session cookies are confined to the empty tag document's path.
     const suffix=GA_MEASUREMENT_ID.slice(2);
@@ -93,7 +94,18 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
       enabled = value;
       if (enabled) {
         visit=campaignVisit(location,win,doc.referrer);
-        frame=frameFactory({source:visit.source,medium:visit.attribution.medium});
+        const {medium,campaign} = visit.attribution;
+        frame=frameFactory({source:visit.source,medium,...visit.source==='whatsapp' && campaign && {campaign}});
+        // Count the tagged entry once in its own history entry. Subsequent pages carry only src.
+        const query = new URLSearchParams(location.search);
+        if (visit.source === 'whatsapp' && campaign && medium === 'messenger' &&
+            query.get('utm_source')?.trim().toLowerCase() === 'whatsapp' &&
+            query.get('utm_medium')?.trim().toLowerCase() === 'messenger' && query.has('utm_campaign') &&
+            !entryCounted && win.history?.state?.fpWhatsappVisit !== true) {
+          entryCounted = true;
+          try { win.history.replaceState({...win.history.state,fpWhatsappVisit:true},''); } catch {}
+          record('whatsapp_visit');
+        }
       }
       else {
         visit=null;forgetVisit(win);

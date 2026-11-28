@@ -1,5 +1,6 @@
 import {InputError,isGoogleAdVariant} from './inputs.mjs';
 import {cleanAttribution} from '../public/assets/campaign-attribution.js';
+import {trafficSources} from '../public/assets/contact-channel.js';
 import {validateJobScope,summarizeJobTiming} from '../public/assets/job-scope-model.js';
 import {factsFromEditedScope} from '../public/assets/estimate-scope.js';
 import {scopeConditionNotes,normalizeJobContext} from '../public/assets/job-scope-conditions.js';
@@ -7,7 +8,7 @@ import {normalizeActualJob,evaluateActualJob} from '../public/assets/actual-job.
 import {businessProjects} from '../public/assets/business-projects.js';
 
 const services = new Set(['entruempelung','entsorgung','umzug','moebeltaxi','seniorenumzug','rueckruf','transport']);
-export const sources = new Set(['direkt','google','kleinanzeigen','empfehlung','sonstige','unbekannt']);
+export const sources = new Set([...trafficSources,'unbekannt']);
 const contactMethods = new Set(['phone','email']);
 const contactClicks = new Set(['phone_click','whatsapp_click','callback_click']);
 const requestIdPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

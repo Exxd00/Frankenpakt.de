@@ -1,4 +1,5 @@
-const channels = new Set(['google', 'kleinanzeigen', 'empfehlung', 'direkt', 'sonstige']);
+export const trafficSources = new Set(['google', 'kleinanzeigen', 'empfehlung', 'whatsapp', 'direkt', 'sonstige']);
+export const whatsappPlacements = new Set(['profil', 'chat', 'katalog', 'status']);
 const adLabels = new Set(['privatumzug-team', 'seniorenumzug-team', 'entruempelung-nuernberg', 'entsorgung-nuernberg']);
 const paidMedia = new Set(['cpc', 'ppc', 'paidsearch', 'paid_search']);
 
@@ -19,7 +20,7 @@ export function googleClickId(params, key) {
 export function contactCampaign(params) {
   const one = key => params.getAll(key).length === 1 ? params.get(key).trim().toLowerCase() : '';
   const channel = one('src') || one('utm_source');
-  const source = channels.has(channel) ? channel : 'unbekannt';
+  const source = trafficSources.has(channel) ? channel : 'unbekannt';
   const label = one('anzeige');
   const adVariant = one('src') === 'google' && adLabels.has(label) ? label : null;
   const result = {source, adVariant: null, phoneChannel: 'main'};
