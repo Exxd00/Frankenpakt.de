@@ -157,11 +157,13 @@ Ein Seitenaufruf ist ein HTTP-Abruf und kann sich durch Neuladen wiederholen. Be
 Zur interoperablen Sicherung `node ops.mjs backup ABSOLUTER_NEUER_DATEIPFAD` verwenden. Einen abgestimmten Sicherungsplan des Hosters einrichten und eine Sicherung regelmäßig separat wiederherstellen. Der Server bereinigt erledigte Fälle täglich und beim Start. Für langfristige Vergleiche aggregierte Monatsberichte vor Ablauf der Aufbewahrungszeit im Betriebsarchiv aufbewahren. Nach Prüfung eines Löschbegehrens kann ein berechtigter Mitarbeiter `node ops.mjs erase VORGANG` ausführen. Dies entfernt die Anfrage samt untergeordneten Buchungseinträgen aus diesem Werkzeug. Sicherungslöschung und handels- oder steuerrechtliche Pflichten getrennt bearbeiten.
 
 
-### Freiwillige Webstatistik
+### Kontaktbestätigungen und freiwillige Webstatistik
 
 Beim ersten Besuch bietet „Optionale Statistik“ die Auswahl „Ablehnen“ oder „Erlauben“. Über „Cookie-Einstellungen“ im Fußbereich lässt sich die Entscheidung später ändern. Beide Kontaktwege stehen bei jeder Auswahl zur Verfügung. Im Telefondialog startet „Jetzt anrufen“ die Telefon-App. Im WhatsApp-Dialog öffnet „WhatsApp öffnen“ den angezeigten Entwurf zur Bearbeitung und zum Versand in WhatsApp.
 
-Bei erteilter Statistik-Einwilligung übermittelt die Bestätigung ein `contact_intent` mit dem jeweiligen Kanal über `/api/contact-confirmation`. Sobald die Datenbank den Eingang quittiert, entfernt der Tab den Eintrag aus seiner Warteliste. Bei vorübergehenden Verbindungsproblemen kann derselbe Tab die Übertragung innerhalb von 30 Minuten mit derselben Ereignis-ID wiederholen. Beim Widerruf der Einwilligung verwirft er ausstehende Einträge. Öffnen und Abbrechen des Kontaktdialogs erzeugen keinen Eintrag im Ereignisblatt.
+Ohne Statistikfreigabe fordert der bestätigte Klick über `/api/contact-handoff` die Zieladresse für Telefon oder WhatsApp an. Der Server erfasst den angeforderten Kanal mit Eingangszeit und einer neuen Vorgangskennung. Leistung und Quelle stehen auf `unbekannt`; Anzeigenkennung, Suchwort und Einstiegsseite bleiben leer. Der WhatsApp-Entwurf wird erst auf dem Gerät der Zieladresse hinzugefügt. Derselbe Klick löst einen Abruf aus. Bei einem Netzausfall bleibt das angezeigte Kontaktziel nutzbar. Eine Übergabe, deren Abruf den Server nie erreicht hat, ist im Blatt nicht nachweisbar.
+
+Mit Statistikfreigabe übermittelt der Tab die Bestätigung einmal über `/api/contact-confirmation`. Dieser Eintrag kann Leistung und Kampagnenzuordnung enthalten. Bei vorübergehenden Verbindungsproblemen kann derselbe Tab die Übertragung innerhalb von 30 Minuten mit derselben Ereignis-ID wiederholen. Beim Widerruf verwirft er ausstehende Statistikmeldungen. Der Dialog erzeugt beim Öffnen und Abbrechen keinen Eintrag im Ereignisblatt.
 
 Das Tabellenblatt **Ereignisse** zeigt in Spalte C die Bezeichnungen `phone_call` und `whatsapp`. Spalte B enthält die UTC-Eingangszeit beim Server. Spalte K erläutert den Kontaktweg als „Telefon – Weiterleitung“ oder „WhatsApp – Weiterleitung“. Eine zustande gekommene Verbindung oder eingegangene Nachricht bestätigt der Betrieb separat.
 

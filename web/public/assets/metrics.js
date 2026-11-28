@@ -164,14 +164,14 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
     if(event.isTrusted && event.target.matches?.('#service,#comparison-topic') && services.has(event.target.value)) record('service_chosen',event.target.value);
   });
   doc.addEventListener('fp-estimate',e=>record('estimate_viewed',e.detail?.service));
-  function measureContact(action,detail={}) {
+  function measureContact(action,detail={},confirmation) {
     const {channel,placement} = detail;
     if (!enabled || !preference.accepted() || !['phone','whatsapp'].includes(channel)) return;
     const service = metricCategories(doc.querySelector('#service')?.value,location).service;
     if (action === 'confirmed') {
       const metric = publicMetric('contact_intent',service,location,uuid,visit);
       metric.contactChannel = channel;
-      handoffs.record(metric);
+      if (handoffs.record(metric)) confirmation?.preventDefault();
     }
     frame?.send({event:channel+'_'+action,service,source:visit.source},location.pathname,
       {channel,placement:['floating','footer','hero','page'].includes(placement)?placement:'page'});
@@ -179,6 +179,7 @@ export function mountMetrics({doc=document,win=window,location=win.location,stor
   doc.addEventListener('fp-contact-intent',event=>measureContact('click',event.detail));
   doc.addEventListener('fp-contact-cancel',event=>measureContact('cancelled',event.detail));
   doc.addEventListener('fp-contact-handoff',event=>measureContact('confirmed',event.detail));
+  doc.addEventListener('fp-contact-confirmation',event=>measureContact('confirmed',event.detail,event));
   doc.addEventListener('fp-upload-ready',()=>record('upload_ready',doc.querySelector('#service')?.value));
 }
 

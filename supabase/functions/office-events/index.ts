@@ -1,4 +1,5 @@
 import {cleanAttribution} from '../../../web/public/assets/campaign-attribution.js';
+import {businessWhatsApp,phoneLines} from '../../../web/public/assets/phone-lines.js';
 
 const origins = new Set(['https://frankenpakt.vercel.app','https://frankenpakt.de','https://www.frankenpakt.de']);
 const clientEvents = new Set(['service_chosen','estimate_viewed','upload_ready','contact_intent']);
@@ -32,6 +33,27 @@ Deno.serve(async req=>{
   if(origins.has(origin))Object.assign(headers,{'Access-Control-Allow-Origin':origin,'Access-Control-Allow-Methods':'POST, OPTIONS','Access-Control-Allow-Headers':'content-type'});
   const result=(code:number,data:string|null=null)=>new Response(data,{status:code,headers});
   try{
+    if (endpoint.pathname === '/office-events/handoff' || endpoint.pathname === '/functions/v1/office-events/handoff') {
+      if (req.method !== 'POST') return result(405);
+      if (!origins.has(origin) || req.headers.get('Sec-Fetch-Site') === 'cross-site') return result(403);
+      if (endpoint.search) return result(400);
+      if (req.headers.get('Content-Type')?.split(';',1)[0].trim().toLowerCase() !== 'text/plain') return result(415);
+      const action = await payload(req);
+      if (!action || typeof action !== 'object' || Array.isArray(action) || Object.keys(action).length !== 1 ||
+          !['phone','whatsapp'].includes(action.channel)) return result(400);
+      // This shared per-channel minute limit is independent of the visitor and device.
+      const status = await rpc('fp_record_event_detail',{
+        eid:crypto.randomUUID(),kind:'contact_intent',category:'unbekannt',channel:'unbekannt',
+        rate_bucket:await hash('frankenpakt/handoff/'+action.channel),access_digest:null,
+        attribution:null,contact_method:action.channel
+      });
+      if (status !== 'ok') return result(status === 'limited' ? 429 : 403);
+      const destinations = action.channel === 'phone'
+        ? [phoneLines.main,phoneLines.google,phoneLines.kleinanzeigen].map(line=>'tel:'+line.phone)
+        : ['https://wa.me/'+businessWhatsApp.slice(1)];
+      headers['Content-Type']='application/json; charset=utf-8';
+      return result(200,JSON.stringify({destinations}));
+    }
     if(req.method==='OPTIONS')return result(origins.has(origin)?204:403);
     if(req.method==='GET'){
       const read=endpoint.searchParams.get('key')||'';if(!/^[a-f0-9]{64}$/.test(read))return result(403);

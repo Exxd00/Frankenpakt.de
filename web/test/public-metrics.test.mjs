@@ -119,7 +119,7 @@ test('independent statistics prompt respects refusal, settings changes, and revo
   file();assert.equal(frames[1].closed,true);assert.equal(requests.length,1);
 });
 
-test('only consented confirmations go to Sheets, with a deduplicable retry; clicks and cancellations are GA only',async()=>{
+test('only an opted-in attributed submission claims the handoff from the contact resolver',async()=>{
   for (const channel of ['phone','whatsapp']) {
     const doc=new EventTarget(), win=new EventTarget(), rows=[], ga=[];
     const controls=statisticsControls(doc);
@@ -130,17 +130,18 @@ test('only consented confirmations go to Sheets, with a deduplicable retry; clic
     };
     mountMetrics({doc,win,location:url,storage,send,uuid,frameFactory:()=>({send:(...args)=>ga.push(args),close(){}})});
     function action(type,detail={}) {
-      doc.dispatchEvent(new CustomEvent('fp-contact-'+type,{detail:{channel,placement:'footer',text:'PRIVATE-TEST',...detail}}));
+      const name=type==='handoff'?'fp-contact-confirmation':'fp-contact-'+type;
+      return !doc.dispatchEvent(new CustomEvent(name,{cancelable:true,detail:{channel,placement:'footer',text:'PRIVATE-TEST',...detail}}));
     }
-    action('handoff');
+    assert.equal(action('handoff'),false);
     click(controls.decline);
-    action('handoff',{oneTimeConsent:true}); // Old markup cannot grant contact-only consent.
+    assert.equal(action('handoff',{oneTimeConsent:true}),false);
     assert.equal(rows.length,0);assert.equal(ga.length,0);
     click(controls.settings);click(controls.accept);
     action('intent');action('cancel');
     assert.deepEqual(ga.map(([metric])=>metric.event),[channel+'_click',channel+'_cancelled']);
     assert.equal(rows.length,0);
-    action('handoff');
+    assert.equal(action('handoff'),true);
     await new Promise(resolve=>setImmediate(resolve));
     assert.equal(rows.length,2);
     assert.equal(rows[0].destination,'/api/contact-confirmation');
@@ -153,7 +154,7 @@ test('only consented confirmations go to Sheets, with a deduplicable retry; clic
     assert.equal(options.credentials,'omit');assert.equal(options.keepalive,true);assert.equal(options.referrerPolicy,'origin');
     assert.equal(options.headers['Content-Type'],'text/plain;charset=UTF-8');
     assert.deepEqual(ga.map(([metric])=>metric.event),[channel+'_click',channel+'_cancelled',channel+'_confirmed']);
-    click(controls.settings);click(controls.decline);action('handoff');
+    click(controls.settings);click(controls.decline);assert.equal(action('handoff'),false);
     assert.equal(rows.length,2);assert.equal(ga.length,3);
     assert(!JSON.stringify({rows,ga}).includes('PRIVATE-TEST'));
   }

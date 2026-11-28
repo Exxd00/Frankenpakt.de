@@ -37,6 +37,8 @@
   let channel;
   let placement;
   let handedOff = false;
+  let requestToken;
+  let directLinkReady = false;
   const viewport = window.visualViewport;
   function sizeDialog() {
     if (viewport) dialog.style.setProperty('--contact-viewport',viewport.height+'px');
@@ -75,6 +77,37 @@
   function emit(name) {
     if (!preview) document.dispatchEvent(new CustomEvent(name,{detail:{channel,placement}}));
   }
+  async function resolveDestination(method, visibleLink) {
+    async function requestDestination() {
+      const response = await fetch('/api/contact-handoff', {
+        method:'POST', mode:'same-origin', credentials:'omit', keepalive:true, redirect:'error',
+        referrerPolicy:'origin', headers:{'Content-Type':'text/plain;charset=UTF-8'},
+        body:JSON.stringify({channel:method})
+      });
+      if (response.status !== 200) return visibleLink;
+      const {destinations} = await response.json();
+      if (!Array.isArray(destinations)) return visibleLink;
+      if (method === 'phone') {
+        const phones = destinations.filter(value => typeof value === 'string' && /^tel:\+[1-9]\d{6,14}$/.test(value));
+        return phones.find(phone => phone === visibleLink) || visibleLink;
+      }
+      const shown = new URL(visibleLink);
+      const chat = destinations.find(value => value === shown.origin + shown.pathname);
+      return chat ? chat + shown.search : visibleLink;
+    }
+    // A slow response must not prevent the visitor from reaching us. The single
+    // keepalive request can finish after navigation; no timeout causes a resend.
+    let timeout;
+    const fallback = new Promise(resolve => { timeout = setTimeout(()=>resolve(visibleLink),1200); });
+    try { return await Promise.race([requestDestination().catch(()=>visibleLink),fallback]); }
+    finally { clearTimeout(timeout); }
+  }
+  function closeAfterAppSwitch() {
+    if (directLinkReady && dialog.open) dialog.close();
+  }
+  window.addEventListener('pagehide',closeAfterAppSwitch);
+  window.addEventListener('blur',closeAfterAppSwitch);
+  document.addEventListener('visibilitychange',() => { if (document.hidden) closeAfterAppSwitch(); });
   document.addEventListener('click', event => {
     const link = event.target.closest?.('a');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || dialog.contains(link) || link.hidden) return;
@@ -89,6 +122,8 @@
     placement = link.closest('[data-floating-contact]') ? 'floating' : link.closest('footer') ? 'footer' :
       link.closest('.hero, .firm-hero, .subhead, .detail-hero') ? 'hero' : 'page';
     handedOff = false;
+    requestToken = null;
+    directLinkReady = false;
     title.textContent = phone ? 'Anruf starten?' : 'WhatsApp öffnen?';
     const phoneDisplay = link.dataset.phoneDisplay || href.slice(4).replace(/^\+49911/, '+49 911 ');
     message.textContent = phone
@@ -111,6 +146,8 @@
   });
   dialog.addEventListener('close', () => {
     if (dialog.open) return;
+    requestToken = null;
+    directLinkReady = false;
     viewport?.removeEventListener('resize',sizeDialog);
     draft.textContent = '';
     confirm.removeAttribute('href');
@@ -124,6 +161,9 @@
     opener = null;
   });
   confirm.addEventListener('click',event => {
+    // If the browser blocked the asynchronous app switch, a second tap follows
+    // the real tel:/WhatsApp link natively, without recording another action.
+    if (dialog.open && directLinkReady) return;
     event.preventDefault();
     if (handedOff || !dialog.open) return;
     handedOff = true;
@@ -135,14 +175,32 @@
       return;
     }
     const destination = confirm.href;
-    emit('fp-contact-handoff');
     recordLocal(channel + '_click');
-    dialog.close();
-    window.location.assign(destination);
+    const confirmation = new CustomEvent('fp-contact-confirmation',{cancelable:true,detail:{channel,placement}});
+    const handled = !document.dispatchEvent(confirmation);
+    if (handled || !['frankenpakt.de','www.frankenpakt.de','frankenpakt.vercel.app'].includes(location.hostname)) {
+      dialog.close();
+      window.location.assign(destination);
+      return;
+    }
+    const token = requestToken = {};
+    resolveDestination(channel,destination).then(resolved => {
+      if (!dialog.open || requestToken !== token) return;
+      confirm.href = resolved;
+      directLinkReady = true;
+      try { window.location.assign(resolved); } catch { /* The native link remains available. */ }
+      setTimeout(()=>{
+        if (!dialog.open || !directLinkReady || requestToken !== token) return;
+        demoResult.textContent = channel === 'phone'
+          ? 'Falls sich die Telefon-App nicht öffnet, tippen Sie erneut auf „Jetzt anrufen“.'
+          : 'Falls sich WhatsApp nicht öffnet, tippen Sie erneut auf „WhatsApp öffnen“.';
+        demoResult.hidden = false;
+      },900);
+    });
   });
   function dismiss() {
     if (!dialog.open) return;
-    emit('fp-contact-cancel');
+    if (!handedOff) emit('fp-contact-cancel');
     dialog.close();
   }
   callback.addEventListener('click', () => recordLocal('callback_click'));

@@ -99,7 +99,7 @@ function statisticsSettings() {
     '<button type="button" data-statistics-details aria-haspopup="dialog" aria-controls="statistics-settings" aria-label="Mehr über optionale Statistik erfahren">Optionale Statistik</button>'+
     '<div class="statistics-choices"><button type="button" data-statistics-choice="no">Ablehnen</button><button type="button" data-statistics-choice="yes">Erlauben</button></div></aside>'+
     '<dialog class="statistics-settings" id="statistics-settings" aria-labelledby="statistics-title" aria-describedby="statistics-description">'+
-    '<h2 id="statistics-title">Cookie-Einstellungen</h2><p id="statistics-description">Mit Ihrer Zustimmung messen wir mit Google Analytics die Nutzung unserer Website und Kontaktaktionen. Bestätigte Wechsel zur Telefon-App oder zu WhatsApp erscheinen auch in unserem internen Ereignisblatt. Bei Anzeigenklicks kann es die Google-Klick-ID (GCLID) enthalten.</p>'+
+    '<h2 id="statistics-title">Cookie-Einstellungen</h2><p id="statistics-description">Bestätigte Wechsel zu Telefon oder WhatsApp zählen wir im Betrieb bei jeder Auswahl. Mit Ihrer Zustimmung nutzen wir zusätzlich Google Analytics und können Kontaktaktionen einer Anzeige zuordnen.</p>'+
     '<p>Statistik ist <span data-statistics-status>ausgeschaltet</span>. <a href="/datenschutz/#statistik">Datenschutzerklärung</a></p>'+
     '<div class="statistics-choices"><button type="button" data-statistics-choice="no">Ablehnen</button><button type="button" data-statistics-choice="yes">Statistik erlauben</button><button type="button" data-statistics-close>Schließen</button></div></dialog>';
 }

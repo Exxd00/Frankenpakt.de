@@ -74,10 +74,11 @@ export function contactDelivery({session,accepted,send,collector,services,source
 
   return {
     record(metric) {
-      if (!accepted()) return;
+      if (!accepted()) return false;
       const row = {at:now(),metric};
       save([...pending().filter(entry=>entry.metric.id!==metric.id),row]);
       void deliver(row);
+      return true;
     },
     resume() {
       if (!accepted()) return;

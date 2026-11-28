@@ -7,6 +7,7 @@ const configuredOrigin = process.env.VERCEL_ENV === 'production'
   : undefined;
 const cloudEnabled = process.env.VERCEL_ENV === 'production' && process.env.FRANKENPACKT_CLOUD_INTAKE === '1';
 const cloud = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/frankenpakt-intake';
+const officeEvents = 'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events';
 const pages = publicPagePaths.filter(path=>path!=='/').map(path=>path.slice(1,-1)).join('|');
 const read = ['GET','HEAD'];
 
@@ -50,7 +51,11 @@ export const config = {
     ...canonicalRoutes,
     ...(configuredOrigin || cloudEnabled ? [{
       src:'^/api/contact-confirmation$', methods:['POST'],
-      dest:'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events',
+      dest:officeEvents,
+      headers:{'Cache-Control':'private, no-store'}
+    }, {
+      src:'^/api/contact-handoff$', methods:['POST'],
+      dest:officeEvents+'/handoff',
       headers:{'Cache-Control':'private, no-store'}
     }] : []),
     {src:'^/betrieb(?:/.*)?$',methods:read,status:404,dest:'/404.html',headers:{'X-Robots-Tag':'noindex, nofollow'}},

@@ -28,6 +28,7 @@ test('static production and preview builds publish their preview status without 
     assert.deepEqual(settings, {mode:'preview',leadIntake:false});
     assert.equal(destination(routes, 'POST', '/api/leads'), null);
     assert.equal(destination(routes, 'POST', '/api/contact-confirmation'), null);
+    assert.equal(destination(routes, 'POST', '/api/contact-handoff'), null);
     assert.equal(destination(routes, 'GET', '/anfrage/'), null);
   }
 });
@@ -84,6 +85,8 @@ test('cloud production serves operator pages and sends submissions only to the p
   const read=(path)=>readFileSync(new URL('../public'+destination(routes,'GET',path),import.meta.url),'utf8');
   assert.equal(destination(routes,'POST','/api/contact-confirmation'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events');
   assert.equal(destination(routes,'GET','/api/contact-confirmation'),null);
+  assert.equal(destination(routes,'POST','/api/contact-handoff'),'https://rjcmfkupgngfxteeupql.supabase.co/functions/v1/office-events/handoff');
+  assert.equal(destination(routes,'GET','/api/contact-handoff'),null);
   const legal=read('/impressum/');
   for(const value of ['Mohamad Alzaim','Einsteinring 12','90453 Nürnberg','mailto:info@frankenpakt.de','tel:+4991181672879']){
     assert.ok(legal.includes(value));
